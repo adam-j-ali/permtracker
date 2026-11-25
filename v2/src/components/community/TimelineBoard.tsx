@@ -8,47 +8,20 @@ import {
   METRIC_MIN_N,
   CONTACT_KINDS,
   RECENT_MIN,
-  SIDE_METRIC_IDS,
   ROUTES,
   type BoardRow,
-  type MetricResult,
   type UpdatesSummary,
   type RfeSummary,
   type WaitingView,
   type RecentApprovals,
 } from "@/lib/communityTimeline";
 import { ChartTips } from "@/components/data/ChartTips";
+import { StepFigures } from "@/components/community/StepFigures";
+import type { SideFigure } from "@/lib/reportedSummary";
 import { cn } from "@/lib/utils";
 import { ScrollBox } from "@/components/ui/scroll-box";
 import { officeByCode } from "@/lib/uscisOffices";
 import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
-
-/** One stage in the empty state: its name and how many of the five reports a median needs it holds. */
-function EmptyStep({ m, n }: { m: MetricResult; n: number | null }) {
-  return (
-    <li className="flex items-start gap-3 bg-sage p-3 border-2 border-border">
-      {n !== null ? (
-        <span className="flex size-7 shrink-0 items-center justify-center border-input font-mono text-sm font-bold border">
-          {n}
-        </span>
-      ) : null}{" "}
-      <span className="min-w-0 flex-1">
-        <span className="block text-sm font-bold">{keepWhole(m.label)}</span>{" "}
-        <span aria-hidden="true" className="mt-2 flex gap-1">
-          {Array.from({ length: METRIC_MIN_N }, (_, k) => (
-            <span
-              key={k}
-              className={cn("h-2 flex-1 border border-input", k < m.n ? "bg-primary" : "bg-soft-wait")}
-            />
-          ))}
-        </span>{" "}
-        <span className="mt-1 block text-sm text-muted-foreground">
-          {`${Math.min(m.n, METRIC_MIN_N)} of ${METRIC_MIN_N} reports`}
-        </span>
-      </span>
-    </li>
-  );
-}
 
 /**
  * The visual half of the green card timelines page, server-rendered, no
@@ -68,100 +41,6 @@ const monthName = (ym: string) =>
   new Date(`${ym}-15T12:00:00Z`).toLocaleDateString("en-US", { year: "numeric", month: "short", timeZone: "UTC" });
 
 const days = (n: number) => `${n.toLocaleString("en-US")} ${n === 1 ? "day" : "days"}`;
-
-export function StageMedians({ metrics }: { metrics: readonly MetricResult[] }) {
-  const measured = metrics.filter((m) => m.median !== null);
-  // One scale for every bar, so two stages can be compared by eye. Rounded up
-  // to a whole 60 days so the axis reads as chosen.
-  const top = Math.max(120, ...measured.map((m) => m.p75 ?? 0));
-  const span = Math.ceil(top / 60) * 60;
-  const pct = (d: number) => `${Math.min(100, (d / span) * 100)}%`;
-
-  // NO STEP MEASURED YET: one chain of the steps, each with how many reports
-  // it holds of the five a median needs, instead of the same sentence once a
-  // step. Every row is still listed, so a reader sees what will be measured.
-  if (measured.length === 0) {
-    const chain = metrics.filter((m) => !SIDE_METRIC_IDS.includes(m.id));
-    const side = metrics.filter((m) => SIDE_METRIC_IDS.includes(m.id));
-    return (
-      <div className="border-2 border-dashed border-foreground/40 p-4 sm:p-5">
-        <p className="text-base text-muted-foreground">
-          {`No step has the ${METRIC_MIN_N} reports a median needs yet. Each fills in as timelines arrive.`}
-        </p>{" "}
-        <ol className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 [&>*]:min-w-0">
-          {chain.map((m, i) => (
-            <Fragment key={m.id}>
-              {" "}
-              <EmptyStep m={m} n={i + 1} />
-            </Fragment>
-          ))}
-        </ol>{" "}
-        {side.length > 0 ? (
-          <>
-            <p className="mt-4 text-sm font-bold"><KeepWhole>{"Beside the case: RFEs and a spouse's H-4"}</KeepWhole></p>{" "}
-            <ul className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 [&>*]:min-w-0">
-              {side.map((m) => (
-                <Fragment key={m.id}>
-                  {" "}
-                  <EmptyStep m={m} n={null} />
-                </Fragment>
-              ))}
-            </ul>
-          </>
-        ) : null}
-      </div>
-    );
-  }
-
-  return (
-    <ChartTips label="Days each stage took, the median and the middle half">
-    <ul className="grid grid-cols-1 gap-3">
-      {metrics.map((m) => (
-        <Fragment key={m.id}>
-          {" "}
-          <li className="bg-sage p-4 border-2 border-border">
-            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-              <p className="font-heading text-base font-bold">{keepWhole(m.label)}</p>{" "}
-              <p className="text-sm text-muted-foreground">
-                {m.verified ? "DOL's record" : "self-reported"}, {m.n.toLocaleString("en-US")}{" "}
-                {m.n === 1 ? "timeline" : "timelines"}
-              </p>
-            </div>{" "}
-            {m.median !== null && m.p25 !== null && m.p75 !== null ? (
-              <>
-                <div
-                  className="relative mt-3 h-6 border-input bg-card border"
-                  aria-hidden="true"
-                  data-tip={`${m.label}\nMedian ${days(m.median)}\nMiddle half ${m.p25.toLocaleString("en-US")} to ${days(m.p75)}\n${m.n.toLocaleString("en-US")} ${m.n === 1 ? "timeline" : "timelines"}, ${m.verified ? "DOL's record" : "self-reported"}`}
-                >
-                  <span
-                    className={cn("absolute inset-y-0 border-x-2 border-input", m.verified ? "bg-primary" : "bg-card bg-hatch text-primary-text")}
-                    style={{ left: pct(m.p25), width: `calc(${pct(m.p75)} - ${pct(m.p25)})` }}
-                  />{" "}
-                  {/* The median in the amber ink (round 3, Oct 15 2026: no black
-                      marks in charts), ringed in the card's colour so it parts
-                      from the lime bar in dark mode, where the two inks are close. */}
-                  <span className="absolute inset-y-[-4px] w-1 bg-data-warn-ink ring-2 ring-card" style={{ left: pct(m.median) }} />
-                </div>{" "}
-                <p className="mt-2 text-base">
-                  <b>Median {days(m.median)}</b>,{" "}
-                  <span className="text-muted-foreground">
-                    the middle half {m.p25.toLocaleString("en-US")} to {days(m.p75)}
-                  </span>
-                </p>
-              </>
-            ) : (
-              <p className="mt-2 text-base text-muted-foreground">
-                Not enough timelines yet: a median needs {METRIC_MIN_N}, and this stage has {m.n}.
-              </p>
-            )}
-          </li>
-        </Fragment>
-      ))}
-    </ul>
-    </ChartTips>
-  );
-}
 
 /** The stops a board row can show, in order, with a short name for the key. */
 const STOPS = [
@@ -194,26 +73,39 @@ const DOT: Record<string, string> = {
 const shape = (id: string) => (id === "greenCardOn" ? "rotate-45" : id === "biometricsOn" ? "" : "rounded-full");
 
 /**
- * The RFE and H-4 medians, which only the timelines saved on PERM Tracker carry: the merged figures from every source
- * have no step for them yet. Drawn beside the merged steps so a reader who saw them before the merge still finds them
- * (Nov 25 2026: the summary's branch had hidden them for good). Nothing until one of them has a median: on Nov 25 all
- * five held 0 of the 5 reports one needs, and five empty rows would only repeat that.
+ * The figures beside the case: each RFE on either form, from every source that reports one, and a spouse's H-4
+ * papers, which only the timelines saved on PERM Tracker carry (the summary's `side`, D7). Drawn under the steps with
+ * the steps' own cards. Nothing until one of them has a figure: five lines of "too few" would only repeat that.
  */
-export function BesideTheCase({ metrics }: { metrics: readonly MetricResult[] }) {
-  const side = metrics.filter((m) => SIDE_METRIC_IDS.includes(m.id));
-  if (!side.some((m) => m.median !== null)) return null;
+export function BesideTheCase({ side }: { side: readonly SideFigure[] | undefined }) {
+  const all = side ?? [];
+  const measured = all.filter((s) => s.median !== null);
+  if (measured.length === 0) return null;
+  const waiting = all.filter((s) => s.median === null);
   return (
     <div className="mt-8">
       <h3 className="font-heading text-xl font-bold">
         <KeepWhole>{"Beside the case: RFEs and a spouse's H-4"}</KeepWhole>
       </h3>{" "}
       <p className="mt-2 max-w-2xl text-base text-muted-foreground">
-        Counted from the timelines people saved on PERM Tracker. The steps above merge every source, and none of the
-        others reports these dates yet.
+        <KeepWhole>
+          {"Each RFE counts once, on the I-140 or the I-485, from every source that reports one. The H-4 dates come " +
+            "only from the timelines people saved here. Each figure counts the last 6 months, or 12 when 6 hold too few."}
+        </KeepWhole>
       </p>{" "}
-      <div className="mt-4">
-        <StageMedians metrics={side} />
-      </div>
+      <StepFigures steps={measured} className="mt-4" />{" "}
+      {waiting.length ? (
+        <div className="mt-3 max-w-3xl text-base text-muted-foreground">
+          <p>Too few cases yet for a figure:</p>{" "}
+          <ul className="mt-1 list-disc pl-5">
+            {waiting.map((s) => (
+              <li key={s.id}>
+                <KeepWhole>{s.label}</KeepWhole>{" "}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </div>
   );
 }

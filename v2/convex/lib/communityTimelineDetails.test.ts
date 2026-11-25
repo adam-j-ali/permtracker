@@ -7,7 +7,6 @@ import {
   MAX_CONTACTS,
   METRIC_MIN_N,
   TIMELINE_TEXT_FIELDS,
-  computeMetrics,
   contactOutcomes,
   interviewShare,
   toBoardRow,
@@ -114,22 +113,8 @@ describe("what people did to move a case", () => {
 });
 
 describe("the figures the details feed", () => {
-  it("count premium from the day it was requested when that came after filing", () => {
-    const rows = Array.from({ length: METRIC_MIN_N }, () =>
-      rec({ premium: true, i140FiledOn: "2025-01-01", premiumOn: "2025-06-01", i140ApprovedOn: "2025-06-21" }),
-    );
-    expect(computeMetrics(rows).find((m) => m.id === "i140-premium")?.median).toBe(20);
-  });
-
-  it("measure the move to a field office and the card in the mail", () => {
-    const rows = Array.from({ length: METRIC_MIN_N }, () =>
-      rec({ i485FiledOn: "2026-01-01", officeMovedOn: "2026-04-11", greenCardOn: "2026-08-01", cardArrivedOn: "2026-08-15" }),
-    );
-    const m = Object.fromEntries(computeMetrics(rows).map((x) => [x.id, x.median]));
-    expect(m["i485-office"]).toBe(100);
-    expect(m["gc-card"]).toBe(14);
-  });
-
+  // The step medians (premium from the day it was asked for, the move to a field office, the card in the mail, each
+  // RFE's own times) are the server's summary since Nov 25 2026 (D7): scripts/test_lib_reported_summary.py.
   it("say how many green cards came without an interview, once enough say either way", () => {
     const rows = [
       ...Array.from({ length: 3 }, () => rec({ greenCardOn: "2026-08-01", interview: "waived" })),
@@ -138,21 +123,6 @@ describe("the figures the details feed", () => {
       rec({ greenCardOn: "2026-08-01" }),
     ];
     expect(interviewShare(rows)).toEqual({ answered: 6, waived: 3 });
-  });
-});
-
-describe("the RFE's own times", () => {
-  it("measure the answer and the decision after it, the decision by the RFE's form", () => {
-    const i140 = Array.from({ length: METRIC_MIN_N }, () =>
-      rec({ rfeForm: "i140", rfeIssuedOn: "2026-03-01", rfeRespondedOn: "2026-04-15", rfeOutcome: "approved", i140ApprovedOn: "2026-05-15", greenCardOn: "2026-10-01" }),
-    );
-    const m = Object.fromEntries(computeMetrics(i140).map((x) => [x.id, x.median]));
-    expect(m["rfe-answer"]).toBe(45);
-    expect(m["rfe-decision"]).toBe(30);
-    const i485 = Array.from({ length: METRIC_MIN_N }, () =>
-      rec({ rfeForm: "i485", rfeIssuedOn: "2026-03-01", rfeRespondedOn: "2026-04-15", rfeOutcome: "approved", i140ApprovedOn: "2025-01-01", greenCardOn: "2026-06-14" }),
-    );
-    expect(computeMetrics(i485).find((x) => x.id === "rfe-decision")?.median).toBe(60);
   });
 });
 
@@ -175,26 +145,12 @@ describe("more than one RFE", () => {
     expect(validateTimeline({ ...base, ...first, moreRfes: many }, TODAY)).toMatchObject({ ok: false, code: "rfe-many" });
   });
 
-  it("counts every RFE in the summary, the medians and the row", async () => {
+  it("counts every RFE in the summary and the row", async () => {
     const { summarizeRfes } = await import("./communityTimeline");
     const one = rec({ ...base, ...(first as Partial<TimelineRecord>), moreRfes: [second as never], i140ApprovedOn: "2026-08-25", greenCardOn: "2026-11-17" });
     const s = summarizeRfes([one]);
     expect(s.total).toBe(2);
     expect(s.byForm.map((f) => [f.id, f.count])).toEqual([["i140", 1], ["i485", 1]]);
-    const five = Array.from({ length: METRIC_MIN_N }, () => one);
-    const m = Object.fromEntries(computeMetrics(five).map((x) => [x.id, x]));
-    // Two RFEs each, but the floor and n count timelines, not RFEs.
-    expect(m["rfe-answer"]).toMatchObject({ n: METRIC_MIN_N });
-    expect(m["rfe-decision"]).toMatchObject({ n: METRIC_MIN_N });
-    // Four people, however many RFEs each, print no median.
-    const four = Array.from({ length: METRIC_MIN_N - 1 }, () => one);
-    expect(computeMetrics(four).find((x) => x.id === "rfe-answer")).toMatchObject({ n: METRIC_MIN_N - 1, median: null });
-    // A denied RFE, and one followed by another RFE on its form, give no decision time.
-    const denied = rec({ ...base, rfeForm: "i140", rfeIssuedOn: "2026-01-01", rfeRespondedOn: "2026-02-01", rfeOutcome: "denied", i140ApprovedOn: "2026-09-01" });
-    const twice = rec({ ...base, rfeForm: "i485", rfeIssuedOn: "2026-01-01", rfeRespondedOn: "2026-02-01", rfeOutcome: "approved", moreRfes: [{ form: "i485", issuedOn: "2026-03-01", respondedOn: "2026-03-20", outcome: "approved" }], greenCardOn: "2026-05-19" });
-    expect(computeMetrics([denied]).find((x) => x.id === "rfe-decision")).toMatchObject({ n: 0 });
-    const t = computeMetrics(Array.from({ length: METRIC_MIN_N }, () => twice)).find((x) => x.id === "rfe-decision");
-    expect(t).toMatchObject({ n: METRIC_MIN_N, median: 60 });
     const row = toBoardRow(one);
     expect(row.rfes.map((x) => x.form)).toEqual(["i140", "i485"]);
     expect(row.rfe).toMatchObject({ form: "i140" });

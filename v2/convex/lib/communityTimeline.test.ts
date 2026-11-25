@@ -9,8 +9,6 @@ import {
   METRIC_MIN_N,
   TIMELINE_TEXT_FIELDS,
   OFFICE_LIST_OPENS_AT,
-  OFFICE_METRIC_IDS,
-  computeMetrics,
   formHints,
   isListedCode,
   isPermCategory,
@@ -105,45 +103,6 @@ describe("validateTimeline", () => {
 });
 
 const rec = (over: Partial<TimelineRecord>): TimelineRecord => ({ public: false, updatedAt: Date.UTC(2026, 8, 1), ...over });
-
-describe("computeMetrics", () => {
-  it("prints no median below the minimum count, and one at it", () => {
-    const four = Array.from({ length: METRIC_MIN_N - 1 }, (_, i) =>
-      rec({ i140FiledOn: "2026-01-01", i140ApprovedOn: `2026-01-${String(10 + i).padStart(2, "0")}`, premium: true }),
-    );
-    const m4 = computeMetrics(four).find((m) => m.id === "i140-premium")!;
-    expect(m4.n).toBe(METRIC_MIN_N - 1);
-    expect(m4.median).toBeNull();
-    const five = [...four, rec({ i140FiledOn: "2026-01-01", i140ApprovedOn: "2026-01-20", premium: true })];
-    const m5 = computeMetrics(five).find((m) => m.id === "i140-premium")!;
-    expect(m5.n).toBe(METRIC_MIN_N);
-    expect(m5.median).toBe(11);
-  });
-
-  it("keeps premium and regular I-140s apart, and skips an unknown premium", () => {
-    const rows = [
-      ...Array.from({ length: 5 }, () => rec({ i140FiledOn: "2026-01-01", i140ApprovedOn: "2026-01-11", premium: true })),
-      ...Array.from({ length: 5 }, () => rec({ i140FiledOn: "2026-01-01", i140ApprovedOn: "2026-07-01", premium: false })),
-      rec({ i140FiledOn: "2026-01-01", i140ApprovedOn: "2026-02-01" }),
-    ];
-    const ms = computeMetrics(rows);
-    expect(ms.find((m) => m.id === "i140-premium")!.median).toBe(10);
-    expect(ms.find((m) => m.id === "i140-regular")!.median).toBe(181);
-    expect(ms.find((m) => m.id === "i140-regular")!.n).toBe(5);
-  });
-
-  it("drops a negative duration and a hidden row rather than averaging them in", () => {
-    const rows = [
-      ...Array.from({ length: 5 }, () => rec({ permFiledOn: "2025-01-01", permCertifiedOn: "2025-12-01" })),
-      rec({ permFiledOn: "2025-12-01", permCertifiedOn: "2025-01-01" }),
-      rec({ permFiledOn: "2025-01-01", permCertifiedOn: "2025-02-01", hiddenAt: 1 }),
-    ];
-    const perm = computeMetrics(rows).find((m) => m.id === "perm")!;
-    expect(perm.n).toBe(5);
-    expect(perm.median).toBe(334);
-    expect(perm.verified).toBe(true);
-  });
-});
 
 describe("summarizeRfes", () => {
   it("counts by form, reason and outcome, busiest first, and leaves out empty buckets", () => {
@@ -268,18 +227,6 @@ describe("an office's row and its medians", () => {
   it("names only an RFE on the I-485", () => {
     expect(toOfficeRow(rec({ i485FiledOn: "2025-05-01", rfeForm: "i485", rfeOutcome: "approved" })).rfe).toEqual({ outcome: "approved" });
     expect(toOfficeRow(rec({ i485FiledOn: "2025-05-01", rfeForm: "i140" })).rfe).toBeNull();
-  });
-
-  it("measures the I-485's steps, each from the filing", () => {
-    const five = Array.from({ length: 5 }, (_, i) =>
-      rec({ i485FiledOn: "2025-05-01", biometricsOn: `2025-06-${String(10 + i).padStart(2, "0")}`, interviewOn: "2026-02-03" }),
-    );
-    const m = computeMetrics(five).filter((x) => OFFICE_METRIC_IDS.includes(x.id));
-    expect(m.map((x) => x.id)).toEqual(["i485-bio", "i485-ead", "i485-office", "i485-interview", "i485-gc"]);
-    expect(m[0]).toMatchObject({ n: 5, median: 42 });
-    expect(m[2]).toMatchObject({ n: 0, median: null });
-    expect(m[3]).toMatchObject({ n: 5, median: 278 });
-    expect(m[4]).toMatchObject({ n: 0, median: null });
   });
 
   it("the board's row names the office only when told the office's list is open", () => {

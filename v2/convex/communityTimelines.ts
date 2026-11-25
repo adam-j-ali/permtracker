@@ -22,7 +22,6 @@ import {
   DECLINE_REASONS,
   MIN_CASE_REPORTERS,
   OFFICE_LIST_OPENS_AT,
-  OFFICE_METRIC_IDS,
   PERM_CASE,
   EVENT_FORMS,
   TIMELINE_TEXT_FIELDS,
@@ -37,7 +36,6 @@ import {
   contactOutcomes,
   interviewShare,
   rfesOf,
-  computeMetrics,
   isListedCode,
   isPermCategory,
   isShown,
@@ -466,15 +464,6 @@ function asRecord(r: Doc<"communityTimelines">): TimelineRecord {
 /** Approved and not hidden, a legacy row counting as approved. The one gate on every public read. */
 const shows = (r: Doc<"communityTimelines">) => isShown({ status: statusOf(r), hiddenAt: r.hiddenAt });
 
-const metricV = v.object({
-  id: v.string(),
-  label: v.string(),
-  verified: v.boolean(),
-  n: v.number(),
-  median: v.union(v.number(), v.null()),
-  p25: v.union(v.number(), v.null()),
-  p75: v.union(v.number(), v.null()),
-});
 const countV = v.object({ id: v.string(), label: v.string(), count: v.number() });
 const updatesV = v.union(v.null(), v.object({ count: v.number(), codes: v.array(v.string()), lastDay: v.union(v.number(), v.null()) }));
 const contactsV = v.union(v.null(), v.object({ count: v.number(), kinds: v.array(v.string()) }));
@@ -539,7 +528,6 @@ export const board = query({
     scanCap: v.number(),
     opensAt: v.number(),
     open: v.boolean(),
-    metrics: v.array(metricV),
     rfe: v.object({
       total: v.number(),
       byForm: v.array(countV),
@@ -611,7 +599,6 @@ export const board = query({
       scanCap: SCAN_CAP,
       opensAt: BOARD_OPENS_AT,
       open,
-      metrics: computeMetrics(records),
       rfe: summarizeRfes(records),
       rows,
       offices: [...perOffice.entries()]
@@ -648,8 +635,10 @@ const officeRowV = v.object({
 /**
  * One USCIS office's timelines, for its page. PUBLIC on purpose, and held to
  * the board's rules: approved rows only, no case number, employer, hash or
- * exact date. The list opens at OFFICE_LIST_OPENS_AT shared timelines and a
- * median needs METRIC_MIN_N. An office this site has no page for reads empty.
+ * exact date. The list opens at OFFICE_LIST_OPENS_AT shared timelines. The
+ * office's step figures are the server's summary (scripts/lib_reported_summary.py),
+ * which counts these timelines with every other source. An office this site has
+ * no page for reads empty.
  */
 export const office = query({
   args: { office: v.string() },
@@ -660,7 +649,6 @@ export const office = query({
     open: v.boolean(),
     /** The read stopped at its bound: figures cover the newest timelines only. */
     capped: v.boolean(),
-    metrics: v.array(metricV),
     rows: v.array(officeRowV),
     /** The account codes this office's timelines report, each once METRIC_MIN_N timelines do. */
     codes: codeTallyV,
@@ -683,7 +671,6 @@ export const office = query({
       opensAt: OFFICE_LIST_OPENS_AT,
       open,
       capped: read.length >= PER_OFFICE_READ,
-      metrics: computeMetrics(all.map(asRecord)).filter((m) => OFFICE_METRIC_IDS.includes(m.id)),
       codes: tallyCodes(all.map(asRecord)),
       rows: open
         ? shared

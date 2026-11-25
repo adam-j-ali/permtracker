@@ -5,17 +5,12 @@ import type { Doc } from "./_generated/dataModel";
 import { internalAction, internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { getSecurityAlertEmail, requireAdmin } from "./lib/admin";
 import {
-  MIN_REPORTS,
   POST_SLUG,
   ownerDigest,
   postName,
   postSlug,
   REPORT_FIELD_KEYS,
-  isoToday,
-  summarizeReports,
   validateReport,
-  type ReportRecord,
-  type ReportView,
 } from "./lib/consularReport";
 import { getResend } from "./lib/email";
 import { recordError } from "./lib/errorRecording";
@@ -40,8 +35,8 @@ import { MS_PER_DAY, MS_PER_HOUR } from "./lib/time";
  *   trace of a success");
  * - the per-address limit raises the cost of naive abuse, and the global daily budget bounds the table
  *   whatever addresses rotate, charged before the insert;
- * - GET never mutates, and the public queries return only what a page prints, with every figure under the
- *   three-report floor already empty.
+ * - GET never mutates. Every figure is the server's summary (scripts/lib_reported_summary.py report_view, from
+ *   the internal export), held to the three-report floor there; nothing here counts.
  *
  * No field is free text, and there's no name or case number, so nothing a stranger types reaches a page
  * except a date, a month or a choice from a fixed list.
@@ -55,14 +50,10 @@ export const GLOBAL_BUDGET = { limit: 500, windowMs: MS_PER_DAY };
 export const PER_POST_PER_IP = 3;
 /** How long a report keeps its address hash; `clearIpHashes` removes it after this. */
 export const IP_HASH_KEEP_MS = MS_PER_DAY;
-/** Reports read for one consulate's figures, newest first. */
-const POST_READ = 2_000;
-/** Reports read for every consulate's figures, newest first. */
+/** Reports the export to the server reads, newest first: the figures cover the newest this many. */
 const SCAN_CAP = 5_000;
 /** Address hashes one clearing run removes; a longer backlog reschedules itself. */
 const CLEAR_BATCH = 500;
-/** The overview lists at most this many consulates. */
-const BUSIEST = 20;
 /** Reports the admin list shows, newest first. */
 const ADMIN_ROWS = 100;
 /**
@@ -229,111 +220,6 @@ export const mine = internalQuery({
   },
 });
 
-const countV = v.object({ id: v.string(), label: v.string(), count: v.number() });
-const nullableNumber = v.union(v.number(), v.null());
-const viewV = v.object({
-  total: v.number(),
-  windows: v.array(v.object({ days: v.number(), total: v.number(), open: v.boolean(), byOutcome: v.array(countV) })),
-  categories: v.array(
-    v.object({
-      id: v.union(
-        v.literal("employment"),
-        v.literal("h1b"),
-        v.literal("h4"),
-        v.literal("l1"),
-        v.literal("l2"),
-        v.literal("family"),
-        v.literal("immediate"),
-        v.literal("k1"),
-        v.literal("f1"),
-        v.literal("b1b2"),
-        v.literal("other"),
-      ),
-      label: v.string(),
-      count: nullableNumber,
-      open: v.boolean(),
-      byOutcome: v.array(countV),
-      byLine: v.array(countV),
-      waitMedian: nullableNumber,
-      after: v.object({ finished: nullableNumber, waiting: nullableNumber, median: nullableNumber }),
-    }),
-  ),
-  weeks: v.array(v.object({ start: v.string(), count: nullableNumber, partial: v.boolean() })),
-  results: v.object({
-    days: v.number(),
-    n: nullableNumber,
-    g221: nullableNumber,
-    share: nullableNumber,
-    holdReasons: v.array(countV),
-  }),
-  moved: v.object({ days: v.number(), n: nullableNumber, byWho: v.array(countV) }),
-  wait: v.object({ days: v.number(), n: nullableNumber, median: nullableNumber }),
-});
-
-/** A stored row as the pure helpers read it. */
-function asRecord(r: Doc<"consularReports">): ReportRecord {
-  return r as unknown as ReportRecord;
-}
-
-/**
- * One consulate's figures. PUBLIC on purpose: it returns only what the page prints, every figure under the
- * three-report floor already empty, and never a key, a hash or a row.
- */
-export const forPost = query({
-  args: { post: v.string() },
-  returns: viewV,
-  handler: async (ctx, a): Promise<ReportView> => {
-    const today = isoToday();
-    if (!POST_SLUG.test(a.post)) return summarizeReports([], today);
-    const got = await ctx.db
-      .query("consularReports")
-      .withIndex("by_post", (q) => q.eq("post", a.post))
-      .order("desc")
-      .take(POST_READ);
-    return summarizeReports(got.map(asRecord), today);
-  },
-});
-
-/**
- * Every consulate's figures together, and the consulates with the most reports in the last 30 days with the
- * share of their interview results that were a 221(g). A consulate is listed only from three reports, and its
- * share only from three results. PUBLIC on purpose, and like `forPost` returns only what a page prints.
- */
-export const overview = query({
-  args: {},
-  returns: v.object({
-    all: viewV,
-    busiest: v.array(
-      v.object({ post: v.string(), reports30: v.number(), results: nullableNumber, g221: nullableNumber, share: nullableNumber }),
-    ),
-    scanCapped: v.boolean(),
-    scanCap: v.number(),
-  }),
-  handler: async (ctx) => {
-    const today = isoToday();
-    // NEWEST first, so past the cap the figures cover the newest SCAN_CAP reports, never the oldest.
-    const scanned = await ctx.db.query("consularReports").order("desc").take(SCAN_CAP);
-    const records = scanned.map(asRecord);
-    const byPost = new Map<string, ReportRecord[]>();
-    for (const r of records) {
-      if (r.hidden === true) continue;
-      const list = byPost.get(r.post);
-      if (list) list.push(r);
-      else byPost.set(r.post, [r]);
-    }
-    const busiest = [...byPost.entries()]
-      .map(([post, list]) => {
-        const view = summarizeReports(list, today);
-        const w30 = view.windows.find((w) => w.days === 30);
-        return { post, reports30: w30?.total ?? 0, results: view.results.n, g221: view.results.g221, share: view.results.share };
-      })
-      .filter((p) => p.reports30 >= MIN_REPORTS)
-      .sort((x, y) => y.reports30 - x.reports30 || x.post.localeCompare(y.post))
-      .slice(0, BUSIEST);
-    return { all: summarizeReports(records, today), busiest, scanCapped: scanned.length >= SCAN_CAP, scanCap: SCAN_CAP };
-  },
-});
-
 /** Clear the address hash from reports saved more than a day ago. Hourly (convex/crons.ts). */
 export const clearIpHashes = internalMutation({
   args: {},
@@ -376,7 +262,7 @@ export const exportForMerge = internalQuery({
     }),
   ),
   handler: async (ctx) => {
-    const rows = await ctx.db.query("consularReports").order("desc").take(POST_READ);
+    const rows = await ctx.db.query("consularReports").order("desc").take(SCAN_CAP);
     return rows
       .filter((r) => !r.hidden && r.category === "employment" && (r.line === undefined || EMPLOYMENT_LINES.has(r.line)))
       .map((r) => ({

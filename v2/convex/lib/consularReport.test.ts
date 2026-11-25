@@ -5,42 +5,24 @@ import {
   MIN_REPORTS,
   OWNER_LIST_MAX,
   REPORT_CATEGORIES,
-  activityDay,
   latestAllowedDay,
   linesFor,
   ownerDigest,
   postWords,
-  summarizeReports,
   validateReport,
-  waitDays,
-  weekStarts,
   type ReportChange,
   type ReportInput,
-  type ReportRecord,
 } from "./consularReport";
 
 /**
- * The consulate reports' rules: what a report may hold, and what the public figures may say. The figures
- * hold every cell to the three-report floor the timelines use, so a cell of one or two people's outcomes
- * never prints; a hidden report never counts.
+ * The consulate reports' rules: what a report may hold. The figures over them are the server's summary
+ * (scripts/lib_reported_summary.py report_view), which holds every cell to the three-report floor the
+ * timelines use; a hidden report never reaches it.
  */
 
 const TODAY = "2026-11-05"; // a Thursday
-const NOW = Date.parse(`${TODAY}T12:00:00Z`);
 
 const base: ReportInput = { post: "mumbai", category: "employment", outcome: "waiting", scheduledOn: "2026-10-01" };
-
-function rec(over: Partial<ReportRecord> = {}): ReportRecord {
-  return {
-    post: "mumbai",
-    category: "employment",
-    outcome: "issued",
-    interviewOn: "2026-11-02",
-    createdAt: NOW,
-    updatedAt: NOW,
-    ...over,
-  } as ReportRecord;
-}
 
 describe("validateReport", () => {
   it("accepts a plain report and returns only the fields it holds", () => {
@@ -178,149 +160,10 @@ describe("the exact category, why the 221(g), who cancelled", () => {
     expect(ok({ outcome: "rescheduled", cancelledBy: "me" })).toMatchObject({ ok: true, value: { cancelledBy: "me" } });
     expect(ok({ outcome: "issued", cancelledBy: "me" })).toMatchObject({ ok: false, code: "cancelled-by" });
   });
-
-  it("prints each breakdown only past the floor, and leaves out answers nobody gave", () => {
-    const twoEb2 = [rec({ line: "eb2" }), rec({ line: "eb2" })];
-    // Two employment reports: the cell is shut, so no category breakdown either.
-    expect(summarizeReports(twoEb2, TODAY).categories.find((c) => c.id === "employment")!.byLine).toEqual([]);
-    const cell = summarizeReports([...twoEb2, rec({ line: "eb3" }), rec()], TODAY).categories.find((c) => c.id === "employment")!;
-    expect(cell.byLine).toEqual([
-      { id: "eb2", label: "EB-2", count: 2 },
-      { id: "eb3", label: "EB-3", count: 1 },
-    ]);
-
-    const g = (holdReason?: string) => rec({ outcome: "221g", holdReason } as Partial<ReportRecord>);
-    expect(summarizeReports([g("public-charge"), g("documents"), rec(), rec()], TODAY).results.holdReasons).toEqual([]);
-    expect(summarizeReports([g("public-charge"), g("public-charge"), g()], TODAY).results.holdReasons).toEqual([
-      { id: "public-charge", label: "Public charge or I-864", count: 2 },
-    ]);
-
-    const moved = (cancelledBy?: string) =>
-      rec({ outcome: "cancelled", interviewOn: undefined, scheduledOn: "2026-11-01", cancelledBy } as Partial<ReportRecord>);
-    expect(summarizeReports([moved("consulate"), moved("me")], TODAY).moved).toEqual({ days: 90, n: null, byWho: [] });
-    expect(summarizeReports([moved("consulate"), moved("consulate"), moved()], TODAY).moved).toEqual({
-      days: 90,
-      n: 3,
-      byWho: [{ id: "consulate", label: "The consulate", count: 2 }],
-    });
-  });
 });
 
-describe("the dates a report is read by", () => {
-  it("dates a report by its newest step, or the day it was saved", () => {
-    expect(activityDay(rec({ scheduledOn: "2026-09-01", interviewOn: "2026-10-01", resolvedOn: "2026-10-15" }))).toBe("2026-10-15");
-    expect(activityDay(rec({ interviewOn: undefined, nvcCompleteMonth: "2026-01" }))).toBe(TODAY);
-  });
-
-  it("counts the wait from the middle of the NVC month", () => {
-    expect(waitDays(rec({ nvcCompleteMonth: "2026-10", interviewOn: "2026-11-04" }))).toBe(20);
-    expect(waitDays(rec({ nvcCompleteMonth: "2026-10", interviewOn: "2026-11-04", outcome: "cancelled" }))).toBeNull();
-    expect(waitDays(rec({ nvcCompleteMonth: undefined }))).toBeNull();
-  });
-
-  it("weeks start on Monday, the newest one holding today", () => {
-    const weeks = weekStarts(TODAY, 3);
-    expect(weeks).toEqual(["2026-10-19", "2026-10-26", "2026-11-02"]);
-  });
-});
-
-describe("summarizeReports: the floor", () => {
-  it("prints nothing about two reports but their number", () => {
-    const v = summarizeReports([rec(), rec({ outcome: "221g" })], TODAY);
-    expect(v.total).toBe(2);
-    const w30 = v.windows.find((w) => w.days === 30)!;
-    expect(w30).toMatchObject({ total: 2, open: false, byOutcome: [] });
-    expect(v.categories.find((c) => c.id === "employment")).toMatchObject({ count: null, open: false, byOutcome: [] });
-    expect(v.results).toEqual({ days: 90, n: null, g221: null, share: null, holdReasons: [] });
-    expect(v.moved).toEqual({ days: 90, n: null, byWho: [] });
-    expect(v.wait).toMatchObject({ n: null, median: null });
-    expect(v.weeks.every((w) => w.count === null)).toBe(true);
-  });
-
-  it("opens each figure at three, and holds a category of two shut beside a category of three", () => {
-    const rows = [
-      rec({ nvcCompleteMonth: "2026-08" }),
-      rec({ outcome: "221g", nvcCompleteMonth: "2026-08" }),
-      rec({ outcome: "refused", refusalGround: "public-charge", nvcCompleteMonth: "2026-08" }),
-      rec({ category: "h4", outcome: "issued" }),
-      rec({ category: "h4", outcome: "waiting", interviewOn: undefined, scheduledOn: "2026-10-20" }),
-    ];
-    const v = summarizeReports(rows, TODAY);
-    const w30 = v.windows.find((w) => w.days === 30)!;
-    expect(w30.open).toBe(true);
-    expect(Object.fromEntries(w30.byOutcome.map((o) => [o.id, o.count]))).toEqual({ issued: 2, "221g": 1, refused: 1, waiting: 1 });
-    expect(v.categories.find((c) => c.id === "employment")).toMatchObject({ count: 3, open: true });
-    expect(v.categories.find((c) => c.id === "h4")).toMatchObject({ count: null, open: false, byOutcome: [] });
-    // Four interviews with a result: two issued, one 221(g), one refused.
-    expect(v.results).toEqual({ days: 90, n: 4, g221: 1, share: 0.25, holdReasons: [] });
-    // The week of Nov 2 holds four interviews held; the weeks before hold none.
-    expect(v.weeks[v.weeks.length - 1]).toMatchObject({ start: "2026-11-02", count: 4, partial: true });
-    expect(v.weeks[v.weeks.length - 2]?.count).toBeNull();
-    // Three waits from mid-August to Nov 2: 79 days each.
-    expect(v.wait).toMatchObject({ n: 3, median: 79 });
-  });
-
-  it("after the interview, never prints a median of the finished without the count still waiting", () => {
-    const h1b = (over: Partial<ReportRecord>) => rec({ category: "h1b", interviewOn: "2026-10-20", ...over });
-    // Two finished and one waiting: the pair shows, the median doesn't (two finished is under the floor).
-    let v = summarizeReports(
-      [
-        h1b({ outcome: "approved", approvedOn: "2026-10-20" }),
-        h1b({ outcome: "issued", approvedOn: "2026-10-20", resolvedOn: "2026-10-27" }),
-        h1b({ outcome: "221g", slipColor: "white" }),
-      ],
-      TODAY,
-    );
-    expect(v.categories.find((c) => c.id === "h1b")?.after).toEqual({ finished: 2, waiting: 1, median: null });
-    // A third finished, a cleared 221(g), and a drop box still waiting.
-    v = summarizeReports(
-      [
-        h1b({ outcome: "approved", approvedOn: "2026-10-20" }),
-        h1b({ outcome: "issued", approvedOn: "2026-10-20", resolvedOn: "2026-10-27" }),
-        h1b({ outcome: "221g", slipColor: "white", resolvedOn: "2026-11-03" }),
-        h1b({ outcome: "waiting", mode: "dropbox" }),
-        h1b({ outcome: "refused", refusalGround: "214b" }),
-      ],
-      TODAY,
-    );
-    // Finished in 0, 0 and 14 days; the refusal is neither finished nor waiting.
-    expect(v.categories.find((c) => c.id === "h1b")?.after).toEqual({ finished: 3, waiting: 1, median: 0 });
-    // A drop box isn't an interview held, so the week counts four of the five.
-    expect(v.weeks.find((w) => w.start === "2026-10-19")?.count).toBe(4);
-    // Under three appointments, nothing at all.
-    expect(summarizeReports([h1b({ outcome: "waiting" })], TODAY).categories.find((c) => c.id === "h1b")?.after).toEqual({
-      finished: null,
-      waiting: null,
-      median: null,
-    });
-  });
-
-  it("dates an approval as a step: a report approved this week is this week's", () => {
-    expect(activityDay(rec({ interviewOn: "2026-08-01", approvedOn: "2026-11-01" }))).toBe("2026-11-01");
-  });
-
-  it("never counts a hidden report", () => {
-    const rows = [rec(), rec(), rec({ hidden: true })];
-    const v = summarizeReports(rows, TODAY);
-    expect(v.total).toBe(2);
-    expect(v.windows.every((w) => !w.open)).toBe(true);
-    expect(v.weeks[v.weeks.length - 1]?.count).toBeNull();
-  });
-
-  it("leaves a report older than 90 days out of both windows, and a cancelled interview out of the week", () => {
-    const rows = [
-      rec(),
-      rec(),
-      rec({ outcome: "cancelled" }),
-      rec({ interviewOn: "2026-06-01", createdAt: NOW, updatedAt: NOW }),
-    ];
-    const v = summarizeReports(rows, TODAY);
-    expect(v.total).toBe(4);
-    expect(v.windows.find((w) => w.days === 90)?.total).toBe(3);
-    // Two held interviews that week: under the floor.
-    expect(v.weeks[v.weeks.length - 1]?.count).toBeNull();
-  });
-});
+// The figures over these reports (the floor, the windows, the weeks, the waits, after the appointment) are the server's
+// summary since Nov 25 2026 (D7): scripts/test_lib_reported_summary.py, report_view.
 
 describe("ownerDigest: the owner's daily email", () => {
   const since = 1_000_000;

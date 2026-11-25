@@ -189,38 +189,24 @@ describe("consularReports.remove", () => {
   });
 });
 
-describe("the public figures", () => {
-  it("print only a count under three reports, and never a hash or a key", async () => {
+describe("what reaches the figures", () => {
+  // Every figure is the server's summary (scripts/lib_reported_summary.py report_view, tested there, floor included):
+  // these hold what Convex hands it.
+  it("hands over every shown report and its choices, never a hash or a key", async () => {
     const t = createTestContext();
     await t.mutation(internal.consularReports.save, save());
     await t.mutation(internal.consularReports.save, save({ outcome: "221g" }, { key: "2".repeat(64), ip: IP_B }));
-    const v = await t.query(api.consularReports.forPost, { post: POST });
-    expect(v.total).toBe(2);
-    expect(v.windows.every((w) => !w.open && w.byOutcome.length === 0)).toBe(true);
-    expect(v.results.n).toBeNull();
-    expect(v.categories.every((c) => c.count === null)).toBe(true);
-    const text = JSON.stringify(v);
+    await t.mutation(internal.consularReports.save, save({}, { key: hex(9), ip: hex(9), post: "manila" }));
+    const got = await t.query(internal.consularReports.exportReports, {});
+    expect(got.map((r) => r.post).sort()).toEqual(["manila", POST, POST].sort());
+    expect(got.map((r) => r.outcome).sort()).toEqual(["221g", "issued", "issued"]);
+    const text = JSON.stringify(got);
     expect(text).not.toContain(KEY);
     expect(text).not.toContain(IP_A);
+    expect(text).not.toContain("editKeyHash");
   });
 
-  it("open at three, and the overview lists the post with its 221(g) share", async () => {
-    const t = createTestContext();
-    const outcomes = ["issued", "221g", "issued"];
-    for (let i = 0; i < outcomes.length; i++) {
-      await t.mutation(internal.consularReports.save, save({ outcome: outcomes[i] }, { key: hex(i + 1), ip: hex(i + 50) }));
-    }
-    await t.mutation(internal.consularReports.save, save({}, { key: hex(9), ip: hex(9), post: "manila" }));
-    const v = await t.query(api.consularReports.forPost, { post: POST });
-    expect(v.windows.find((w) => w.days === 30)).toMatchObject({ total: 3, open: true });
-    expect(v.results).toMatchObject({ n: 3, g221: 1 });
-    const o = await t.query(api.consularReports.overview, {});
-    expect(o.all.total).toBe(4);
-    expect(o.busiest).toEqual([{ post: POST, reports30: 3, results: 3, g221: 1, share: 1 / 3 }]);
-    expect(JSON.stringify(o)).not.toContain(hex(50));
-  });
-
-  it("a hidden report leaves every figure, and an admin can put it back", async () => {
+  it("a hidden report leaves the figures, and an admin can put it back", async () => {
     const t = createTestContext();
     for (let i = 0; i < 3; i++) {
       await t.mutation(internal.consularReports.save, save({}, { key: hex(i + 1), ip: hex(i + 50) }));
@@ -228,14 +214,11 @@ describe("the public figures", () => {
     const [first] = await rows(t);
     const admin = await adminAuth(t);
     await admin.mutation(api.consularReports.setHiddenForAdmin, { id: first!._id, hidden: true });
-    const v = await t.query(api.consularReports.forPost, { post: POST });
-    expect(v.total).toBe(2);
-    expect(v.windows.every((w) => !w.open)).toBe(true);
-    expect((await t.query(api.consularReports.overview, {})).busiest).toEqual([]);
+    expect(await t.query(internal.consularReports.exportReports, {})).toHaveLength(2);
     const listed = await admin.query(api.consularReports.listForAdmin, {});
     expect(listed.find((r) => r.id === first!._id)?.hidden).toBe(true);
     await admin.mutation(api.consularReports.setHiddenForAdmin, { id: first!._id, hidden: false });
-    expect((await t.query(api.consularReports.forPost, { post: POST })).total).toBe(3);
+    expect(await t.query(internal.consularReports.exportReports, {})).toHaveLength(3);
   });
 
   it("the admin list and hide refuse anyone but the admin", async () => {
@@ -254,7 +237,7 @@ describe("the public figures", () => {
     await t.mutation(internal.consularReports.save, save());
     const [row] = await rows(t);
     await t.mutation(internal.consularReports.hide, { id: row!._id, hidden: true });
-    expect((await t.query(api.consularReports.forPost, { post: POST })).total).toBe(0);
+    expect(await t.query(internal.consularReports.exportReports, {})).toEqual([]);
   });
 });
 

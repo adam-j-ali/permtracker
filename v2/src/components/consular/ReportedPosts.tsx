@@ -4,21 +4,15 @@ import { ChatsCircleIcon } from "@phosphor-icons/react/ssr";
 import { BarRows, type BarRow } from "@/components/data/BarRows";
 import { FigurePlate } from "@/components/tools/FigurePlate";
 import { MIN_REPORTS, SELF_REPORTED } from "@/lib/consularReport";
+import type { BusiestPost } from "@/lib/consularReportView";
 import { formatInt, formatShareOf } from "@/lib/format";
 
 /**
  * The index page's small panel: the consulates with the most reports from visitors in the last 30 days, and
- * the share of their interview results that were a 221(g). The overview query already leaves out a post
- * under three reports and a share under three results; this panel also drops a slug State's tables don't
- * list (the server can't check a slug against State's list, so a made-up one is never named here).
+ * the share of their interview results that were a 221(g). The hourly build (scripts/lib_reported_summary.py)
+ * already leaves out a post under three reports and a share under three results; this panel also drops a slug
+ * State's tables don't list, so a made-up one is never named here.
  */
-
-export interface BusiestPost {
-  post: string;
-  reports30: number;
-  results: number | null;
-  g221: number | null;
-}
 
 const SHOWN = 8;
 

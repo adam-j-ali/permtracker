@@ -152,6 +152,8 @@ describe("more than one RFE", () => {
     const board = await t.query(api.communityTimelines.board, {});
     expect(board.rfe.total).toBe(2 * BOARD_OPENS_AT);
     expect(board.rows[0]!.rfes.map((e) => e.form)).toEqual(["i140", "i485"]);
-    expect(board.metrics.find((m) => m.id === "rfe-decision")).toMatchObject({ n: BOARD_OPENS_AT });
+    // Each RFE's form and dates reach the server's summary, which times them (D7).
+    const exported = await t.query(internal.communityTimelines.exportForMerge, {});
+    expect(exported.every((r) => r.rfeForm === "i140" && r.moreRfes?.[0]?.form === "i485")).toBe(true);
   });
 });

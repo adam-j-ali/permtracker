@@ -24,7 +24,7 @@
 
 import { MIN_CASE_REPORTERS } from "./communityTimeline";
 import { monthDay } from "./months";
-import { MS_PER_DAY, daysBetween } from "./time";
+import { MS_PER_DAY } from "./time";
 
 /**
  * The kind of visa. Every kind, because everyone goes through the same posts and one person's report tells
@@ -196,20 +196,18 @@ export function postName(key: string, issuanceLabel: string | null | undefined, 
   return (toolName ?? key).replace(/\s*\(.*?\)/g, "").trim();
 }
 
-/** Every figure prints only over at least this many reports: the timelines' floor. */
+/**
+ * Every figure prints only over at least this many reports: the timelines' floor. The figures themselves are the
+ * server's summary (scripts/lib_reported_summary.py report_view, REPORT_FLOOR), which holds them to this number;
+ * the pages' words name it from here (consular-report-view.test.ts keeps the two equal).
+ */
 export const MIN_REPORTS = MIN_CASE_REPORTERS;
 
 /** The label every figure built from these reports carries. */
 export const SELF_REPORTED = "Visitors' own reports, unchecked";
 
-/** The two windows the figures count. */
-export const REPORT_WINDOWS = [30, 90] as const;
-/** Weeks of interviews the chart draws, the newest holding today. */
+/** Weeks of interviews the chart draws, the newest holding today (the summary's REPORT_WEEKS). */
 export const REPORT_WEEKS = 12;
-/** The NVC-to-interview median, and the interview-to-visa median, read interviews in this many days. */
-export const WAIT_WINDOW_DAYS = 180;
-/** The share that ended in 221(g) reads results in this many days. */
-export const RESULT_WINDOW_DAYS = 90;
 
 /** The earliest date or month a report may carry. */
 const FLOOR = "2020-01-01";
@@ -461,241 +459,6 @@ export function validateReport(input: ReportInput, today: string = isoToday()): 
 
 function capital(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
-/** A stored report, as the figures read it. */
-export interface ReportRecord extends ReportFields {
-  createdAt: number;
-  updatedAt: number;
-  hidden?: boolean;
-}
-
-/** The appointment took place (or is waiting on its result): not cancelled, not moved. */
-function appeared(r: ReportRecord): boolean {
-  return r.interviewOn !== undefined && r.outcome !== "cancelled" && r.outcome !== "rescheduled";
-}
-
-/** An interview was held: the appointment took place, and it wasn't a drop box. */
-export function heldInterview(r: ReportRecord): boolean {
-  return appeared(r) && r.mode !== "dropbox";
-}
-
-/** A result came out of the interview. */
-const DECIDED: ReadonlySet<ReportOutcomeId> = new Set(["approved", "issued", "passport-returned", "221g", "refused"]);
-
-/**
- * The day a report speaks for: its newest date (the visa, the approval, the interview, the letter), or the
- * day it was last saved when it holds only NVC's month. An interview from 2022 reported today is old news,
- * not this month's, so the windows count it by its own date.
- */
-export function activityDay(r: ReportRecord): string {
-  const dates = [r.resolvedOn, r.approvedOn, r.interviewOn, r.scheduledOn].filter((d): d is string => typeof d === "string");
-  return dates.length ? dates.sort()[dates.length - 1]! : isoToday(r.updatedAt);
-}
-
-/**
- * Days from NVC's complete month to the interview, counted from the middle of that month (the month alone
- * can't say which day; the middle is wrong by at most half a month either way). Null when either is
- * missing, the interview didn't happen, or the wait comes out negative.
- */
-export function waitDays(r: ReportRecord): number | null {
-  if (!r.nvcCompleteMonth || !heldInterview(r)) return null;
-  const d = daysBetween(`${r.nvcCompleteMonth}-15`, r.interviewOn!);
-  return Number.isFinite(d) && d >= 0 ? d : null;
-}
-
-/**
- * Where a report stands after its interview or drop box: finished (approved, issued, the passport back, or a
- * 221(g) cleared), still waiting (no result yet, or a 221(g) not cleared), or neither (refused, cancelled,
- * moved, or no appointment day given).
- */
-export function afterAppointment(r: ReportRecord): { finishedInDays: number } | "waiting" | null {
-  if (!appeared(r)) return null;
-  const end =
-    r.outcome === "221g" ? r.resolvedOn : APPROVED_OUTCOMES.has(r.outcome) ? (r.approvedOn ?? r.resolvedOn) : undefined;
-  if (end) {
-    const d = daysBetween(r.interviewOn!, end);
-    return Number.isFinite(d) && d >= 0 ? { finishedInDays: d } : null;
-  }
-  if (r.outcome === "waiting" || r.outcome === "221g") return "waiting";
-  return null;
-}
-
-/** The Mondays that start the last `n` weeks, oldest first, the newest holding `today`. */
-export function weekStarts(today: string, n: number = REPORT_WEEKS): string[] {
-  const dow = new Date(`${today}T00:00:00Z`).getUTCDay(); // 0 is Sunday
-  const monday = addDays(today, -((dow + 6) % 7));
-  return Array.from({ length: n }, (_, i) => addDays(monday, -7 * (n - 1 - i)));
-}
-
-/** Nearest-rank median over a list; the timelines' rule. */
-function median(values: readonly number[]): number | null {
-  if (!values.length) return null;
-  const sorted = [...values].sort((a, b) => a - b);
-  return sorted[Math.min(sorted.length - 1, Math.max(0, Math.ceil(0.5 * sorted.length) - 1))]!;
-}
-
-export interface ReportCount {
-  id: string;
-  label: string;
-  count: number;
-}
-export interface ReportWindow {
-  days: number;
-  /** Every report the window holds: a number of reports says nothing about anyone. */
-  total: number;
-  /** The breakdown prints only from MIN_REPORTS. */
-  open: boolean;
-  byOutcome: ReportCount[];
-}
-/**
- * After the interview or drop box: how many finished and how many still wait, over appointments in the last
- * WAIT_WINDOW_DAYS. The pair shows from MIN_REPORTS appointments, and the median only from MIN_REPORTS
- * finished, so a median of the finished never prints without the count still waiting beside it.
- */
-export interface AfterView {
-  finished: number | null;
-  waiting: number | null;
-  median: number | null;
-}
-export interface ReportCategoryCell {
-  id: ReportCategoryId;
-  label: string;
-  /** Reports in the last 90 days; null under the floor. */
-  count: number | null;
-  open: boolean;
-  byOutcome: ReportCount[];
-  /** The exact categories reported (EB-2, F2A...), when the cell is open and anyone gave one. */
-  byLine: ReportCount[];
-  /** The NVC-to-interview median for this category; null under the floor. */
-  waitMedian: number | null;
-  after: AfterView;
-}
-export interface ReportWeek {
-  /** The Monday the week starts. */
-  start: string;
-  /** Interviews held that week; null under the floor. */
-  count: number | null;
-  /** The week holds today, so it's still filling. */
-  partial: boolean;
-}
-export interface ReportView {
-  total: number;
-  windows: ReportWindow[];
-  categories: ReportCategoryCell[];
-  weeks: ReportWeek[];
-  /** Interviews with a result in the last RESULT_WINDOW_DAYS, and how many were a 221(g); null under the floor. */
-  results: { days: number; n: number | null; g221: number | null; share: number | null; holdReasons: ReportCount[] };
-  /**
-   * Interviews cancelled or moved in the last 90 days, and who did it among the reports that say; empty under
-   * the floor.
-   */
-  moved: { days: number; n: number | null; byWho: ReportCount[] };
-  /** NVC's month to the interview, over interviews held in the last WAIT_WINDOW_DAYS; null under the floor. */
-  wait: { days: number; n: number | null; median: number | null };
-}
-
-const floor = (n: number) => n >= MIN_REPORTS;
-
-function outcomeCounts(rows: readonly ReportRecord[]): ReportCount[] {
-  return REPORT_OUTCOMES.map((o) => ({ id: o.id as string, label: o.label as string, count: rows.filter((r) => r.outcome === o.id).length })).filter(
-    (c) => c.count > 0,
-  );
-}
-
-/** How many reports gave each answer from a list, in the list's order, leaving out answers nobody gave. */
-function choiceCounts(rows: readonly ReportRecord[], list: readonly { id: string; label: string }[], pickOf: (r: ReportRecord) => string | undefined): ReportCount[] {
-  return list
-    .map((x) => ({ id: x.id, label: x.label, count: rows.filter((r) => pickOf(r) === x.id).length }))
-    .filter((c) => c.count > 0);
-}
-
-function afterOf(rows: readonly ReportRecord[]): AfterView {
-  const finished: number[] = [];
-  let waiting = 0;
-  for (const r of rows) {
-    const a = afterAppointment(r);
-    if (a === "waiting") waiting += 1;
-    else if (a) finished.push(a.finishedInDays);
-  }
-  if (!floor(finished.length + waiting)) return { finished: null, waiting: null, median: null };
-  return { finished: finished.length, waiting, median: floor(finished.length) ? median(finished) : null };
-}
-
-/**
- * The figures for one set of reports (one post's, or every post's). Returns only what a page may print:
- * every breakdown, cell, week and median under the floor comes back empty or null, so no caller can print
- * one by mistake. Hidden reports never count.
- */
-export function summarizeReports(records: readonly ReportRecord[], today: string = isoToday()): ReportView {
-  const live = records.filter((r) => r.hidden !== true);
-  const since = (days: number) => addDays(today, -(days - 1));
-
-  const windows = REPORT_WINDOWS.map((days) => {
-    const from = since(days);
-    const rows = live.filter((r) => activityDay(r) >= from);
-    const open = floor(rows.length);
-    return { days, total: rows.length, open, byOutcome: open ? outcomeCounts(rows) : [] };
-  });
-
-  const recent = live.filter((r) => activityDay(r) >= since(90));
-  const apptFrom = since(WAIT_WINDOW_DAYS);
-  const recentAppt = (rows: readonly ReportRecord[]) => rows.filter((r) => r.interviewOn !== undefined && r.interviewOn >= apptFrom);
-  const waitsOf = (rows: readonly ReportRecord[]) => recentAppt(rows).map(waitDays).filter((d): d is number => d !== null);
-
-  const categories = REPORT_CATEGORIES.map((c) => {
-    const rows = recent.filter((r) => r.category === c.id);
-    const open = floor(rows.length);
-    const mineAll = live.filter((r) => r.category === c.id);
-    const waits = waitsOf(mineAll);
-    return {
-      id: c.id,
-      label: c.label as string,
-      count: open ? rows.length : null,
-      open,
-      byOutcome: open ? outcomeCounts(rows) : [],
-      byLine: open ? choiceCounts(rows, linesFor(c.id), (r) => r.line) : [],
-      waitMedian: floor(waits.length) ? median(waits) : null,
-      after: afterOf(recentAppt(mineAll)),
-    };
-  });
-
-  const weeks = weekStarts(today).map((start) => {
-    const end = addDays(start, 7);
-    const n = live.filter((r) => heldInterview(r) && r.interviewOn! >= start && r.interviewOn! < end).length;
-    return { start, count: floor(n) ? n : null, partial: end > today };
-  });
-
-  const resultFrom = since(RESULT_WINDOW_DAYS);
-  const decided = live.filter((r) => DECIDED.has(r.outcome) && activityDay(r) >= resultFrom);
-  const g221 = decided.filter((r) => r.outcome === "221g").length;
-  const resultsOpen = floor(decided.length);
-  const holds = decided.filter((r) => r.outcome === "221g");
-  const movedRows = recent.filter((r) => MOVED_OUTCOMES.has(r.outcome));
-  const movedOpen = floor(movedRows.length);
-
-  const waits = waitsOf(live);
-  const waitOpen = floor(waits.length);
-
-  return {
-    total: live.length,
-    windows,
-    categories,
-    weeks,
-    results: {
-      days: RESULT_WINDOW_DAYS,
-      n: resultsOpen ? decided.length : null,
-      g221: resultsOpen ? g221 : null,
-      share: resultsOpen ? g221 / decided.length : null,
-      holdReasons: resultsOpen && floor(holds.length) ? choiceCounts(holds, HOLD_REASONS, (r) => r.holdReason) : [],
-    },
-    moved: {
-      days: 90,
-      n: movedOpen ? movedRows.length : null,
-      byWho: movedOpen ? choiceCounts(movedRows, CANCELLED_BY, (r) => r.cancelledBy) : [],
-    },
-    wait: { days: WAIT_WINDOW_DAYS, n: waitOpen ? waits.length : null, median: waitOpen ? median(waits) : null },
-  };
 }
 
 /** Labels for a stored id, for the admin list. */

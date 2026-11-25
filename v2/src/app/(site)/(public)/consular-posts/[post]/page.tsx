@@ -2,7 +2,8 @@
  * One US consulate: the month NVC is scheduling in each category at every State update held, and
  * the immigrant visas the post issued each month, from State's two tables (see the index page).
  * The interview pause is the hand-kept record, dated. Under State's figures, "What people report": visitors'
- * own interview reports (convex/consularReports.ts), labelled self-reported at every figure, with the form.
+ * own interview reports (sent through convex/consularReports.ts, counted by scripts/lib_reported_summary.py),
+ * labelled self-reported at every figure, with the form.
  *
  * Expired with the index by /api/revalidate-consular.
  */
@@ -12,7 +13,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowSquareOutIcon, BriefcaseIcon, CalendarBlankIcon, HeartIcon, MegaphoneSimpleIcon, UsersThreeIcon } from "@phosphor-icons/react/ssr";
 
-import { api } from "@convex/_generated/api";
 import { ConsularPauseNote } from "@/components/consular/ConsularPauseNote";
 import { WorkVisasAtPost } from "@/components/consular/WorkVisasAtPost";
 import { ConsularReports } from "@/components/consular/ConsularReports";
@@ -25,7 +25,6 @@ import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { FigurePlate } from "@/components/tools/FigurePlate";
 import { ToolPageFooter } from "@/components/tools/ToolPageFooter";
 import { breadcrumbSchema } from "@/lib/breadcrumbs";
-import { queryStatic } from "@/lib/convexStatic";
 import { softFail } from "@/lib/softRead";
 import { behindLabel, IV_CATEGORIES, IV_CATEGORY_LABEL, IV_TOOL_URL, monthsBehind, type IvCategory } from "@/lib/consular/scheduling";
 import { embassyVisasUrl, shortExcerpt } from "@/lib/consular/embassies";
@@ -33,7 +32,7 @@ import { getConsularIndex, getEmbassyNotices, getPostDetail, type EmbassyNotices
 import { EMPLOYMENT_CATEGORIES, monthName } from "@/lib/db/visaIssuances";
 import { formatInt } from "@/lib/format";
 import { StepFigures } from "@/components/community/StepFigures";
-import { getPostSummary, getReportedSummary } from "@/lib/db/reportedSummary";
+import { getEveryPostReports, getPostReports, getPostSummary, getReportedSummary } from "@/lib/db/reportedSummary";
 import type { PlaceSummary } from "@/lib/reportedSummary";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { consularDescription } from "@/lib/consular/describe";
@@ -140,11 +139,12 @@ export default async function ConsularPostPage({ params }: { params: Promise<{ p
   const { post: slug } = await params;
   const [post, index] = await Promise.all([getPostDetail(slug), getConsularIndex()]);
   if (!post) notFound();
-  // Visitors' own reports (convex/consularReports.ts): a page that can't read them still renders State's figures.
+  // Visitors' own reports, as the hourly build counts them (scripts/lib_reported_summary.py): a page that can't read
+  // them still renders State's figures.
   const [embassy, reports, everyPost, summary, merged] = await Promise.all([
     getEmbassyNotices(post.key),
-    queryStatic(api.consularReports.forPost, { post: post.slug }, revalidate).catch(softFail("consular-posts/post.reports", null)),
-    queryStatic(api.consularReports.overview, {}, revalidate).catch(softFail("consular-posts/post.overview", null)),
+    getPostReports(post.slug).catch(softFail("consular-posts/post.reports", null)),
+    getEveryPostReports().catch(softFail("consular-posts/post.overview", null)),
     // The steps here from every case people reported at this consulate (community sheets and reports, merged hourly).
     getPostSummary(post.slug).catch(softFail<PlaceSummary | null>("consular-posts/post.summary", null)),
     // Every consulate together, for a post too few people have reported yet (Nov 25 2026: such a post showed nothing).

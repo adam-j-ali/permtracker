@@ -9,7 +9,7 @@
  */
 
 import { StepFigures } from "@/components/community/StepFigures";
-import { getReportedSummary } from "@/lib/db/reportedSummary";
+import { getEveryPostReports, getReportedSummary } from "@/lib/db/reportedSummary";
 import { stepsIn, type ReportedSummary } from "@/lib/reportedSummary";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -29,14 +29,12 @@ import { ToolPageFooter } from "@/components/tools/ToolPageFooter";
 import { ListPages } from "@/components/ui/list-pages";
 import { PanelTabs } from "@/components/ui/panel-tabs";
 import { behindLabel, IV_CATEGORIES, IV_CATEGORY_LABEL, IV_TOOL_URL, monthsBehind, type IvCategory } from "@/lib/consular/scheduling";
-import { queryStatic } from "@/lib/convexStatic";
 import { getConsularIndex } from "@/lib/db/consularPosts";
 import { monthName } from "@/lib/db/visaIssuances";
 import { formatInt } from "@/lib/format";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { softFail } from "@/lib/softRead";
 import { withSocialCard } from "@/lib/socialCard";
-import { api } from "@convex/_generated/api";
 import { longDate } from "@convex/lib/months";
 import { KeepWhole } from "@/components/ui/keep-whole";
 
@@ -58,10 +56,11 @@ export const metadata: Metadata = withSocialCard(
 );
 
 export default async function ConsularPostsPage() {
-  // Visitors' own reports (convex/consularReports.ts): the page renders State's figures without them.
+  // Visitors' own reports, as the hourly build counts them (scripts/lib_reported_summary.py): the page renders State's
+  // figures without them.
   const [index, reports, summary] = await Promise.all([
     getConsularIndex(),
-    queryStatic(api.consularReports.overview, {}, revalidate).catch(softFail("consular-posts.reports", null)),
+    getEveryPostReports().catch(softFail("consular-posts.reports", null)),
     // The consulate steps from every case people reported (community sheets and reports, merged hourly).
     getReportedSummary().catch(softFail<ReportedSummary | null>("consular-posts.summary", null)),
   ]);

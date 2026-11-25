@@ -129,12 +129,13 @@ describe("a timeline with no PERM case number", () => {
 });
 
 describe("nothing shows until the owner approves", () => {
-  it("a waiting timeline is in no count, median, list or case summary; approving puts it in all of them", async () => {
+  it("a waiting timeline is in no count, figure, list or case summary; approving puts it in all of them", async () => {
     const t = createTestContext();
     await saveMany(t, BOARD_OPENS_AT);
     const before = await t.query(api.communityTimelines.board, {});
     expect(before).toMatchObject({ total: 0, shared: 0, open: false, rows: [], offices: [] });
-    expect(before.metrics.every((m) => m.n === 0)).toBe(true);
+    // The figures are the server's summary, built from this export: a waiting timeline never reaches it.
+    expect(await t.query(internal.communityTimelines.exportForMerge, {})).toEqual([]);
     const officeBefore = await t.query(api.communityTimelines.office, { office: HFD });
     expect(officeBefore).toMatchObject({ total: 0, shared: 0, open: false, rows: [] });
 
@@ -142,7 +143,7 @@ describe("nothing shows until the owner approves", () => {
     const after = await t.query(api.communityTimelines.board, {});
     expect(after).toMatchObject({ total: BOARD_OPENS_AT, shared: BOARD_OPENS_AT, open: true });
     expect(after.rows).toHaveLength(BOARD_OPENS_AT);
-    expect(after.metrics.find((m) => m.id === "i485-bio")).toMatchObject({ n: BOARD_OPENS_AT, median: 40 });
+    expect(await t.query(internal.communityTimelines.exportForMerge, {})).toHaveLength(BOARD_OPENS_AT);
     expect(after.offices).toEqual([{ code: HFD, shared: BOARD_OPENS_AT }]);
     expect(after.rows.every((r) => r.office === HFD)).toBe(true);
   });

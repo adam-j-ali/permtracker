@@ -4,12 +4,14 @@ import type { api } from "@convex/_generated/api";
 import { PageSection } from "@/components/data/PageSection";
 import { NoteBanner } from "@/components/ui/note";
 import { ScrollBox } from "@/components/ui/scroll-box";
-import { CATEGORIES, COUNTRIES, DATE_FIELDS, OFFICE_STOPS, shareProgress, type MetricResult } from "@/lib/communityTimeline";
+import { CATEGORIES, COUNTRIES, DATE_FIELDS, OFFICE_STOPS, shareProgress } from "@/lib/communityTimeline";
+import type { StepFigure } from "@/lib/reportedSummary";
 import { formatInt } from "@/lib/format";
 import { isCenter, type UscisOffice } from "@/lib/uscisOffices";
 
 import { ShareTimeline } from "./ShareTimeline";
-import { AccountCodes, StageMedians, contactsText, h4Text, updatesText } from "./TimelineBoard";
+import { StepsByStage } from "./StepFigures";
+import { AccountCodes, contactsText, h4Text, updatesText } from "./TimelineBoard";
 import { KeepWhole } from "@/components/ui/keep-whole";
 
 /**
@@ -20,9 +22,10 @@ import { KeepWhole } from "@/components/ui/keep-whole";
  * rows fill that gap from visitors, so the section says whose they are and keeps them apart from USCIS's counts
  * above it.
  *
- * THE FLOORS ARE THE QUERY'S. It sends rows only once three people at the office have shared theirs, a median
- * only over five, and approved timelines only, so this component can't print a row or a figure by mistake. A
- * read that failed is named as a failed read (`view` is null), never drawn as "nobody has shared".
+ * THE FLOORS ARE THE QUERY'S AND THE BUILD'S. The query sends rows only once three people at the office have shared
+ * theirs, and approved timelines only; every figure is the hourly build's (scripts/lib_reported_summary.py), a
+ * median only over five. So this component can't print a row or a figure by mistake. A read that failed is named
+ * as a failed read (`view` is null), never drawn as "nobody has shared".
  */
 
 export type OfficeTimelineView = FunctionReturnType<typeof api.communityTimelines.office>;
@@ -46,16 +49,16 @@ const place = (o: UscisOffice) => (isCenter(o) ? `the ${o.name}` : `the ${o.name
 export function OfficeTimelines({
   office,
   view,
-  mergedShown = false,
+  steps = null,
 }: {
   office: UscisOffice;
   view: OfficeTimelineView | null;
   /**
-   * The page already shows this office's figures merged from every source. The shared timelines' own medians would then
-   * be a second, smaller set for the same steps (or "not enough timelines" under real figures), so they're left out and
-   * the list of timelines stays (Nov 25 2026).
+   * This office's steps from the hourly build's summary, which counts these timelines with every other source (D7,
+   * Nov 25 2026), when none has a figure yet: each step's count is listed here, under the timelines. An empty list is
+   * an office too few people have reported for a summary. Null when the page already shows the office's figures.
    */
-  mergedShown?: boolean;
+  steps?: readonly StepFigure[] | null;
 }) {
   const sharePath = `/i485-by-field-office/${office.slug}#timelines`;
   return (
@@ -93,10 +96,14 @@ export function OfficeTimelines({
 
       {view && view.total > 0 ? (
         <>
-          {mergedShown ? null : (
+          {steps === null ? null : steps.length ? (
             <div className="mt-6">
-              <StageMedians metrics={view.metrics as readonly MetricResult[]} />
+              <StepsByStage steps={steps} stages={[{ groups: ["i485"], title: "Each step of the I-485" }]} />
             </div>
+          ) : (
+            <p className="mt-6 max-w-2xl text-base text-muted-foreground">
+              Too few cases from {place(office)} yet for a figure: each step needs 5.
+            </p>
           )}{" "}
           {/* Optional: a backend older than Nov 17 2026 sends no codes. */}
           <AccountCodes codes={view.codes ?? []} where={`timelines from ${place(office)}`} className="mt-6" />{" "}

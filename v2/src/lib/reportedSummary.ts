@@ -59,12 +59,22 @@ export interface I140Summary {
   rfeShare: number | null;
 }
 
+/** A figure beside the case, worked out like a step (ReportedSummary.side). */
+export interface SideFigure extends Omit<StepFigure, "group"> {
+  group: "side";
+}
+
 export interface ReportedSummary {
   today: string;
   headline: { cases: number; heard: number; heardDays: number; greenCards30: number; i140s30: number; perm30: number };
   /** The week's approvals, the board's shape (RecentApprovals): null counts are under 5. Absent before Nov 20 2026. */
   week?: { from: string; through: string; steps: { id: string; label: string; count: number | null }[] };
   steps: StepFigure[];
+  /**
+   * Beside the case, never a step of it: each RFE on either form, one value per RFE, so `n` counts RFEs; and a
+   * spouse's H-4 papers, the work permit by the way it went in. Absent before Nov 25 2026 (D7).
+   */
+  side?: SideFigure[];
   waiting: WaitingSummary;
   i140: I140Summary[];
 }

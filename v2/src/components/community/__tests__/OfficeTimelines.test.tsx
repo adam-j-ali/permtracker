@@ -1,7 +1,8 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
-import { computeMetrics, OFFICE_LIST_OPENS_AT, OFFICE_METRIC_IDS, toOfficeRow, type TimelineRecord } from "@/lib/communityTimeline";
+import { OFFICE_LIST_OPENS_AT, toOfficeRow, type TimelineRecord } from "@/lib/communityTimeline";
+import type { StepFigure } from "@/lib/reportedSummary";
 import { officeByCode } from "@/lib/uscisOffices";
 
 import { OfficeTimelines, type OfficeTimelineView } from "../OfficeTimelines";
@@ -40,7 +41,6 @@ function viewOf(records: TimelineRecord[]): OfficeTimelineView {
     opensAt: OFFICE_LIST_OPENS_AT,
     open,
     capped: false,
-    metrics: computeMetrics(records).filter((m) => OFFICE_METRIC_IDS.includes(m.id)),
     rows: open ? shared.map(toOfficeRow) : [],
   };
 }
@@ -90,22 +90,27 @@ describe("OfficeTimelines", () => {
     expect(out).not.toMatch(/G-\d{3}-\d{5}/);
   });
 
-  it("prints a median only over five timelines, and says how many a step has below that", () => {
-    const five = html(viewOf(Array.from({ length: 5 }, (_, i) => rec(i))));
-    expect(five).toContain("I-485 filed to green card");
-    expect(five).toContain("Median 295 days");
-    const three = html(viewOf(Array.from({ length: 3 }, (_, i) => rec(i))));
-    expect(three).not.toContain("Median");
-    expect(three).toContain("3 of 5 reports");
-  });
-
-  it("leaves its own medians out when the page already shows the office's figures from every source, and keeps the list", () => {
+  // The office's figures are the hourly build's (D7, Nov 25 2026): these timelines count in them with every other
+  // source, and this section works out no median of its own.
+  it("works out no median of its own, and lists the office's steps from the summary while none has a figure", () => {
     const view = viewOf(Array.from({ length: 5 }, (_, i) => rec(i)));
-    const merged = renderToStaticMarkup(<OfficeTimelines office={HAR} view={view} mergedShown />);
-    expect(merged).not.toContain("Median 295 days");
-    expect(merged).not.toContain("of 5 reports");
-    expect(merged).toContain("Timelines shared from");
-    expect(html(view)).toContain("Median 295 days");
+    const step = (id: string, label: string, allTime: number): StepFigure => ({
+      id, label, group: "i485", verified: false, n: allTime, windowDays: null, median: null, p25: null, p75: null,
+      before: null, allTime, months: [],
+    });
+    const listed = htmlText(renderToStaticMarkup(
+      <OfficeTimelines office={HAR} view={view} steps={[step("i485-bio", "I-485 filed to biometrics", 3), step("i485-gc", "I-485 filed to green card", 0)]} />,
+    ));
+    expect(listed).not.toContain("Median");
+    expect(listed).toContain("No step here has enough cases for a figure yet");
+    expect(listed).toContain("I-485 filed to biometrics, 3 ever reported");
+    expect(listed).toContain("I-485 filed to green card, none reported yet");
+    const none = htmlText(renderToStaticMarkup(<OfficeTimelines office={HAR} view={view} steps={[]} />));
+    expect(none).toContain("Too few cases from the Hartford office yet for a figure: each step needs 5.");
+    // The page already shows the office's figures above: nothing about them here, and the list stays.
+    const shown = htmlText(html(view));
+    expect(shown).not.toMatch(/Median|enough cases|Too few cases/);
+    expect(html(view)).toContain("Timelines shared from");
   });
 
   it("gives a step its month when the person left the I-485 date out", () => {

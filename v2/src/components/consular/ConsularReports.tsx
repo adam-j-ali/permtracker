@@ -6,22 +6,24 @@ import { FinePrint } from "@/components/data/FinePrint";
 import { ColumnChart, type Column } from "@/components/numbers/ColumnChart";
 import { FigurePlate } from "@/components/tools/FigurePlate";
 import { NoteBanner } from "@/components/ui/note";
-import { MIN_REPORTS, REPORT_WEEKS, SELF_REPORTED, type ReportCategoryCell, type ReportCount, type ReportView } from "@/lib/consularReport";
+import { MIN_REPORTS, REPORT_WEEKS, SELF_REPORTED } from "@/lib/consularReport";
+import type { ReportCategoryCell, ReportCount, ReportView } from "@/lib/consularReportView";
 import { formatInt, formatShareOf } from "@/lib/format";
 import { shortDate } from "@convex/lib/months";
 
 import { ConsularReportForm } from "./ConsularReportForm";
 
 /**
- * "What people report": interviews at one consulate, as the people who went report them
- * (convex/consularReports.ts), with the form to add one.
+ * "What people report": interviews at one consulate, as the people who went report them (sent through
+ * convex/consularReports.ts), with the form to add one.
  *
  * SELF-REPORTED, AND SAID SO AT EVERY FIGURE. State publishes its scheduling month and, months late, its
  * issuances; nothing about last week's interviews. These figures fill that gap from visitors, so every one
  * is labelled as theirs and never set as State's.
  *
- * THE FLOOR IS THE QUERY'S. `forPost` returns every figure under three reports already empty or null, so this
- * component only says "too few reports yet" where the query sent nothing; it can't print a cell by mistake.
+ * THE FLOOR IS THE BUILD'S. The hourly build (scripts/lib_reported_summary.py report_view) stores every figure
+ * under three reports already empty or null, so this component only says "too few reports yet" where it got
+ * nothing; it can't print a cell by mistake.
  */
 
 const TOO_FEW = "Too few reports yet";

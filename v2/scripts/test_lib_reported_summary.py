@@ -5,6 +5,7 @@ Run: python3 scripts/test_lib_reported_summary.py
 from __future__ import annotations
 
 import datetime as dt
+import json
 import os
 import sys
 
@@ -303,8 +304,35 @@ def main() -> int:
     check(set(rs.all_summaries([], R, reports=busy)) >= set(sums) and "reports:all" not in rs.all_summaries([], R),
           "the reports' summaries join the rest only when the reports were read")
 
+    # The views the consulate section's component test draws (src/components/consular/__tests__/ConsularReports.test.tsx)
+    # are this engine's own output, kept in a fixture both sides read: run with --write after a rule changes.
+    got = report_fixtures()
+    if "--write" in sys.argv:
+        with open(FIXTURE, "w") as f:
+            json.dump(got, f, indent=1, sort_keys=True)
+            f.write("\n")
+    with open(FIXTURE) as f:
+        check(json.load(f) == got, "the component test's report views are this engine's output (--write to refresh)")
+
     print(f"{failures} failed")
     return 1 if failures else 0
+
+
+FIXTURE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src", "components", "consular", "__tests__",
+                       "fixtures", "report-views.json")
+
+
+def report_fixtures() -> dict:
+    """Three consulates' reports, H-1B interviews on Nov 2 2026, as report_view stores them on Thursday Nov 5."""
+    day = dt.date(2026, 11, 5)
+    rep = lambda **kw: {"post": "mumbai", "category": "h1b", "outcome": "issued", "interview": "2026-11-02",  # noqa: E731
+                        "saved": "2026-11-05", **kw}
+    finished = lambda d: rep(outcome="approved", approved=(dt.date(2026, 11, 2) + dt.timedelta(days=d)).isoformat())  # noqa: E731
+    return {
+        "two": rs.report_view([rep(), rep(outcome="221g")], day),
+        "three": rs.report_view([rep(), rep(outcome="221g"), rep()], day),
+        "after": rs.report_view([finished(0), finished(1), finished(2), rep(outcome="waiting")], day),
+    }
 
 
 if __name__ == "__main__":

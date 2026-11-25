@@ -125,21 +125,18 @@ function ordinal(n: number): string {
 }
 
 /**
- * The answer about people's own waits here: the office's figure merged from every source (the summary's "i485-gc")
- * first, the timelines shared on this page while that has none (Nov 25 2026: it read the shared ones alone). A median
- * is named only when a read sent one, and always as theirs, never as USCIS's.
+ * The answer about people's own waits here: the office's figure over every source (the summary's "i485-gc"), which
+ * counts the timelines shared on this page too. A median is named only when the summary has one, and always as
+ * theirs, never as USCIS's.
  */
-function reportedAnswer(o: UscisOffice, summary: PlaceSummary | null, view: OfficeTimelineView | null): string {
+function reportedAnswer(o: UscisOffice, summary: PlaceSummary | null): string {
   const caveat = "Their dates are self-reported, and people with a fast or a stuck case are likelier to share, so read it as what they saw.";
   const merged = summary?.steps.find((st) => st.id === "i485-gc");
   if (merged && merged.median !== null) {
     const window = merged.windowDays ? `, over the last ${merged.windowDays <= 183 ? 6 : 12} months` : "";
     return `USCIS doesn't publish a wait for one office. The ${formatInt(merged.n)} people who reported a finished I-485 at ${theOffice(o)} in ${REPORTED_COMMUNITY_PLACES} and on this site report a median of ${formatInt(merged.median)} days from filing the I-485 to the green card${window}. ${caveat}`;
   }
-  const none = `USCIS doesn't publish a wait for one office. People whose I-485 was at ${theOffice(o)} can share their own dates on this page, and it shows a median once five have.`;
-  const toCard = view?.metrics.find((m) => m.id === "i485-gc");
-  if (!view || !toCard || toCard.median === null) return none;
-  return `USCIS doesn't publish a wait for one office. The ${formatInt(toCard.n)} people who shared a full timeline from ${theOffice(o)} report a median of ${formatInt(toCard.median)} days from filing the I-485 to the green card. Their dates are self-reported, and people with a fast or a stuck case are likelier to share, so read it as what they saw.`;
+  return `USCIS doesn't publish a wait for one office. People whose I-485 was at ${theOffice(o)} can share their own dates on this page, and it shows a median once five have.`;
 }
 
 /** The quarter in words alone: "April to June 2026". */
@@ -276,7 +273,7 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
     },
     {
       q: `How long did people at ${theOffice(office)} wait for their I-485?`,
-      a: reportedAnswer(office, summary, shared),
+      a: reportedAnswer(office, summary),
     },
     {
       q: `Where do these numbers come from?`,
@@ -557,7 +554,7 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
         </section>
       ) : null}
 
-      <OfficeTimelines office={office} view={shared} mergedShown={stepsMeasured} />
+      <OfficeTimelines office={office} view={shared} steps={stepsMeasured ? null : (summary?.steps ?? [])} />
 
       {reported === null ? (
         <NoteBanner alert className="mt-12 max-w-2xl">

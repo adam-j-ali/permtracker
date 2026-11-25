@@ -1,0 +1,356 @@
+{
+ "after": {
+  "categories": {
+   "h1b": {
+    "after": {
+     "finished": 3,
+     "median": 1,
+     "waiting": 1
+    },
+    "byLine": {},
+    "byOutcome": {
+     "approved": 3,
+     "waiting": 1
+    },
+    "count": 4,
+    "open": true,
+    "waitMedian": null
+   }
+  },
+  "floor": 3,
+  "moved": {
+   "byWho": {},
+   "days": 90,
+   "n": null
+  },
+  "results": {
+   "days": 90,
+   "g221": 0,
+   "holdReasons": {},
+   "n": 3,
+   "share": 0.0
+  },
+  "today": "2026-11-05",
+  "total": 4,
+  "wait": {
+   "days": 180,
+   "median": null,
+   "n": null
+  },
+  "weeks": [
+   {
+    "count": null,
+    "partial": false,
+    "start": "2026-08-17"
+   },
+   {
+    "count": null,
+    "partial": false,
+    "start": "2026-08-24"
+   },
+   {
+    "count": null,
+    "partial": false,
+    "start": "2026-08-31"
+   },
+   {
+    "count": null,
+    "partial": false,
+    "start": "2026-09-07"
+   },
+   {
+    "count": null,
+    "partial": false,
+    "start": "2026-09-14"
+   },
+   {
+    "count": null,
+    "partial": false,
+    "start": "2026-09-21"
+   },
+   {
+    "count": null,
+    "partial": false,
+    "start": "2026-09-28"
+   },
+   {
+    "count": null,
+    "partial": false,
+    "start": "2026-10-05"
+   },
+   {
+    "count": null,
+    "partial": false,
+    "start": "2026-10-12"
+   },
+   {
+    "count": null,
+    "partial": false,
+    "start": "2026-10-19"
+   },
+   {
+    "count": null,
+    "partial": false,
+    "start": "2026-10-26"
+   },
+   {
+    "count": 4,
+    "partial": true,
+    "start": "2026-11-02"
+   }
+  ],
+  "windows": [
+   {
+    "byOutcome": {
+     "approved": 3,
+     "waiting": 1
+    },
+    "days": 30,
+    "open": true,
+    "total": 4
+   },
+   {
+    "byOutcome": {
+     "approved": 3,
+     "waiting": 1
+    },
+    "days": 90,
+    "open": true,
+    "total": 4
+   }
+  ]
+ },
+ "three": {
+  "categories": {
+   "h1b": {
+    "after": {
+     "finished": null,
+     "median": null,
+     "waiting": null
+    },
+    "byLine": {},
+    "byOutcome": {
+     "221g": 1,
+     "issued": 2
+    },
+    "count": 3,
+    "open": true,
+    "waitMedian": null
+   }
+  },
+  "floor": 3,
+  "moved": {
+   "byWho": {},
+   "days": 90,
+   "n": null
+  },
+  "results": {
+   "days": 90,
+   "g221": 1,
+   "holdReasons": {},
+   "n": 3,
+   "share": 0.3333333333333333
+  },
+  "today": "2026-11-05",
+  "total": 3,
+  "wait": {
+   "days": 180,
+   "median": null,
+   "n": null
+  },
+  "weeks": [
+   {
+    "count": null,
+    "partial": false,
+    "start": "2026-08-17"
+   },
+   {
+    "count": null,
+    "partial": false,
+    "start": "2026-08-24"
+   },
+   {
+    "count": null,
+    "partial": false,
+    "start": "2026-08-31"
+   },
+   {
+    "count": null,
+    "partial": false,
+    "start": "2026-09-07"
+   },
+   {
+    "count": null,
+    "partial": false,
+    "start": "2026-09-14"
+   },
+   {
+    "count": null,
+    "partial": false,
+    "start": "2026-09-21"
+   },
+   {
+    "count": null,
+    "partial": false,
+    "start": "2026-09-28"
+   },
+   {
+    "count": null,
+    "partial": false,
+    "start": "2026-10-05"
+   },
+   {
+    "count": null,
+    "partial": false,
+    "start": "2026-10-12"
+   },
+   {
+    "count": null,
+    "partial": false,
+    "start": "2026-10-19"
+   },
+   {
+    "count": null,
+    "partial": false,
+    "start": "2026-10-26"
+   },
+   {
+    "count": 3,
+    "partial": true,
+    "start": "2026-11-02"
+   }
+  ],
+  "windows": [
+   {
+    "byOutcome": {
+     "221g": 1,
+     "issued": 2
+    },
+    "days": 30,
+    "open": true,
+    "total": 3
+   },
+   {
+    "byOutcome": {
+     "221g": 1,
+     "issued": 2
+    },
+    "days": 90,
+    "open": true,
+    "total": 3
+   }
+  ]
+ },
+ "two": {
+  "categories": {
+   "h1b": {
+    "after": {
+     "finished": null,
+     "median": null,
+     "waiting": null
+    },
+    "byLine": {},
+    "byOutcome": {},
+    "count": null,
+    "open": false,
+    "waitMedian": null
+   }
+  },
+  "floor": 3,
+  "moved": {
+   "byWho": {},
+   "days": 90,
+   "n": null
+  },
+  "results": {
+   "days": 90,
+   "g221": null,
+   "holdReasons": {},
+   "n": null,
+   "share": null
+  },
+  "today": "2026-11-05",
+  "total": 2,
+  "wait": {
+   "days": 180,
+   "median": null,
+   "n": null
+  },
+  "weeks": [
+   {
+    "count": null,
+    "partial": false,
+    "start": "2026-08-17"
+   },
+   {
+    "count": null,
+    "partial": false,
+    "start": "2026-08-24"
+   },
+   {
+    "count": null,
+    "partial": false,
+    "start": "2026-08-31"
+   },
+   {
+    "count": null,
+    "partial": false,
+    "start": "2026-09-07"
+   },
+   {
+    "count": null,
+    "partial": false,
+    "start": "2026-09-14"
+   },
+   {
+    "count": null,
+    "partial": false,
+    "start": "2026-09-21"
+   },
+   {
+    "count": null,
+    "partial": false,
+    "start": "2026-09-28"
+   },
+   {
+    "count": null,
+    "partial": false,
+    "start": "2026-10-05"
+   },
+   {
+    "count": null,
+    "partial": false,
+    "start": "2026-10-12"
+   },
+   {
+    "count": null,
+    "partial": false,
+    "start": "2026-10-19"
+   },
+   {
+    "count": null,
+    "partial": false,
+    "start": "2026-10-26"
+   },
+   {
+    "count": null,
+    "partial": true,
+    "start": "2026-11-02"
+   }
+  ],
+  "windows": [
+   {
+    "byOutcome": {},
+    "days": 30,
+    "open": false,
+    "total": 2
+   },
+   {
+    "byOutcome": {},
+    "days": 90,
+    "open": false,
+    "total": 2
+   }
+  ]
+ }
+}

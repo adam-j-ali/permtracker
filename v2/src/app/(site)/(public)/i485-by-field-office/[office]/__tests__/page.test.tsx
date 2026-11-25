@@ -6,7 +6,8 @@
 import { render } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { computeMetrics, OFFICE_LIST_OPENS_AT, OFFICE_METRIC_IDS, toOfficeRow, type TimelineRecord } from "@/lib/communityTimeline";
+import { OFFICE_LIST_OPENS_AT, toOfficeRow, type TimelineRecord } from "@/lib/communityTimeline";
+import type { PlaceSummary, StepFigure } from "@/lib/reportedSummary";
 import type { OfficeQuarter, OfficeRow } from "@/lib/uscisQuarterlyShape";
 
 vi.mock("server-only", () => ({}));
@@ -30,6 +31,9 @@ const getReportedCasesBuiltAt = vi.fn(async () => Date.UTC(2026, 10, 19, 18, 16)
 vi.mock("@/lib/db/communityReports", () => ({ getOfficeReportedCases, getReportedCasesBuiltAt }));
 const getSampleMonths = vi.fn(async () => null as unknown);
 vi.mock("@/lib/db/uscisSample", () => ({ getSampleMonths }));
+// The office's figures over every source, the shared timelines among them (the hourly build's summary, D7).
+const getOfficeSummary = vi.fn(async () => null as PlaceSummary | null);
+vi.mock("@/lib/db/reportedSummary", () => ({ getOfficeSummary }));
 
 const { default: UscisOfficePage, generateStaticParams, generateMetadata } = await import("../page");
 
@@ -93,7 +97,6 @@ function sharedView(n: number) {
     opensAt: OFFICE_LIST_OPENS_AT,
     open,
     capped: false,
-    metrics: computeMetrics(records).filter((m) => OFFICE_METRIC_IDS.includes(m.id)),
     rows: open ? records.map(toOfficeRow) : [],
   };
 }
@@ -107,6 +110,8 @@ beforeEach(() => {
   getOfficeReportedCases.mockResolvedValue([]);
   getSampleMonths.mockReset();
   getSampleMonths.mockResolvedValue(null);
+  getOfficeSummary.mockReset();
+  getOfficeSummary.mockResolvedValue(null);
 });
 
 /** A case people reported at the San Fernando Valley office (src/lib/reportedCases.ts). */
@@ -200,8 +205,13 @@ describe("a USCIS office's page", () => {
     expect(text).toContain("Nobody has shared a timeline from the Hartford office yet.");
   });
 
-  it("puts people's own timelines under USCIS's figures, and answers the wait question from them as theirs", async () => {
+  it("puts people's own timelines under USCIS's figures, and answers the wait question from every source as theirs", async () => {
     queryStatic.mockResolvedValue(sharedView(5));
+    const gc: StepFigure = {
+      id: "i485-gc", label: "I-485 filed to green card", group: "i485", verified: false, n: 12, windowDays: 365,
+      median: 295, p25: 250, p75: 330, before: null, allTime: 20, months: [],
+    };
+    getOfficeSummary.mockResolvedValue({ today: "2026-11-25", cases: 30, steps: [gc] });
     const { container, text } = await page("hartford-connecticut");
     const section = container.querySelector("#timelines")!;
     expect(section.textContent).toContain("5 timelines");
@@ -210,13 +220,16 @@ describe("a USCIS office's page", () => {
     expect(container.querySelector("#quarters")!.compareDocumentPosition(section) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     const faq = [...container.querySelectorAll('script[type="application/ld+json"]')].map((n) => n.textContent ?? "").find((t) => t.includes("FAQPage"))!;
     expect(faq).toContain("How long did people at the Hartford field office wait for their I-485?");
-    expect(faq).toContain("The 5 people who shared a full timeline from the Hartford field office report a median of 295 days from filing the I-485 to the green card.");
+    expect(faq).toContain("The 12 people who reported a finished I-485 at the Hartford field office");
+    expect(faq).toContain("report a median of 295 days from filing the I-485 to the green card, over the last 12 months.");
     expect(faq).toContain("self-reported");
     expect(text).toContain("Median 295 days");
+    // The shared timelines work out no median of their own: the office's one figure is the summary's.
+    expect(section.textContent).not.toContain("Median");
   });
 
-  it("gives no median in the answer below five timelines, and says the page shows one once five have shared", async () => {
-    queryStatic.mockResolvedValue(sharedView(3));
+  it("gives no median in the answer while the summary has none, and says the page shows one once five have shared", async () => {
+    queryStatic.mockResolvedValue(sharedView(5));
     const { container } = await page("hartford-connecticut");
     const faq = [...container.querySelectorAll('script[type="application/ld+json"]')].map((n) => n.textContent ?? "").find((t) => t.includes("FAQPage"))!;
     expect(faq).toContain("it shows a median once five have");

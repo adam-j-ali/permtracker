@@ -12,7 +12,7 @@ import { queryStatic } from "@/lib/convexStatic";
 import { getReportedSummary } from "@/lib/db/reportedSummary";
 import { getUscisPosted } from "@/lib/db/uscisPosted";
 import type { ReportedSummary, StepFigure } from "@/lib/reportedSummary";
-import { BOARD_OPENS_AT, OFFICE_LIST_OPENS_AT, computeMetrics, summarizeRfes, toBoardRow, whoIsWaiting, type TimelineRecord } from "@/lib/communityTimeline";
+import { BOARD_OPENS_AT, OFFICE_LIST_OPENS_AT, summarizeRfes, toBoardRow, whoIsWaiting, type TimelineRecord } from "@/lib/communityTimeline";
 import Page from "../(site)/(public)/green-card-timelines/page";
 import { htmlText } from "../../../test-utils/text-content";
 
@@ -48,7 +48,6 @@ function boardOf(records: TimelineRecord[], opensAt = 25) {
     shared: shared.length,
     opensAt,
     open: shared.length >= opensAt,
-    metrics: computeMetrics(records),
     rfe: summarizeRfes(records),
     rows: shared.length >= opensAt ? shared.map(toBoardRow) : [],
     waiting: whoIsWaiting(records),
@@ -99,13 +98,14 @@ describe("/green-card-timelines", () => {
     expect(out).toContain("USCIS&#x27;s own posted times, as of its October 19, 2026 posting: 12 months for a work permit based on a pending I-485, at the National Benefits Center, and 26.5 months for advance parole.");
   });
 
-  it("labels each stage with whose record it is and prints a median only with enough timelines", async () => {
+  it("works out no figure from the shared timelines: without the summary it says the figures can't be read", async () => {
+    // D7 (Nov 25 2026): every step's figure is the hourly build's summary, which counts these timelines too.
     vi.mocked(queryStatic).mockResolvedValue(boardOf(Array.from({ length: 6 }, (_, i) => rec(i))) as never);
     const out = await html();
-    expect(out).toMatch(/PERM filed to certified.*?DOL&#x27;s record/s);
-    expect(out).toMatch(/I-140 to approved, premium.*?self-reported/s);
-    expect(out).toContain("Median 289 days");
-    expect(out).toContain("a median needs 5, and this stage has 0");
+    expect(out).toContain("The step figures can&#x27;t be read right now.");
+    expect(out).not.toContain("Median");
+    // The shared timelines' own list and RFE reasons still show.
+    expect(out).toContain("Timelines shared here");
   });
 
   it("shows who's waiting where once the board opens, and keeps it shut below", async () => {
@@ -204,6 +204,23 @@ describe("/green-card-timelines", () => {
       expect(form).toBeGreaterThan(lede);
       expect(add).toBeGreaterThan(form);
       expect(add).toBeLessThan(figures);
+    });
+
+    it("draws the RFE and H-4 figures beside the case from the summary, and nothing while none has a figure", async () => {
+      const side = (id: string, label: string, median: number | null) => ({
+        ...step(id, label, "i485", median ?? 0), group: "side" as const, median, p25: median, p75: median,
+      });
+      vi.mocked(getReportedSummary).mockResolvedValue({
+        ...summary,
+        side: [side("rfe-answer", "RFE issued to answered", 74), side("h4-i539", "H-4 extension, filed to approved", null)],
+      });
+      const out = htmlText(await html());
+      expect(out).toContain("Beside the case: RFEs and a spouse");
+      expect(out).toContain("RFE issued to answered");
+      expect(out).toContain("Median 74 days");
+      expect(out).toMatch(/Too few cases yet for a figure:\s*H-4 extension, filed to approved/);
+      vi.mocked(getReportedSummary).mockResolvedValue({ ...summary, side: [side("h4-i539", "H-4 extension, filed to approved", null)] });
+      expect(htmlText(await html())).not.toContain("Beside the case");
     });
 
     it("gives the last 30 days' green cards in the week's approvals, not as a fourth figure", async () => {

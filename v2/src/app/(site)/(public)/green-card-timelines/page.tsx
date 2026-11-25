@@ -12,7 +12,6 @@ import {
   InterviewLine,
   RecentApprovals,
   RfeBars,
-  StageMedians,
   BesideTheCase,
   ThirdFta0Line,
   ThirtyDayLine,
@@ -60,9 +59,9 @@ import { KeepWhole } from "@/components/ui/keep-whole";
  * checked before it counts (convex/communityTimelines.ts), and the form to add
  * one sits near the top: no account and no case number needed.
  *
- * Reads one public Convex query (`communityTimelines.board`), which returns
- * only what this page prints. A deploy-skew window where the function does
- * not exist yet renders the empty state rather than failing the route.
+ * Every figure is the hourly build's summary (`getReportedSummary`). The shared timelines' own list, RFE reasons,
+ * account codes and contacts come from one public Convex query (`communityTimelines.board`), which returns only
+ * what this page prints; a failed read of either is named on the page rather than failing the route.
  */
 
 // The searched phrase first (Search Console, Nov 2026: "green card timeline", "perm timeline tracker").
@@ -109,7 +108,7 @@ const FAQS = [
   },
   {
     q: "Who can see my timeline?",
-    a: `We check each timeline before it counts. After that your dates join the anonymous medians, which need ${METRIC_MIN_N} timelines before a figure shows. A row of your own is listed only if you tick the box, and only once ${BOARD_OPENS_AT} people have shared (${OFFICE_LIST_OPENS_AT} for one office's list). A row is the month you filed and the days each step took. A case number, an employer or an exact PERM date never shows.`,
+    a: `We check each timeline before it counts. After that your dates count in the anonymous medians beside every other source, and a figure shows once ${METRIC_MIN_N} cases have finished the step. A row of your own is listed only if you tick the box, and only once ${BOARD_OPENS_AT} people have shared (${OFFICE_LIST_OPENS_AT} for one office's list). A row is the month you filed and the days each step took. A case number, an employer or an exact PERM date never shows.`,
   },
   {
     q: "Can I see timelines for one USCIS field office?",
@@ -263,7 +262,7 @@ export default async function GreenCardTimelinesPage() {
                 <div className="mt-5">
                   <StepsByStage steps={summary.steps} agency={agencyNotes} />
                 </div>{" "}
-                {board ? <BesideTheCase metrics={board.metrics} /> : null}{" "}
+                <BesideTheCase side={summary.side} />{" "}
                 <p className="mt-6 max-w-3xl text-base leading-relaxed">
                   What each step means, and what to do while you wait:{" "}
                   <Link href="/guides/i485-timeline-each-step" className="link font-bold">
@@ -280,18 +279,12 @@ export default async function GreenCardTimelinesPage() {
                   .
                 </p>
               </>
-            ) : board ? (
-              <>
-                <p className="mt-2 max-w-2xl text-base text-muted-foreground">
-                  The bar is the middle half of the reports and the amber tick is the median. Every timeline counts here,
-                  shared on the board or not
-                  {board.scanCapped ? `, up to the newest ${board.scanCap.toLocaleString("en-US")}` : ""}.
-                </p>
-                <div className="mt-5">
-                  <StageMedians metrics={board.metrics} />
-                </div>
-              </>
-            ) : null}{" "}
+            ) : (
+              // Every figure here is the hourly build's (scripts/lib_reported_summary.py): without it there's none.
+              <NoteBanner alert className="mt-4 max-w-2xl">
+                <p>The step figures can&apos;t be read right now. Try again in a few minutes.</p>
+              </NoteBanner>
+            )}{" "}
             {papers && (papers.ead || papers.ap) ? (
               <p className="mt-5 max-w-2xl text-base leading-relaxed">
                 {`USCIS's own posted times, as of its ${formatAsOf(papers.published)} posting: ${[

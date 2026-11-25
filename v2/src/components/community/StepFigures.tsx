@@ -4,7 +4,10 @@ import Link from "next/link";
 import { ChartTips } from "@/components/data/ChartTips";
 import { TrendChip } from "@/components/data/FigureRow";
 import { formatInt } from "@/lib/format";
-import { stepTrend, stepsIn, windowText, type StepFigure, type StepGroup, type StepMonth } from "@/lib/reportedSummary";
+import { stepTrend, stepsIn, windowText, type SideFigure, type StepFigure, type StepGroup, type StepMonth } from "@/lib/reportedSummary";
+
+/** A card draws a step or a figure beside the case (an RFE, a spouse's H-4) the same way. */
+type Figure = StepFigure | SideFigure;
 import { cn } from "@/lib/utils";
 import { KeepWhole } from "@/components/ui/keep-whole";
 
@@ -22,7 +25,7 @@ const days = (n: number) => `${formatInt(n)} ${n === 1 ? "day" : "days"}`;
 const monthName = (ym: string) =>
   new Date(`${ym}-15T12:00:00Z`).toLocaleDateString("en-US", { year: "numeric", month: "short", timeZone: "UTC" });
 
-function MonthLine({ s }: { s: StepFigure }) {
+function MonthLine({ s }: { s: Figure }) {
   const top = Math.max(1, ...s.months.map((m) => m.median ?? 0));
   const shown = s.months.filter((m) => m.median !== null);
   if (shown.length < 2) return null;
@@ -56,7 +59,7 @@ function MonthLine({ s }: { s: StepFigure }) {
   );
 }
 
-function StepCard({ s, pct }: { s: StepFigure; pct: (d: number) => string }) {
+function StepCard({ s, pct }: { s: Figure; pct: (d: number) => string }) {
   const trend = stepTrend(s);
   const measured = s.median !== null && s.p25 !== null && s.p75 !== null;
   return (
@@ -111,9 +114,9 @@ export function StepFigures({
   allHref,
   className,
 }: {
-  steps: readonly StepFigure[];
+  steps: readonly Figure[];
   /** The steps the shared scale is set from, when these cards are one stage of a longer list. */
-  scaleFrom?: readonly StepFigure[];
+  scaleFrom?: readonly Figure[];
   label?: string;
   /** A link to every step from every source, when this is one page's part of it. */
   allHref?: string;
