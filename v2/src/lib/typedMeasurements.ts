@@ -49,15 +49,15 @@ export const TYPED_MEASUREMENTS: readonly TypedMeasurement[] = [
   {
     name: "I140_PREP_DAYS_ASSUMED",
     file: "convex/lib/perm/calculators/greenCardPlan.ts",
-    source: "an assumption (30 days), stated on the planner",
+    source: "a fallback (30 days): the planner uses the reported step cert-to-i140 whenever it holds a median",
     recheckBy: "2026-12-14",
-    next: "replace it with the reported timelines' measured span, certification to I-140 filed (Batch 2b)",
+    next: "check the reported step still holds a median; if it does, the fallback can go (Batch 2b)",
   },
   {
     name: "CONSULAR_INTERVIEW_DAYS_ASSUMED",
     file: "convex/lib/perm/calculators/greenCardPlan.ts",
     source: "an assumption (30, 90 and 180 days), stated on the planner",
     recheckBy: "2026-12-14",
-    next: "replace it with the consulate reports' measured span (Batch 2b)",
+    next: "measure it from employment cases only: the reports' nvc-interview step is mostly family visas (Batch 2b)",
   },
 ];
