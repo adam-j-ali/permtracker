@@ -48,7 +48,7 @@
     "@ai-sdk/provider": "^4.0.39",
     "@ai-sdk/react": "^4.0.180",
     "@auth/core": "^0.41.3",
-    "@convex-dev/auth": "^0.0.98",
+    "@convex-dev/auth": "^2.0.0",
     "@convex-dev/rag": "^0.7.9",
     "@convex-dev/rate-limiter": "^0.4.3",
     "@dnd-kit/core": "^6.3.1",
