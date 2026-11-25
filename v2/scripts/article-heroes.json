@@ -1634,5 +1634,41 @@
     },
     "credit": "Screenshot of permtracker.app, November 25, 2026",
     "alt": "The USCIS receipt box with LIN2604 typed: it names the Nebraska Service Center and fiscal year 2026, and shows the number in its parts with six digits to come"
+  },
+  "guides/what-uscis-case-statuses-mean": {
+    "photo": {
+      "file": "uscis-tampa-field-office-2021.png",
+      "focus": [
+        0.52,
+        0.5
+      ]
+    },
+    "credit": "Photo: DHS, USCIS Multimedia, still from a 2021 video / Wikimedia Commons, public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:BRoll_Exterior.mp4.webm",
+    "alt": "The U.S. Citizenship and Immigration Services sign and seal on the front of a USCIS field office in Tampa, Florida"
+  },
+  "guides/i140-processing-times-and-premium": {
+    "photo": {
+      "file": "uscis-nbc-file-aisle-2021.png",
+      "focus": [
+        0.5,
+        0.5
+      ]
+    },
+    "credit": "Photo: DHS, USCIS Multimedia, still from a 2021 video / Wikimedia Commons, public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:BRoll_NBC.mp4.webm",
+    "alt": "A long aisle of shelved case files with barcode labels at the USCIS National Benefits Center in Lee's Summit, Missouri"
+  },
+  "guides/nvc-and-ds-260-after-an-approved-i140": {
+    "photo": {
+      "file": "us-embassy-manila-aerial.jpg",
+      "focus": [
+        0.5,
+        0.5
+      ]
+    },
+    "credit": "Photo: Lawrence Ruiz / Wikimedia Commons, CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:US_Embassy_Manila.jpg",
+    "alt": "The US Embassy compound in Manila on the shore of Manila Bay, seen from above, with Roxas Boulevard running past it"
   }
 }
