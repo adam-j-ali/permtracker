@@ -447,6 +447,14 @@ case "$job" in
     fi
     echo "policy-watch: $failed of $ran sources failed"
     if [ "$ran" -gt 0 ] && [ "$failed" -eq "$ran" ]; then rc=1; fi ;;
+  # The USCIS case-status sample (Batch 3, Nov 25 2026): the files prepared off this server each morning land in
+  # /srv/permtracker/inbox/uscis-sample; this loads only what changed, nightly, since a first load writes a few hundred
+  # thousand rows and a daytime write that size stalls page reads. A repeat day is skipped; a refused file keeps the
+  # last good load and records why.
+  #   sudo -u permtracker permtracker-uscis uscis-sample [/srv/permtracker/inbox/uscis-sample]
+  uscis-sample)
+    timeout 30m nice -n 10 python3 scripts/ingest_uscis_sample.py load "${2:-/srv/permtracker/inbox/uscis-sample}" \
+      || { rc=1; fail ingest_uscis_sample.py "the sample's files were refused or didn't load; the last good load stands"; } ;;
   *) echo "unknown job $job"; exit 2 ;;
 esac
 exit $rc
