@@ -26,6 +26,11 @@ const eslintConfig = defineConfig([
     "public/sw.js",
     // Local scratch dir for the "remember" feature (gitignored, not source)
     ".remember/**",
+    // Gitignored build output and local caches, so `eslint .` reads only source (Nov 25 2026: its only findings).
+    ".vitest-cache/**",
+    "sdk/dist/**",
+    "scratchpad/**",
+    "tmp/**",
     // The mail Worker's bundle (workers/mail/build.mjs)
     "workers/mail/dist/**",
   ]),
