@@ -201,11 +201,6 @@
    "rule": "rebuilt from other tables on each run",
    "by": "scripts/build_lca_cities.py"
   },
-  "main:mirror_progress": {
-   "kind": "retired",
-   "rule": "nothing reads or writes it (2 rows); dropping it waits on the owner's yes",
-   "by": ""
-  },
   "main:niv_issuances": {
    "kind": "mirror",
    "rule": "holds exactly what its source publishes, synced each load",
