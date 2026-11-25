@@ -59,18 +59,28 @@
     "alt": "A PERM case looked up on permtracker.app: DOL's status in plain English and the estimated decision date"
   },
   "guides/what-perm-case-statuses-mean": {
-    "capture": {
-      "url": "/perm-case-statuses"
+    "photo": {
+      "file": "what-perm-case-statuses-mean.jpg",
+      "focus": [
+        0.5,
+        0.5
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 15, 2026",
-    "alt": "Every status DOL prints on a PERM case, with how many cases sit at each one today"
+    "credit": "Photo: U.S. Department of Labor / Wikimedia Commons, CC BY 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Frances_Perkins_Building_of_the_United_States_Department_of_Labor_in_Washington,_D.C._-_2.jpg",
+    "alt": "The raised words Frances Perkins Department of Labor Building over an entrance to the Labor Department's headquarters in Washington"
   },
   "guides/perm-application-on-hold-meaning": {
-    "capture": {
-      "url": "/perm-employers/under-review"
+    "photo": {
+      "file": "perm-application-on-hold-meaning.jpg",
+      "focus": [
+        0.42,
+        0.5
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 15, 2026",
-    "alt": "The employers with PERM cases on hold, at an RFI or under appeal, led by DOL's newest employer-wide move"
+    "credit": "Photo: U.S. Department of Labor / Wikimedia Commons, CC BY 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:DOL_Exterior_(30086642434).jpg",
+    "alt": "The Department of Labor's sign outside the Frances Perkins Building at 200 Constitution Avenue NW, under a dark, cloudy sky"
   },
   "guides/perm-rfi-issued-what-to-do": {
     "capture": {
@@ -87,18 +97,28 @@
     "alt": "The PERM cases DOL shows as NORD issued, counted and dated"
   },
   "guides/perm-denied-what-happens-next": {
-    "capture": {
-      "url": "/perm-rfi-audit/reconsideration-appeals"
+    "photo": {
+      "file": "perm-denied-what-happens-next.jpg",
+      "focus": [
+        0.5,
+        0.5
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 15, 2026",
-    "alt": "The PERM cases waiting on a request for reconsideration"
+    "credit": "Photo: U.S. Department of Labor / Wikimedia Commons, CC BY 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Frances_Perkins_Building_of_the_United_States_Department_of_Labor_in_Washington,_D.C._-_3.jpg",
+    "alt": "Looking up at the concrete window grid of the Labor Department's headquarters, with the raised words Frances Perkins Department of Labor Building"
   },
   "guides/perm-appeal-reconsideration-balca": {
-    "capture": {
-      "url": "/perm-rfi-audit/balca-appeals"
+    "photo": {
+      "file": "perm-appeal-reconsideration-balca.jpg",
+      "focus": [
+        0.55,
+        0.5
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 15, 2026",
-    "alt": "The PERM cases appealed to the Board of Alien Labor Certification Appeals"
+    "credit": "Photo: Blogtrepreneur / Wikimedia Commons, CC BY 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Legal_Gavel_(27571702173).jpg",
+    "alt": "A dark wooden gavel with a brass band resting on its round sound block"
   },
   "guides/perm-case-number-format": {
     "capture": {
@@ -511,14 +531,16 @@
     "alt": "PERM decisions in April to June 2026 against the quarter before and a year before, as bars"
   },
   "blog/dol-perm-file-fy2026-q4": {
-    "capture": {
-      "url": "/blog/dol-perm-file-fy2026-q4",
-      "clip": "fromm:How many PERM cases did DOL decide?",
-      "maxHeight": 440,
-      "css": "aside.lg\\:block{display:none!important}"
+    "photo": {
+      "file": "dol-perm-file-fy2026-q4.jpg",
+      "focus": [
+        0.6,
+        0.5
+      ]
     },
-    "credit": "Chart from DOL's PERM disclosure file, permtracker.app",
-    "alt": "PERM decisions in July to September 2026 against the quarter before and a year before, as bars"
+    "credit": "Photo: ajay_suresh / Wikimedia Commons, CC BY 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:United_States_Department_of_Labor_(53840039586).jpg",
+    "alt": "The wide granite steps up to the Frances Perkins Building, the Labor Department's headquarters, with its name over the doors"
   },
   "blog/eb2-vs-eb3-by-the-numbers": {
     "capture": {
@@ -823,25 +845,28 @@
     "alt": "The EB-2 India final action cutoff, a fiscal year at a time, from every visa bulletin"
   },
   "guides/employer-barred-from-perm": {
-    "capture": {
-      "url": "/debarments/settlements",
-      "clip": "h:Cloudera, the one barred from PERM",
-      "width": 1000,
-      "fit": "contain",
-      "css": "section[aria-labelledby=cloudera] > div { padding-bottom: 10px !important; }"
+    "photo": {
+      "file": "employer-barred-from-perm.jpg",
+      "focus": [
+        0.55,
+        0.5
+      ]
     },
-    "credit": "Screenshot of permtracker.app, November 1, 2026",
-    "alt": "Cloudera's case on a time line: DOL's suspension, the settlement, and the 24 months it agreed to file no PERM application"
+    "credit": "Photo: U.S. Department of Labor / Wikimedia Commons, CC BY 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Frances_Perkins_Building_of_the_United_States_Department_of_Labor_in_Washington,_D.C._-_4.jpg",
+    "alt": "The Department of Labor's sign on the lawn outside the Frances Perkins Building, with the building's long rows of windows behind it"
   },
   "guides/employer-suspended-from-perm": {
-    "capture": {
-      "url": "/perm-employers/under-review",
-      "clip": "h:When DOL moved them",
-      "width": 1000,
-      "fit": "contain"
+    "photo": {
+      "file": "employer-suspended-from-perm.jpg",
+      "focus": [
+        0.5,
+        0.5
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 17, 2026",
-    "alt": "The days DOL moved an employer's PERM cases on hold or off it, and how many on each"
+    "credit": "Photo: U.S. Department of Labor / Wikimedia Commons, CC BY 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Frances_Perkins_Building_of_the_United_States_Department_of_Labor_in_Washington,_D.C._-_5.jpg",
+    "alt": "The Department of Labor's sign beside a young tree outside the Frances Perkins Building at night"
   },
   "guides/find-your-lca-without-the-number": {
     "capture": {
@@ -899,12 +924,16 @@
     "alt": "The priority date retention and I-485 portability calculator on permtracker.app"
   },
   "guides/i485-inventory-month-by-month": {
-    "capture": {
-      "url": "/tools/i485-queue-position",
-      "clip": "h:The whole pending inventory, release by release"
+    "photo": {
+      "file": "i485-inventory-month-by-month.jpg",
+      "focus": [
+        0.5,
+        0.6
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 17, 2026",
-    "alt": "USCIS's employment-based I-485 inventory, release by release"
+    "credit": "Photo: DHS, USCIS Multimedia, still from a 2021 video / Wikimedia Commons, public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:BRoll_NBC.mp4.webm",
+    "alt": "Rows of open shelves holding case files at the USCIS National Benefits Center, with shelf labels that read I-485 EB"
   },
   "guides/opt-to-green-card-employers": {
     "capture": {
@@ -925,12 +954,16 @@
     "alt": "20 CFR 656.10(f), the five years an employer keeps a PERM file"
   },
   "guides/perm-audit-response": {
-    "capture": {
-      "url": "/tools/rfi-deadline",
-      "width": 1000
+    "photo": {
+      "file": "perm-audit-response.jpg",
+      "focus": [
+        0.4,
+        0.5
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 17, 2026",
-    "alt": "The RFI and audit response deadline calculator on permtracker.app"
+    "credit": "Photo: U.S. Department of Labor / Wikimedia Commons, CC BY 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Frances_Perkins_Building_(30602084122).jpg",
+    "alt": "The Department of Labor's sign outside the Frances Perkins Building at night, beside a lit cluster of street lamps"
   },
   "guides/perm-business-necessity": {
     "pdf": {
@@ -1533,13 +1566,17 @@
     "alt": "The USCIS account reader after a paste: an I-485 with its receipt masked, four updates by date (IAF, FTA0 twice, IK1) each with a few words, and below them what each code is known to mean and where that reading comes from"
   },
   "guides/i485-timeline-each-step": {
-    "capture": {
-      "url": "/green-card-timelines",
-      "clip": "h:The I-485",
-      "width": 1000
+    "photo": {
+      "file": "i485-timeline-each-step.jpg",
+      "focus": [
+        0.5,
+        0.5
+      ],
+      "fit": "contain"
     },
-    "credit": "Screenshot of permtracker.app, November 20, 2026",
-    "alt": "Each step of an employment-based I-485 drawn as a bar of days, from the cases people reported to PERM Tracker"
+    "credit": "Photo: DHS, USCIS Multimedia, still from a 2021 video / Wikimedia Commons, public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:BRoll_NBC.mp4.webm",
+    "alt": "The Homeland Security seal over the words National Benefits Center, Lee's Summit, Missouri, on a wall at the USCIS center"
   },
   "guides/i485-interview-to-green-card": {
     "capture": {
