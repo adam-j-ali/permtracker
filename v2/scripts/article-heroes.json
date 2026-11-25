@@ -83,18 +83,28 @@
     "alt": "The Department of Labor's sign outside the Frances Perkins Building at 200 Constitution Avenue NW, under a dark, cloudy sky"
   },
   "guides/perm-rfi-issued-what-to-do": {
-    "capture": {
-      "url": "/perm-rfi-audit/rfi-issued"
+    "photo": {
+      "file": "perm-rfi-issued-what-to-do.jpg",
+      "focus": [
+        0.42,
+        0.5
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 15, 2026",
-    "alt": "The open PERM RFIs, counted and listed oldest filing first"
+    "credit": "Photo: G. Edward Johnson / Wikimedia Commons, CC BY 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Department_of_Labor_sign_Washington_DC_2025-02-04_12-38-46.jpg",
+    "alt": "The Department of Labor's sign on Constitution Avenue, with the long window grid of the Frances Perkins Building behind it"
   },
   "guides/perm-nord-issued-meaning": {
-    "capture": {
-      "url": "/perm-rfi-audit/nord-issued"
+    "photo": {
+      "file": "perm-nord-issued-meaning.jpg",
+      "focus": [
+        0.5,
+        0.5
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 15, 2026",
-    "alt": "The PERM cases DOL shows as NORD issued, counted and dated"
+    "credit": "Photo: AgnosticPreachersKid / Wikimedia Commons, CC BY-SA 3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Frances_Perkins_Building.JPG",
+    "alt": "The long concrete front of the Frances Perkins Building, the Labor Department's headquarters, seen across Constitution Avenue"
   },
   "guides/perm-denied-what-happens-next": {
     "photo": {
@@ -172,11 +182,16 @@
     "alt": "A PERM Tracker reminder email listing a case's next deadlines"
   },
   "guides/how-the-perm-queue-works": {
-    "capture": {
-      "url": "/perm-queue"
+    "photo": {
+      "file": "how-the-perm-queue-works.jpg",
+      "focus": [
+        0.5,
+        0.5
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 15, 2026",
-    "alt": "Where the PERM queue stands: the oldest filing month DOL still has open, the month it is reviewing and how fast it moves"
+    "credit": "Photo: Mike Mozart / Wikimedia Commons, CC BY 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Take_a_Number,_(14495402297).jpg",
+    "alt": "An orange Take-A-Tab ticket dispenser at a shop counter, with numbered tickets 29, 32, 34 and 35 torn off beside it"
   },
   "guides/where-your-filing-month-sits": {
     "capture": {
@@ -521,14 +536,16 @@
     "alt": "The Frances Perkins Building, the Department of Labor's headquarters, seen across the lawn"
   },
   "blog/dol-perm-file-fy2026-q3": {
-    "capture": {
-      "url": "/blog/dol-perm-file-fy2026-q3",
-      "clip": "fromm:How many PERM cases did DOL decide?",
-      "maxHeight": 440,
-      "css": "aside.lg\\:block{display:none!important}"
+    "photo": {
+      "file": "dol-perm-file-fy2026-q3.jpg",
+      "focus": [
+        0.45,
+        0.5
+      ]
     },
-    "credit": "Chart from DOL's PERM disclosure file, permtracker.app",
-    "alt": "PERM decisions in April to June 2026 against the quarter before and a year before, as bars"
+    "credit": "Photo: AgnosticPreachersKid / Wikimedia Commons, CC BY-SA 3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:U.S._Department_of_Labor_headquarters.JPG",
+    "alt": "The Frances Perkins Building, the Labor Department's headquarters, seen from across Constitution Avenue under a clear blue sky"
   },
   "blog/dol-perm-file-fy2026-q4": {
     "photo": {
@@ -564,11 +581,16 @@
     "alt": "The salary explorer: certified PERM wages filtered by job, state and year"
   },
   "blog/perm-processing-times-2026": {
-    "capture": {
-      "url": "/perm-processing-times"
+    "photo": {
+      "file": "perm-processing-times-2026.jpg",
+      "focus": [
+        0.5,
+        0.55
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 15, 2026",
-    "alt": "PERM processing times: the month DOL is reviewing and its average days to a decision, from DOL's own page"
+    "credit": "Photo: Pauloleong2002 / Wikimedia Commons, CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Hourglass_with_flowing_sand.jpg",
+    "alt": "Golden sand running through the neck of a brass-framed hourglass and piling up in the lower bulb"
   },
   "blog/what-law-firm-volume-tells-you": {
     "capture": {
@@ -578,11 +600,16 @@
     "alt": "Who files the most PERM cases: the ten busiest law firms as bars"
   },
   "blog/why-perm-cases-are-denied": {
-    "capture": {
-      "url": "/perm-rfi-audit"
+    "photo": {
+      "file": "why-perm-cases-are-denied.jpg",
+      "focus": [
+        0.5,
+        0.5
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 15, 2026",
-    "alt": "RFIs, audits and appeals: how many PERM cases sit at each review stage"
+    "credit": "Photo: G. Edward Johnson / Wikimedia Commons, CC BY 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Department_of_Labor_front_Washington_DC_2025-02-07_15-38-57.jpg",
+    "alt": "Granite steps leading up to the Frances Perkins Building, with a plaque reading United States Department of Labor and the flag flying above"
   },
   "blog/what-is-perm-labor-certification": {
     "photo": {
@@ -619,11 +646,16 @@
     "alt": "The corner of the Frances Perkins Building, the Department of Labor's headquarters, with its sign"
   },
   "blog/how-perm-wage-data-is-published": {
-    "capture": {
-      "url": "/perm-wages/software-developers"
+    "photo": {
+      "file": "how-perm-wage-data-is-published.jpg",
+      "focus": [
+        0.6,
+        0.5
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 15, 2026",
-    "alt": "Software developers on permtracker.app: median certified wage, filings and the wage ladder year by year"
+    "credit": "Photo: U.S. Department of Labor / Wikimedia Commons, CC BY 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Frances_Perkins_Building_of_the_United_States_Department_of_Labor_in_Washington,_D.C._-_1.jpg",
+    "alt": "The Labor Department's headquarters in Washington seen from above, its rows of windows running into soft focus"
   },
   "blog/what-an-employers-perm-record-shows": {
     "capture": {
@@ -829,12 +861,16 @@
     "alt": "The I-485 by field office: what each USCIS office received, decided and holds"
   },
   "guides/dol-average-vs-your-wait": {
-    "capture": {
-      "url": "/perm-processing-times",
-      "clip": "h:How fast it advances"
+    "photo": {
+      "file": "dol-average-vs-your-wait.jpg",
+      "focus": [
+        0.32,
+        0.55
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 17, 2026",
-    "alt": "How fast DOL's PERM queue has advanced, month by month, on permtracker.app"
+    "credit": "Photo: AgnosticPreachersKid / Wikimedia Commons, CC BY-SA 3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Capitol_Reflecting_Pool_-_Frances_Perkins_Building.JPG",
+    "alt": "The Labor Department's headquarters seen in the distance across the Capitol Reflecting Pool, with people walking along the pool's edge"
   },
   "guides/eb2-india-forecasts-how-close": {
     "capture": {
@@ -976,12 +1012,16 @@
     "alt": "Form ETA-9141's minimum job requirements, the part business necessity has to justify"
   },
   "guides/perm-certified-what-next": {
-    "capture": {
-      "url": "/tools/i140-calculator",
-      "width": 1000
+    "photo": {
+      "file": "perm-certified-what-next.jpg",
+      "focus": [
+        0.5,
+        0.5
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 17, 2026",
-    "alt": "The I-140 queue calculator on permtracker.app"
+    "credit": "Photo: U.S. Department of Labor / Wikimedia Commons, CC BY 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Frances_Perkins_Building_of_the_United_States_Department_of_Labor_in_Washington,_D.C._-_8.jpg",
+    "alt": "A fountain in front of the entrance to the Frances Perkins Building, with DEPARTMENT OF LABOR lettered above the doors"
   },
   "guides/perm-employer-questionnaire": {
     "pdf": {
@@ -1175,12 +1215,16 @@
     "alt": "The first page of the 2007 PERM rule that made the employer pay its own attorney's fees"
   },
   "blog/perm-queue-october-2026": {
-    "capture": {
-      "url": "/perm-queue",
-      "clip": "h:The wall, by filing month"
+    "photo": {
+      "file": "perm-queue-october-2026.jpg",
+      "focus": [
+        0.5,
+        0.5
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 17, 2026",
-    "alt": "The PERM cases still waiting, by the month they were filed"
+    "credit": "Photo: Holger.Ellgaard / Wikimedia Commons, CC BY-SA 3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Turn-o-matic_A&E.jpg",
+    "alt": "A red Turn-O-Matic ticket dispenser beside a display that reads Nu betjänas 80, Swedish for now serving 80"
   },
   "blog/proposed-perm-rule-rin-1205-ac29": {
     "pdf": {
