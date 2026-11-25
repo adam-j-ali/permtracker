@@ -92,6 +92,8 @@ const ISOLATED_UNIT_FILES = [
   "src/lib/db/__tests__/reference.test.ts",
   // Added 2026-10-29: mocks the database client and the doc reader for the job code finder.
   "src/lib/db/__tests__/socTitles.test.ts",
+  // Added 2026-11-25: the I-140 quarter reader mocks ../publicData.
+  "src/lib/db/__tests__/uscisI140.test.ts",
   // Added 2026-11-02: mocks the four readers behind one SOC code's profile.
   "src/lib/db/__tests__/socProfile.test.ts",
   "src/lib/auth/__tests__/authGate.test.ts",
