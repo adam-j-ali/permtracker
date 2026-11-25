@@ -18,7 +18,7 @@ import { toast } from "@/lib/toast";
  *
  * Nothing here sends the person out of the app (owner, Oct 26 2026): watching
  * and skipping both close the wizard where they are, the dashboard's banner
- * (AudienceBanner) points them to the case lookup, and the employer search
+ * (AudienceBanner) points them to adding their case in the app, and the employer search
  * opens in a new tab so the wizard stays put.
  */
 export function OwnCaseStep() {

@@ -9,6 +9,7 @@ import { api } from "@convex/_generated/api";
 import SummaryTilesGrid from "@/components/dashboard/SummaryTilesGrid";
 import DeadlineHeroWidget from "@/components/dashboard/DeadlineHeroWidget";
 import RecentActivityWidget from "@/components/dashboard/RecentActivityWidget";
+import MyWatchesWidget from "@/components/dashboard/MyWatchesWidget";
 import { DashboardHeading } from "@/components/dashboard/DashboardShell";
 import AutoClosureAlertBanner from "@/components/dashboard/AutoClosureAlertBanner";
 import { OnboardingChecklist } from "@/components/onboarding/OnboardingChecklist";
@@ -78,6 +79,7 @@ export function DashboardPageClient() {
       <CaseCapNotice />
       <AutoClosureAlertBanner />
       <DeadlineHeroWidget />
+      <MyWatchesWidget />
       <OnboardingChecklist />
       <SummaryTilesGrid />
       <RecentActivityWidget />

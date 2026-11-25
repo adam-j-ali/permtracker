@@ -35,4 +35,45 @@ describe("the account's own alert settings", () => {
     expect(await as.query(api.emailPrefs.mine, {})).not.toBeNull();
     expect(await as.mutation(api.emailPrefs.turnOffMine, { kind: "news" })).not.toBeNull();
   });
+
+  // The dashboard lists these watches with a stop on each (MyWatchesWidget): only the account's own, and a stop
+  // naming another address's row leaves it alone.
+  it("list only the account's own watches, and never stop another address's", async () => {
+    const { t, as } = await account(true);
+    const ids = await t.run(async (ctx) => {
+      const now = Date.now();
+      const mine = await ctx.db.insert("caseStatusAlerts", {
+        email: "owner@example.com",
+        caseNumber: "G-100-26001-123456",
+        confirmedAt: now,
+        createdAt: now,
+      });
+      const theirs = await ctx.db.insert("caseStatusAlerts", {
+        email: "someone.else@example.com",
+        caseNumber: "G-100-26001-654321",
+        confirmedAt: now,
+        createdAt: now,
+      });
+      await ctx.db.insert("bulletinAlerts", {
+        email: "owner@example.com",
+        category: "EB2",
+        country: "india",
+        confirmedAt: now,
+        createdAt: now,
+      });
+      await ctx.db.insert("uscisWatches", { email: "owner@example.com", receipt: "IOE0000000012", confirmedAt: now, createdAt: now });
+      return { mine, theirs };
+    });
+
+    const state = (await as.query(api.emailPrefs.mine, {}))!;
+    expect(state.caseAlerts.map((a) => a.caseNumber)).toEqual(["G-100-26001-123456"]);
+    expect(state.bulletinAlerts).toHaveLength(1);
+    expect(state.uscisAlerts.map((a) => a.receipt)).toEqual(["IOE0000000012"]);
+
+    await as.mutation(api.emailPrefs.turnOffMine, { kind: "case", id: ids.theirs });
+    await as.mutation(api.emailPrefs.turnOffMine, { kind: "case", id: ids.mine });
+    const after = await t.run(async (ctx) => ({ mine: await ctx.db.get(ids.mine), theirs: await ctx.db.get(ids.theirs) }));
+    expect(after.mine?.unsubscribedAt).toBeDefined();
+    expect(after.theirs?.unsubscribedAt).toBeUndefined();
+  });
 });

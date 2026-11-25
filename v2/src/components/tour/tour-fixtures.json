@@ -2067,6 +2067,7 @@
     "news": false,
     "newsletter": false,
     "queueAlerts": [],
+    "uscisAlerts": [],
     "weeklyDigest": true
   },
   "deadlineEnforcement:getAutoClosureAlerts {}": [],

@@ -3,17 +3,18 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useQuery } from "convex/react";
-import { MagnifyingGlassIcon, WarningIcon, XIcon } from "@phosphor-icons/react";
+import { PlusIcon, WarningIcon, XIcon } from "@phosphor-icons/react";
 
 import { api } from "@convex/_generated/api";
 import { analytics } from "@/lib/analytics";
 import { audienceOf } from "@/lib/audience";
 
 /**
- * Caution tape at the top of the signed-in app for an account that doesn't file cases: who the app is for, and
- * where someone waiting on their own case gets what they came for (the free case lookup and its email alert).
- * It replaced the box that had stood in front of the sign-up form (owner, Oct 26 2026): nobody is turned away
- * before an account, and nobody is sent out of the app after it.
+ * Caution tape at the top of the signed-in app for an account that doesn't file cases: the app is theirs too, and
+ * their own case goes in here, with or without the employer's name, its email alerts on the dashboard. It replaced
+ * the box that had stood in front of the sign-up form (Oct 26 2026): nobody is turned away before an account, and
+ * nobody is sent out of the app after it. Until Nov 25 2026 it said the app was for people who file cases and
+ * pointed to the public case lookup; it now keeps them here.
  *
  * Shown to accounts that said they're waiting on their own case or chose Other, and to accounts made since setup
  * began asking the question (Oct 6 2026) that skipped it: the 11 that skipped it by Oct 26 were all individuals.
@@ -53,19 +54,20 @@ export function AudienceBannerView({ onClose }: { onClose: () => void }) {
         </span>{" "}
         <div className="min-w-0 flex-1 sm:flex sm:items-center sm:justify-between sm:gap-6">
           <div className="min-w-0">
-            <p className="font-heading text-base font-bold leading-snug">This app is for people who file PERM cases</p>{" "}
+            <p className="font-heading text-base font-bold leading-snug">Waiting on your own case? Track it here</p>{" "}
             <p className="mt-0.5 text-sm leading-snug text-soft">
-              Waiting on your own case? The free case lookup shows DOL&rsquo;s status and emails you when it moves.
+              Add it with or without the employer&rsquo;s name. Your email alerts show on the dashboard, each with a way
+              to stop it.
             </p>
           </div>{" "}
           <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 sm:mt-0 sm:shrink-0">
             <Link
-              href="/perm-case-status"
-              onClick={() => analytics.capture("audience_banner_taken", { door: "case_lookup" })}
+              href="/cases/new"
+              onClick={() => analytics.capture("audience_banner_taken", { door: "add_case" })}
               className="inline-flex min-h-11 items-center gap-2 border-2 border-border bg-primary px-3.5 font-heading text-sm font-bold text-black"
             >
-              <MagnifyingGlassIcon size={15} weight="bold" aria-hidden="true" />
-              Check my case
+              <PlusIcon size={15} weight="bold" aria-hidden="true" />
+              Add my case
             </Link>{" "}
             <Link href="/settings#role" className="link inline-flex min-h-11 items-center text-sm font-semibold">
               I file cases

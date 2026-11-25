@@ -26,12 +26,21 @@ describe("AudienceBanner", () => {
     Object.defineProperty(window, "localStorage", { value: realStorage, configurable: true });
   });
 
-  it.each(["Waiting on my own case", "Other"])("shows for %s, with the case lookup and a way to change the role", (role) => {
+  it.each(["Waiting on my own case", "Other"])("shows for %s, with a way to add the case here and to change the role", (role) => {
     mockUseQuery.mockReturnValue(profile(role));
     render(<AudienceBanner />);
     expect(banner()).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /check my case/i })).toHaveAttribute("href", "/perm-case-status");
+    expect(screen.getByRole("link", { name: /add my case/i })).toHaveAttribute("href", "/cases/new");
     expect(screen.getByRole("link", { name: /i file cases/i })).toHaveAttribute("href", "/settings#role");
+  });
+
+  it("keeps someone waiting on their own case in the app: it says the app is theirs and sends them nowhere else", () => {
+    mockUseQuery.mockReturnValue(profile("Waiting on my own case"));
+    render(<AudienceBanner />);
+    for (const link of screen.getAllByRole("link")) {
+      expect(link.getAttribute("href")).not.toMatch(/perm-case-status|uscis-case-status/);
+    }
+    expect(banner()).not.toHaveTextContent(/for people who file/i);
   });
 
   it.each([["Immigration Attorney"], ["Paralegal"], ["HR Professional"], ["Employer/Petitioner"], ["Global Mobility counsel"]])(
