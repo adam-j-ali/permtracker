@@ -685,3 +685,38 @@ export function windowPhrase(period: string): string {
 }
 
 export { SOURCE_URL as DOL_PROCESSING_TIMES_URL };
+
+/**
+ * The snapshot the server's ingest stored (scripts/ingest_processing_times.mts writes `processing_times.json` with
+ * this same parser), read back for Convex. Since Nov 25 2026 Convex reads DOL's page through the database rather than
+ * fetching it a second time. A row that isn't a whole snapshot throws, like a page whose shape changed: a half
+ * snapshot reads as a month where nothing moved.
+ */
+export function snapshotFromStored(json: unknown): DolProcessingTimesSnapshot {
+  let raw: unknown;
+  try {
+    raw = typeof json === "string" ? JSON.parse(json) : null;
+  } catch {
+    throw new DolParseError("the stored snapshot isn't JSON");
+  }
+  if (!raw || typeof raw !== "object") throw new DolParseError("no stored snapshot");
+  const r = raw as Record<string, unknown>;
+  const day = /^\d{4}-\d{2}-\d{2}$/;
+  if (typeof r.permAsOf !== "string" || !day.test(r.permAsOf)) throw new DolParseError("the stored snapshot has no PERM date");
+  if (r.pwdAsOf !== null && r.pwdAsOf !== undefined && (typeof r.pwdAsOf !== "string" || !day.test(r.pwdAsOf))) {
+    throw new DolParseError("the stored snapshot's wage date isn't a day");
+  }
+  for (const k of ["permQueues", "permAverageDays", "pwdQueues", "pwdPermBacklog"] as const) {
+    if (!Array.isArray(r[k])) throw new DolParseError(`the stored snapshot has no ${k}`);
+  }
+  return {
+    permAsOf: r.permAsOf,
+    permQueues: r.permQueues as PermQueueRow[],
+    permAverageDays: r.permAverageDays as PermDeterminationRow[],
+    pwdAsOf: typeof r.pwdAsOf === "string" ? r.pwdAsOf : null,
+    pwdQueues: r.pwdQueues as PwdQueueRow[],
+    pwdPermBacklog: r.pwdPermBacklog as PwdBacklogRow[],
+    pwdReviews: Array.isArray(r.pwdReviews) ? (r.pwdReviews as PwdReviewRow[]) : [],
+    sourceUrl: typeof r.sourceUrl === "string" ? r.sourceUrl : SOURCE_URL,
+  };
+}

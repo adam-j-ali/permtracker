@@ -440,3 +440,43 @@ describe("hashSnapshot", () => {
     );
   });
 });
+
+describe("snapshotFromStored", () => {
+  const stored = {
+    permAsOf: "2026-10-31",
+    permQueues: [],
+    permAverageDays: [{ determination: "Certified", month: null, calendarDays: 480, period: "Last 30 Days", raw: "480" }],
+    pwdAsOf: "2026-10-31",
+    pwdQueues: [{ program: "PERM", oewsReceiptDate: "2025-09-01", nonOewsReceiptDate: null }],
+    pwdPermBacklog: [],
+    pwdReviews: [],
+    sourceUrl: "https://flag.dol.gov/processingtimes",
+  };
+
+  it("reads back the real page's snapshot exactly as the ingest's JSON stores it", async () => {
+    const { snapshotFromStored } = await import("./dolProcessingTimes");
+    for (const page of [FIXTURE, NOV_FIXTURE]) {
+      const parsed = parseProcessingTimes(page);
+      expect(snapshotFromStored(JSON.stringify(parsed))).toEqual(parsed);
+    }
+  });
+
+  it("reads back the snapshot the server's ingest stored, field for field", async () => {
+    const { snapshotFromStored } = await import("./dolProcessingTimes");
+    expect(snapshotFromStored(JSON.stringify(stored))).toEqual(stored);
+  });
+
+  it("hashes a stored snapshot the same as the one parsed from the page", async () => {
+    const { snapshotFromStored } = await import("./dolProcessingTimes");
+    expect(await hashSnapshot(snapshotFromStored(JSON.stringify(stored)))).toBe(await hashSnapshot(stored as never));
+  });
+
+  it("refuses a half snapshot rather than storing a month where nothing moved", async () => {
+    const { snapshotFromStored } = await import("./dolProcessingTimes");
+    expect(() => snapshotFromStored("not json")).toThrow(/isn't JSON/);
+    expect(() => snapshotFromStored(null)).toThrow(/no stored snapshot/);
+    expect(() => snapshotFromStored(JSON.stringify({ ...stored, permAsOf: "Oct 31" }))).toThrow(/PERM date/);
+    const { pwdQueues: _gone, ...noWage } = stored;
+    expect(() => snapshotFromStored(JSON.stringify(noWage))).toThrow(/pwdQueues/);
+  });
+});

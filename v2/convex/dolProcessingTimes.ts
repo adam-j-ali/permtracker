@@ -1,7 +1,8 @@
 /**
  * Ingestion and read API for DOL's published processing times.
  *
- * Source: https://flag.dol.gov/processingtimes (public, no auth, robots-clean).
+ * Source: https://flag.dol.gov/processingtimes (public, no auth, robots-clean), read hourly by the server's ingest
+ * (scripts/ingest_processing_times.mts) into the database; `refresh` reads that stored snapshot.
  *
  * The whole reason this exists: DOL publishes one snapshot and overwrites it
  * on the next update. There is no archive. Storing each publication turns a
@@ -10,8 +11,8 @@
  * DOL's own figures with DOL's own as-of date attached; nothing here predicts.
  *
  * Runtime note: this file stays on Convex's default V8 runtime. It needs
- * `fetch` and Web Crypto, both available there, and no Node builtins, so it
- * deliberately does NOT carry a "use node" directive.
+ * Web Crypto and the database reader, both available there, and no Node
+ * builtins, so it deliberately does NOT carry a "use node" directive.
  *
  * @module convex/dolProcessingTimes
  */
@@ -21,18 +22,11 @@ import { internalAction, internalMutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import { recordError } from "./lib/errorRecording";
-import {
-  parseProcessingTimes,
-  hashSnapshot,
-  analystReviewQueue,
-  DOL_PROCESSING_TIMES_URL,
-} from "./lib/dolProcessingTimes";
+import { snapshotFromStored, hashSnapshot, analystReviewQueue } from "./lib/dolProcessingTimes";
+import { query as mirrorQuery } from "./lib/publicMirror";
 import { createLogger } from "./lib/logging";
 
 const log = createLogger("DolProcessingTimes");
-
-/** Give DOL a generous but bounded window; the page is ~160 KB of plain HTML. */
-const FETCH_TIMEOUT_MS = 30_000;
 
 // ============================================================================
 // Validators
@@ -117,42 +111,27 @@ export const refresh = internalAction({
   args: {},
   returns: ingestResult,
   handler: async (ctx): Promise<{ stored: boolean; permAsOf?: string; reason?: string }> => {
-    let html: string;
-
+    // The server's ingest reads DOL's page hourly (scripts/ingest_processing_times.mts, :05) with this same parser and
+    // stores the snapshot; Convex reads that row rather than fetching the page a second time (Nov 25 2026). The
+    // crons run at :10, after it.
+    let stored: unknown;
     try {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-      try {
-        const response = await fetch(DOL_PROCESSING_TIMES_URL, {
-          signal: controller.signal,
-          headers: {
-            // Identify honestly. DOL serves this page to anyone, and a real
-            // contact string is the courteous way to consume a public feed.
-            "User-Agent":
-              "PERMTrackerBot/1.0 (+https://permtracker.app; support@permtracker.app)",
-            Accept: "text/html",
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(`DOL returned HTTP ${response.status}`);
-        }
-        html = await response.text();
-      } finally {
-        clearTimeout(timer);
-      }
+      const [rows] = await mirrorQuery([
+        { sql: "SELECT json FROM processing_times ORDER BY perm_as_of DESC LIMIT 1", args: [] },
+      ]);
+      stored = rows?.[0]?.json ?? null;
     } catch (error) {
-      // A failed fetch is worth surfacing: the series quietly going stale is
+      // A failed read is worth surfacing: the series quietly going stale is
       // exactly the failure mode this table exists to prevent.
-      await recordError(ctx, "action", "dolProcessingTimes.refresh.fetch", error);
+      await recordError(ctx, "action", "dolProcessingTimes.refresh.read", error);
       throw error;
     }
 
-    // parseProcessingTimes throws when DOL changes the page shape. That is
-    // deliberate: a half-parsed snapshot is indistinguishable from a month
-    // where the queue genuinely did not move.
+    // snapshotFromStored throws on anything short of a whole snapshot. That is
+    // deliberate: a half snapshot is indistinguishable from a month where the
+    // queue genuinely did not move.
     try {
-      const snapshot = parseProcessingTimes(html);
+      const snapshot = snapshotFromStored(stored);
       const contentHash = await hashSnapshot(snapshot);
 
       const result = await ctx.runMutation(internal.dolProcessingTimes.store, {

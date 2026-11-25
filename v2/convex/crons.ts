@@ -246,7 +246,7 @@ crons.daily(
 // Hourly through the weekday as well (Oct 7 2026), matching the site's own
 // hourly DOL read (processing-times-ingest.yml's quick pass, :05), so a month
 // DOL reaches is emailed within the hour instead of the next afternoon. Same
-// one GET; `store` writes only when DOL's content changed.
+// one read of the snapshot the ingest stored; `store` writes only when DOL's content changed.
 crons.cron(
   "dol-processing-times-hourly",
   "10 12-22 * * 1-5",
