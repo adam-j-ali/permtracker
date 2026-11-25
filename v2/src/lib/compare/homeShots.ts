@@ -101,4 +101,18 @@ export const HOME_SHOTS: Record<string, HomeShot> = {
     height: 540,
     alt: "H1BPerm's homepage: a dark page headed PWD, PERM and I-485 timelines, DOL's FLAG maintenance notice, and the filing days DOL is working on.",
   },
+  casetracker: {
+    src: "/images/compare/casetracker.webp",
+    captured: "2026-11-25",
+    width: 960,
+    height: 540,
+    alt: "CaseTracker's homepage: a headline reading Your whole caseload, checked with USCIS every day, beside a mock dashboard of law firm cases and a WhatsApp approval message.",
+  },
+  usacasestatus: {
+    src: "/images/compare/usacasestatus.webp",
+    captured: "2026-11-25",
+    width: 960,
+    height: 540,
+    alt: "USACaseStatus's homepage: a receipt number box with sample buttons, the number split into center, year, workday and serial, and a panel naming the Nebraska Service Center.",
+  },
 };

@@ -35,6 +35,10 @@ import type { Tracker } from "./trackers";
  * answered every scripted request, the Internet Archive's included, with
  * Cloudflare's check, so it keeps its October 28 reading. PermQueue's /my-case
  * is closed by its robots.txt, so its alerts mark now rests on its homepage.
+ *
+ * November 25: two USCIS receipt trackers, CaseTracker (casetracker.io) and USACaseStatus (usacasestatus.com, registered
+ * Nov 23 2026), read by plain GET requests, robots.txt first, about 30 to each, nothing submitted or signed up for
+ * (`~/.claude/explanations/20261125_receipt_trackers/raw/`, each quote matched against its saved page).
  */
 
 const PU = "https://permupdate.com";
@@ -50,6 +54,8 @@ const VG = "https://visagrader.com";
 const GCC = "https://greencardclock.com";
 const LW = "https://www.lawfully.com";
 const IR = "https://www.immigrationroad.com";
+const CT = "https://casetracker.io";
+const UCS = "https://usacasestatus.com";
 
 export const RIVALS: readonly Tracker[] = [
   {
@@ -540,6 +546,101 @@ export const RIVALS: readonly Tracker[] = [
       "A place-in-line count from USCIS's I-485 inventory plus State's consular cases",
       "A one-page immigration flowchart the site says media, the U.S. Navy and the American Bar Association have used",
       "The site in Chinese as well as English",
+    ],
+  },
+  {
+    slug: "casetracker",
+    name: "CaseTracker",
+    url: CT,
+    operator: "FADI IT Solutions LLC",
+    price: "A free lookup; WhatsApp and email alerts at $4.99 a month; law firm plans from $100 a month",
+    group: "greenCard",
+    checkedOn: "2026-11-25",
+    newestData: {
+      day: "2026-11-24",
+      note: "Its I-485 processing times, from the cases people look up on it",
+      evidence: { url: `${CT}/processing-times/i-485`, quote: "Form I-485 · Updated November 24, 2026" },
+    },
+    cells: {
+      lookup: { mark: "partial", note: "USCIS receipt numbers. No DOL case lookup", evidence: { url: `${CT}/en/check`, quote: "Enter your receipt number to see your current status, what it means, and what usually happens next." } },
+      pending: { mark: "partial", note: "USCIS cases its users look up, by form. Nothing on PERM", evidence: { url: `${CT}/i-485-tracker`, quote: "Pending cases we're watching 809" } },
+      source: { mark: "partial", note: "USCIS case status for each receipt. Its PERM page shows DOL's published averages", evidence: { url: `${CT}/perm-tracker`, quote: "PERM figures are average calendar days to an analyst-review decision" } },
+      uscis: { mark: "yes", note: "Free, with what the status means, what usually comes next and the case's history", evidence: { url: `${CT}/en/check`, quote: "Check your USCIS case status" } },
+      wage: { mark: "no", note: "DOL's wage-request months on its PERM page. No wage request lookup", evidence: { url: `${CT}/perm-tracker` } },
+      lca: { mark: "no", note: "No LCA lookup or pages in its 480-URL sitemap", evidence: { url: `${CT}/sitemap.xml` } },
+      seasonal: { mark: "no", note: "No H-2A or H-2B lookup or pages in its 480-URL sitemap", evidence: { url: `${CT}/sitemap.xml` } },
+      alerts: { mark: "partial", note: "WhatsApp and email for USCIS cases, on its $4.99 plan and its law firm plans. Nothing on PERM", evidence: { url: `${CT}/alerts`, quote: "When the status changes, you get WhatsApp and email with what it means." } },
+      push: { mark: "no", note: "WhatsApp and email only. No browser or phone notification found", evidence: { url: `${CT}/alerts` } },
+      bulletinAlerts: { mark: "yes", note: "By email", evidence: { url: `${CT}/visa-bulletin`, quote: "send one short email when your date becomes current" } },
+      employers: { mark: "no", note: "No employer pages in its 480-URL sitemap", evidence: { url: `${CT}/sitemap.xml` } },
+      bulletin: { mark: "yes", note: "The current charts, each month's moves and a page per category and country", evidence: { url: `${CT}/visa-bulletin`, quote: "check it against the November 2026 bulletin" } },
+      community: { mark: "no", note: "Its figures come from the cases people look up on it, not from reports or timelines", evidence: { url: `${CT}/case-data-methodology` } },
+      attorney: { mark: "partial", note: "A paid dashboard for law firms' USCIS cases. No PERM deadlines", evidence: { url: `${CT}/pricing`, quote: "Automated USCIS status monitoring Email notifications for status changes Bulk CSV import" } },
+      app: { mark: "no", note: "No app link on the pages read", evidence: { url: CT } },
+      languages: { mark: "yes", note: "English, Spanish, Portuguese and Arabic", evidence: { url: `${CT}/en/check`, quote: "العربية Español Português" } },
+      noAccount: { mark: "yes", evidence: { url: `${CT}/processing-times/i-485`, quote: "Free, no sign-up." } },
+      free: { mark: "partial", note: "A free lookup. WhatsApp alerts are paid", evidence: { url: `${CT}/alerts`, quote: "CaseTracker Personal · $4.99/month" } },
+      noAds: { mark: "yes", note: "No ad code in the pages read", evidence: { url: CT } },
+      openData: { mark: "no", note: "It sells no API and offers no download", evidence: { url: `${CT}/uscis-case-status-api` } },
+    },
+    bestFor: "Checking a USCIS receipt's status and getting a WhatsApp message when it changes",
+    dataFrom: "USCIS's case status and the cases its users look up",
+    beatsUs: [
+      "USCIS case status by receipt number today, free. Ours waits on USCIS granting access",
+      "WhatsApp alerts beside email, on its paid plans",
+      "The site in Spanish, Portuguese and Arabic as well as English. Ours is in English only",
+    ],
+    strengths: [
+      "A free USCIS status lookup that says what the status means and what usually comes next",
+      "WhatsApp and email alerts for up to 10 USCIS cases, on a $4.99 plan",
+      "A dashboard for law firms that checks every client's receipt daily",
+      "Processing times from the cases people look up, beside USCIS's own",
+    ],
+  },
+  {
+    slug: "usacasestatus",
+    name: "USACaseStatus",
+    url: UCS,
+    operator: null,
+    price: "Free",
+    group: "greenCard",
+    checkedOn: "2026-11-25",
+    newestData: {
+      day: "2026-11-23",
+      note: "Every page's own stamp",
+      evidence: { url: UCS, quote: "Updated November 23, 2026" },
+    },
+    cells: {
+      lookup: { mark: "no", note: "It reads what a receipt number encodes, then sends you to USCIS's own page to check it", evidence: { url: UCS, quote: "Copy number & check on egov.uscis.gov" } },
+      pending: { mark: "no", note: "No case counts on the pages read", evidence: { url: UCS } },
+      source: { mark: "partial", note: "DOL's published PERM averages, in a date estimator", evidence: { url: `${UCS}/perm-processing-time`, quote: "We add DOL FLAG’s latest Analyst Review averages and show where your case stands today." } },
+      uscis: { mark: "no", note: "A receipt decoder. It reads no status", evidence: { url: UCS, quote: "Receipt numbers never leave your device." } },
+      wage: { mark: "no", note: "No wage request lookup on the pages read", evidence: { url: UCS } },
+      lca: { mark: "no", note: "A 7-working-day date calculator for an LCA. No LCA lookup", evidence: { url: `${UCS}/lca-status-check`, quote: "LCA Status Check (ETA-9035): 7-Working-Day FLAG Calculator" } },
+      seasonal: { mark: "no", note: "Not found on the pages read", evidence: { url: UCS } },
+      alerts: { mark: "no", note: "No alerts: nothing typed reaches a server", evidence: { url: UCS, quote: "The site has no analytics, no login and no server that receives what you type." } },
+      push: { mark: "no", note: "No alerts", evidence: { url: UCS } },
+      bulletinAlerts: { mark: "no", note: "A priority date check, with no alert", evidence: { url: `${UCS}/visa-bulletin-tracker` } },
+      employers: { mark: "no", note: "No employer pages on the pages read", evidence: { url: UCS } },
+      bulletin: { mark: "partial", note: "The November 2026 bulletin only, with a priority date check", evidence: { url: `${UCS}/visa-bulletin-tracker`, quote: "Visa Bulletin Tracker: November 2026 Priority Date Calculator" } },
+      community: { mark: "no", note: "No timelines or reports", evidence: { url: UCS } },
+      attorney: { mark: "no", note: "No case or deadline tool for attorneys", evidence: { url: UCS } },
+      app: { mark: "no", note: "No app link on the pages read", evidence: { url: UCS } },
+      languages: { mark: "no", note: "English only, on the pages read", evidence: { url: UCS } },
+      noAccount: { mark: "yes", evidence: { url: UCS, quote: "The site has no analytics, no login and no server that receives what you type." } },
+      free: { mark: "yes", note: "Nothing to pay for on the pages read", evidence: { url: UCS } },
+      noAds: { mark: "yes", note: "No ads, analytics or cookies", evidence: { url: UCS, quote: "The site has no analytics, no login and no server that receives what you type." } },
+      openData: { mark: "no", note: "No download or API", evidence: { url: UCS } },
+    },
+    bestFor: "Reading what a receipt number says, privately, in the browser",
+    dataFrom: "What the receipt number encodes, and DOL's published averages",
+    beatsUs: [
+      "Reads a receipt number as you type it, a part at a time, and names the first wrong character",
+    ],
+    strengths: [
+      "A receipt decoder that fills in as you type, with an approximate date for older paper receipts",
+      "Nothing typed leaves the browser: no account, analytics or cookies",
+      "Date calculators for OPT, an LCA and a PERM case",
     ],
   },
 ];
