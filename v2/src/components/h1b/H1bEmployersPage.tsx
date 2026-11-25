@@ -89,6 +89,8 @@ export async function h1bMetadata(state: string): Promise<Metadata> {
     description = firstThatFits([
       `${lead} The 100 busiest H-1B employers in ${name} each year, from DOL's LCAs and USCIS's approvals.`,
       `${lead} The busiest H-1B employers in ${name}, from DOL and USCIS.`,
+      // Without the lead, still over the audit's 110-character floor (Pennsylvania and New Jersey fell under it).
+      `The 100 busiest H-1B employers in ${name} each fiscal year, ranked by DOL's certified LCAs and USCIS's approvals, with median pay.`,
       `The busiest H-1B employers in ${name} each fiscal year, from DOL's certified LCAs and USCIS's approvals.`,
     ]);
   }
