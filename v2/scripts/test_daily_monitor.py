@@ -1122,6 +1122,16 @@ def ai_assistant_visits_are_counted() -> None:
     check("newest count is for 2026-11-23" in dm.assistant_fetch_line(dict(fetched, day="2026-11-23"), "2026-11-24"),
           "an old count says which day it's for")
     check("not counted yet" in dm.assistant_fetch_line(None, "2026-11-24"), "no count yet says so")
+    checks = {"day": "2026-11-30", "model": "gemini-2.5-flash", "asked": 3, "cited": 1, "results": [
+        {"q": "How long does PERM take?", "status": "ok", "cited": False},
+        {"q": "How do I check my PERM case?", "status": "ok", "cited": True},
+        {"q": "Where is the EB-2 India cutoff?", "status": "ok", "cited": False},
+        {"q": "A question that failed", "status": "error 429", "cited": False}]}
+    got = dm.ai_answer_line(checks, "2026-12-01")
+    check(got == "AI answers (gemini-2.5-flash with Google Search, 2026-11-30): this site cited in 1 of 3; not cited for: "
+          "How long does PERM take?; Where is the EB-2 India cutoff?", f"the week's AI answers and the misses ({got})")
+    check("12 days old" in dm.ai_answer_line(checks, "2026-12-12"), "an old check says how old")
+    check("not checked yet" in dm.ai_answer_line(None, "2026-12-01"), "no check yet says so")
 
     # The query names its row cap (PostHog's default is 100 rows, which cut 1,501 rows to a sample, Nov 18 2026), and
     # an answer that fills the cap says so in a line.

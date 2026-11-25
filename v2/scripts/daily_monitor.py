@@ -1129,6 +1129,19 @@ def ai_referral_lines(rows, yday: str) -> tuple[str, list[str]]:
 AI_ROWS_CAP = 10_000
 
 
+def ai_answer_line(doc: dict | None, today: str) -> str:
+    """Pure: perm_docs['ai_answer_checks'] (scripts/check_ai_answers.py, Mondays) -> one line: how many of the fixed
+    questions' answers from Gemini with Google Search cite this site, and the questions where it isn't cited."""
+    if not doc:
+        return "AI answers: not checked yet (check_ai_answers.py runs Mondays)"
+    day = str(doc.get("day") or "")
+    age = (dt.date.fromisoformat(today) - dt.date.fromisoformat(day)).days if day else 99
+    head = f"AI answers ({doc.get('model')} with Google Search, {day}): this site cited in {doc.get('cited', 0)} of {doc.get('asked', 0)}"
+    missed = [r["q"] for r in doc.get("results") or [] if r.get("status") == "ok" and not r.get("cited")]
+    line = head + (f"; not cited for: {'; '.join(missed[:4])}" if missed else "")
+    return line + (f" (the newest check is {age} days old)" if age > 8 else "")
+
+
 def assistant_fetch_line(doc: dict | None, yday: str) -> str:
     """Pure: perm_docs['assistant_fetches'] (the server's daily count from nginx's log, permtracker-perf) -> one line:
     how many pages people's AI assistants fetched yesterday to answer someone, by assistant, and the pages they read
@@ -1276,7 +1289,9 @@ def traffic_section() -> dict:
         from lib_db import Database, read_doc  # noqa: PLC0415 - only needed here
 
         yday = (dt.datetime.now(ET).date() - dt.timedelta(days=1)).isoformat()
-        lines.append(assistant_fetch_line(read_doc(Database(), "assistant_fetches"), yday))
+        db = Database()
+        lines.append(assistant_fetch_line(read_doc(db, "assistant_fetches"), yday))
+        lines.append(ai_answer_line(read_doc(db, "ai_answer_checks"), dt.datetime.now(ET).date().isoformat()))
     # lib_db exits when no database is configured (SystemExit): the report names the failed read and goes on.
     except (Exception, SystemExit) as e:  # noqa: BLE001
         lines.append(f"Pages fetched by AI assistants could not be read ({type(e).__name__})")

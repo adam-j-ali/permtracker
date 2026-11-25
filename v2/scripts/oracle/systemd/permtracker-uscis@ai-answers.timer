@@ -1,0 +1,12 @@
+[Unit]
+Description=Schedule for permtracker-uscis@ai-answers
+# A fixed set of questions people ask, put to Gemini with Google Search once a
+# week; the morning report prints how many answers cite this site (Nov 25 2026).
+# Persistent: a Monday the server was down is asked when it comes back.
+[Timer]
+OnCalendar=Mon *-*-* 06:45:00 America/New_York
+Persistent=true
+Unit=permtracker-uscis@ai-answers.service
+
+[Install]
+WantedBy=timers.target
