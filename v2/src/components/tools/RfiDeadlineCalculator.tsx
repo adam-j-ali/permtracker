@@ -10,6 +10,7 @@ import { RuleNotes } from "@/components/tools/RuleNotes";
 import { calculateRFIDueDate, RFI_DUE_DAYS } from "@/lib/perm";
 import { daysBetween } from "@/lib/time";
 import { weekdayName } from "@convex/lib/months";
+import { readerToday } from "@/lib/readerToday";
 
 /**
  * The RFI and audit response deadline, from the date on DOL's letter.
@@ -21,18 +22,13 @@ import { weekdayName } from "@convex/lib/months";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-/** The reader's own calendar date. `toISOString()` is UTC, which after about 8 PM Eastern is already tomorrow. */
-const localToday = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-};
 /** The due day's weekday, with no time zone arithmetic. */
 const WEEKDAY = (iso: string) => weekdayName(iso) ?? "";
 
 export function RfiDeadlineCalculator() {
   const letterId = useId();
   const [letter, setLetter] = useState("");
-  const today = useMemo(() => localToday(), []);
+  const today = useMemo(() => readerToday(), []);
 
   const result = useMemo(() => {
     if (!DATE_RE.test(letter)) return null;

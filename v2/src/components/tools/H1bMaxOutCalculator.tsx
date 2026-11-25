@@ -11,6 +11,7 @@ import { RuleNotes } from "@/components/tools/RuleNotes";
 import { calculateH1bMaxOut, PERM_ADVANCE_DAYS, type H1bMaxOutResult } from "@/lib/perm";
 import { formatInt } from "@/lib/format";
 import { KeepWhole } from "@/components/ui/keep-whole";
+import { readerToday } from "@/lib/readerToday";
 
 type Outcome = { kind: "error"; error: string } | { kind: "ok"; r: H1bMaxOutResult; warnings: string[] };
 
@@ -27,11 +28,6 @@ type Outcome = { kind: "error"; error: string } | { kind: "ok"; r: H1bMaxOutResu
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-/** The reader's own calendar date. `toISOString()` is UTC, which after about 8 PM Eastern is already tomorrow. */
-const localToday = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-};
 /** "June 30, 2026", with no time zone arithmetic, so every reader sees the same day. */
 const long = (iso: string) => longDate(iso) ?? iso;
 
@@ -42,7 +38,7 @@ export function H1bMaxOutCalculator() {
   const [start, setStart] = useState("");
   const [outside, setOutside] = useState("");
   const [perm, setPerm] = useState("");
-  const today = useMemo(() => localToday(), []);
+  const today = useMemo(() => readerToday(), []);
 
   const result = useMemo((): Outcome | null => {
     if (!DATE_RE.test(start)) return null;

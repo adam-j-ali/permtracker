@@ -9,6 +9,7 @@ import { DateRuler } from "@/components/tools/DateRuler";
 import { EAD_CATEGORIES, EXTENSION_DAYS, eadExtension, type EadVerdict } from "@/lib/eadExtension";
 import { SelectedInFull } from "@/components/tools/SelectedInFull";
 import { KeepWhole } from "@/components/ui/keep-whole";
+import { readerToday } from "@/lib/readerToday";
 
 /** A category as the receipt prints it, "(c)(9)", with its name. */
 function categoryLabel(c: { code: string; label: string }): string {
@@ -25,11 +26,6 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 /** "June 30, 2026", with no time zone arithmetic, so every reader sees the same day. */
 const long = (iso: string) => longDate(iso) ?? iso;
 
-/** The reader's own calendar date. `toISOString()` is UTC, which after about 8 PM Eastern is already tomorrow. */
-const localToday = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-};
 
 function verdictText(v: EadVerdict, expires: string): { head: string; body: string; ok: boolean } {
   switch (v.kind) {
@@ -158,7 +154,7 @@ export function EadExtensionCalculator() {
                 to={result.through}
                 fromLabel="The card expires"
                 toLabel="Still valid with the receipt through"
-                today={localToday()}
+                today={readerToday()}
                 emptyHint=""
               />
             ) : null}

@@ -9,6 +9,7 @@ import { DateRuler } from "@/components/tools/DateRuler";
 import { RuleNotes } from "@/components/tools/RuleNotes";
 import { calculatePendingExtension, EXTENSION_PENDING_DAYS } from "@/lib/perm";
 import { KeepWhole } from "@/components/ui/keep-whole";
+import { readerToday } from "@/lib/readerToday";
 
 /**
  * The 240-day rule, 8 CFR 274a.12(b)(20): working for the same employer while a timely filed extension waits. The
@@ -16,10 +17,6 @@ import { KeepWhole } from "@/components/ui/keep-whole";
  */
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const localToday = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-};
 const long = (iso: string) =>
   new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" });
 
@@ -27,7 +24,7 @@ export function PendingExtensionCalculator() {
   const ids = { end: useId(), filed: useId() };
   const [end, setEnd] = useState("");
   const [filed, setFiled] = useState("");
-  const today = useMemo(() => localToday(), []);
+  const today = useMemo(() => readerToday(), []);
   const r = useMemo(() => {
     if (!DATE_RE.test(end) || !DATE_RE.test(filed)) return null;
     try {

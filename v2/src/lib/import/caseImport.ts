@@ -20,6 +20,7 @@ import type { CaseCardData } from "@convex/lib/caseListTypes";
 import { calculateI140FilingDeadline } from "@/lib/perm";
 import { captureError } from "@/lib/sentry";
 import { csvDate, csvToCases, looksLikeCsv } from "./csvImport";
+import { localDay, readerToday } from "@/lib/readerToday";
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -363,7 +364,7 @@ function normalizeDate(value: unknown): string | undefined {
     // Anything else the browser can read, taken as the calendar day it names locally.
     const date = new Date(trimmed);
     if (!isNaN(date.getTime())) {
-      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+      return localDay(date);
     }
     return undefined;
   }
@@ -745,8 +746,7 @@ function fillMissingExpiration(c: Record<string, unknown>, row: number): FilledE
   if (typeof cert !== "string" || !cert || c.eta9089ExpirationDate) return null;
   const expirationDate = calculateI140FilingDeadline(cert);
   c.eta9089ExpirationDate = expirationDate;
-  const now = new Date();
-  const todayLocal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const todayLocal = readerToday();
   return {
     row,
     employerName: typeof c.employerName === "string" ? c.employerName : undefined,

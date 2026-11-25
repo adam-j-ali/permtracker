@@ -11,6 +11,7 @@ import { RuleNotes } from "@/components/tools/RuleNotes";
 import { calculatePriorityDateRetention, RETENTION_DAYS, type RetentionResult } from "@/lib/perm";
 import { formatInt } from "@/lib/format";
 import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
+import { readerToday } from "@/lib/readerToday";
 
 type Outcome = { kind: "error"; error: string } | { kind: "ok"; r: RetentionResult; warnings: string[] };
 
@@ -26,11 +27,6 @@ type Outcome = { kind: "error"; error: string } | { kind: "ok"; r: RetentionResu
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-/** The reader's own calendar date. `toISOString()` is UTC, which after about 8 PM Eastern is already tomorrow. */
-const localToday = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-};
 /** "June 30, 2026", with no time zone arithmetic, so every reader sees the same day. */
 const long = (iso: string) => longDate(iso) ?? iso;
 
@@ -41,7 +37,7 @@ export function PriorityDateRetentionCalculator() {
   const [approved, setApproved] = useState("");
   const [i485, setI485] = useState("");
   const [withdrew, setWithdrew] = useState("");
-  const today = useMemo(() => localToday(), []);
+  const today = useMemo(() => readerToday(), []);
 
   const result = useMemo((): Outcome | null => {
     if (!DATE_RE.test(approved)) return null;

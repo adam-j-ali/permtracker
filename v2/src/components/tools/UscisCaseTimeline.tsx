@@ -12,6 +12,7 @@ import { DateRuler, type RulerMark } from "@/components/tools/DateRuler";
 import { SelectedInFull } from "@/components/tools/SelectedInFull";
 import { caseMarks, congressNote, inquiryAnswer, ombudsmanFrom, OMBUDSMAN, postedInSentence, type InquiryAnswer } from "@/lib/uscisInquiry";
 import { formatInt } from "@/lib/format";
+import { readerToday } from "@/lib/readerToday";
 
 /** One line of USCIS's newest posting as the page passes it: a form, a category and an office. */
 export interface InquiryRow {
@@ -44,11 +45,6 @@ const SELECT =
 const INPUT =
   "mt-1.5 block min-h-11 w-full min-w-0 border-2 border-input bg-background px-3 py-2 text-base focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
 
-/** The reader's own calendar date. `toISOString()` is UTC, which after about 8 PM Eastern is already tomorrow. */
-const localToday = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-};
 const long = (iso: string) => longDate(iso) ?? iso;
 
 const E_REQUEST = "https://egov.uscis.gov/e-request/ccpt";
@@ -80,7 +76,7 @@ export function UscisCaseTimeline({ rows, published, formNames }: { rows: Inquir
   const [office, setOffice] = useState("");
   const row = offices.find((r) => r.office === office) ?? offices[0] ?? null;
   const [receipt, setReceipt] = useState("");
-  const today = useMemo(() => localToday(), []);
+  const today = useMemo(() => readerToday(), []);
 
   const dated = row !== null && DATE_RE.test(receipt) && receipt <= today;
   const notYet = DATE_RE.test(receipt) && receipt > today;

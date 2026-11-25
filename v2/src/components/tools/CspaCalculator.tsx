@@ -15,6 +15,7 @@ import { calculateCspa, CSPA_FINAL_ACTION_POLICY_FROM, parseCutoff, type Age, ty
 import { bulletinsOf, type BulletinLine, type LineChartSet } from "@/lib/bulletinLineHistory";
 import { cn } from "@/lib/utils";
 import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
+import { readerToday } from "@/lib/readerToday";
 
 /** The Label component's look, for the rows that are a group rather than one field. */
 const LABEL = "block text-sm font-semibold leading-none";
@@ -38,11 +39,6 @@ const FILING_CHARTS: readonly { value: ChartKind; label: string }[] = [
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-/** The reader's own calendar date. `toISOString()` is UTC, which after about 8 PM Eastern is already tomorrow. */
-const localToday = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-};
 
 const COUNTRIES: { code: CountryKey; label: string }[] = [
   { code: "worldwide", label: "All other countries" },
@@ -157,7 +153,7 @@ export function CspaCalculator({
   familyCategories: readonly string[];
 }) {
   // Read in the browser: nothing below uses it until the reader has entered dates, so the server render never does.
-  const today = useMemo(() => localToday(), []);
+  const today = useMemo(() => readerToday(), []);
   const ids = {
     birth: useId(),
     category: useId(),

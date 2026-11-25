@@ -12,6 +12,7 @@ import { formatInt } from "@/lib/format";
 import { calculateCapGap, calculateOptUnemployment } from "@/lib/perm";
 import { cn } from "@/lib/utils";
 import { KeepWhole } from "@/components/ui/keep-whole";
+import { readerToday } from "@/lib/readerToday";
 
 const STEM_CHOICES = [
   { value: "no", label: "No: post-completion OPT" },
@@ -24,10 +25,6 @@ const STEM_CHOICES = [
  */
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const localToday = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-};
 const long = (iso: string) =>
   new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" });
 const INPUT =
@@ -47,7 +44,7 @@ export function CapGapPart() {
   const [start, setStart] = useState("");
   const [filed, setFiled] = useState("");
   const [approved, setApproved] = useState("");
-  const today = useMemo(() => localToday(), []);
+  const today = useMemo(() => readerToday(), []);
   const r = useMemo(() => {
     if (![optEnds, start, filed].every((d) => DATE_RE.test(d))) return null;
     try {
@@ -126,7 +123,7 @@ export function OptDaysPart() {
   const [stem, setStem] = useState<"no" | "yes">("no");
   const [used, setUsed] = useState("");
   const [since, setSince] = useState("");
-  const today = useMemo(() => localToday(), []);
+  const today = useMemo(() => readerToday(), []);
   const usedNum = used.trim() === "" ? 0 : Number(used);
   const bad = !Number.isFinite(usedNum) || usedNum < 0 || usedNum > 400;
   const r = useMemo(() => {

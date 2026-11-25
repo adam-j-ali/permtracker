@@ -4,6 +4,7 @@ import { screen } from "@testing-library/react";
 import { renderWithProviders } from "../../../../test-utils/render-utils";
 import { CaseCard } from "../CaseCard";
 import type { CaseCardData } from "@convex/lib/caseListTypes";
+import { localDay } from "@/lib/readerToday";
 
 // One spy for every mutation, so a test can prove none ran.
 const mutationSpy = vi.hoisted(() => vi.fn());
@@ -124,7 +125,7 @@ describe("CaseCard - Next Deadline", () => {
   const inDays = (n: number) => {
     const d = new Date();
     d.setDate(d.getDate() + n);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    return localDay(d);
   };
 
   it.each([

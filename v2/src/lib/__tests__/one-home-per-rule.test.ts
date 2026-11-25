@@ -84,6 +84,14 @@ const RULES: readonly Rule[] = [
     ].join("\n"),
   },
   {
+    name: "a day on the reader's own calendar",
+    // Nine calculators and the case import each typed this (Nov 25 2026); one more copy is how a fix reaches eight.
+    homes: ["src/lib/readerToday.ts"],
+    copy: /getFullYear\(\)\}-\$\{String\(\w+\.getMonth\(\) \+ 1\)/,
+    probe: '  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;',
+    spare: "  const year = d.getUTCFullYear(); // a UTC day, the server's count",
+  },
+  {
     name: "a PERM case's decision estimate, assembled",
     // Each assembler passes every input (stragglers, the measured range, the stage figures, the RFI clock); one that
     // left five out quoted employer pages a different range than the case page gave a case filed the same day

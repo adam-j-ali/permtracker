@@ -10,6 +10,7 @@ import { RuleNotes } from "@/components/tools/RuleNotes";
 import { calculatePWDExpiration } from "@/lib/perm";
 import { daysBetween } from "@/lib/time";
 import { KeepWhole } from "@/components/ui/keep-whole";
+import { readerToday } from "@/lib/readerToday";
 
 /**
  * When a prevailing wage determination expires, from its determination date.
@@ -23,12 +24,6 @@ import { KeepWhole } from "@/components/ui/keep-whole";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-/** The reader's own calendar date. `toISOString()` is UTC, which after about 8 PM Eastern is already tomorrow. */
-const localToday = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-};
-
 function whichRule(determination: string): string {
   const month = Number(determination.slice(5, 7));
   const day = Number(determination.slice(8, 10));
@@ -40,7 +35,7 @@ function whichRule(determination: string): string {
 export function PwdValidityCalculator() {
   const detId = useId();
   const [det, setDet] = useState("");
-  const today = useMemo(() => localToday(), []);
+  const today = useMemo(() => readerToday(), []);
 
   const result = useMemo(() => {
     if (!DATE_RE.test(det)) return null;
