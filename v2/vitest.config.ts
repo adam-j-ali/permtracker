@@ -244,6 +244,7 @@ const ISOLATED_UNIT_FILES = [
   "src/lib/db/__tests__/entityBrowse.test.ts",
   "src/lib/db/__tests__/liveEmployers.test.ts",
   "src/lib/db/__tests__/rfiBlend.test.ts",
+  "src/lib/db/__tests__/consularPosts.test.ts",
   "src/lib/db/__tests__/visaIssuances.test.ts",
   "src/lib/db/entityLinks.test.ts",
   "src/lib/db/uscisCaseStatus.test.ts",

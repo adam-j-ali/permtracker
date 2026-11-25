@@ -48,7 +48,7 @@ export const revalidate = 86400;
 export async function generateStaticParams() {
   try {
     const { posts } = await getConsularIndex();
-    return [...posts].sort((a, b) => b.employment - a.employment).slice(0, 30).map((p) => ({ post: p.slug }));
+    return [...posts].sort((a, b) => (b.employment ?? 0) - (a.employment ?? 0)).slice(0, 30).map((p) => ({ post: p.slug }));
   } catch {
     return [];
   }
@@ -161,7 +161,12 @@ export default async function ConsularPostPage({ params }: { params: Promise<{ p
       <header>
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">{post.name}: immigrant visas</h1>{" "}
         <p className="mt-4 max-w-3xl text-lg leading-relaxed text-muted-foreground">
-          {post.issued > 0 && index.issuedFrom && index.issuedTo ? (
+          {post.issued === null ? (
+            <>
+              State&apos;s monthly tables of the visas each consulate issued couldn&apos;t be read just now, so this page
+              doesn&apos;t say how many {post.name} issued. The count comes back with the next refresh.
+            </>
+          ) : post.issued > 0 && post.employment !== null && index.issuedFrom && index.issuedTo ? (
             <>
               The consulate in {post.name} issued{" "}
               <span className="font-heading font-bold tabular-nums text-foreground">{formatInt(post.issued)}</span> immigrant

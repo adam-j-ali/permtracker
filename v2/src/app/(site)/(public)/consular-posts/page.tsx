@@ -68,7 +68,7 @@ export default async function ConsularPostsPage() {
   const { asOf, posts } = index;
   const listed = posts.filter((p) => p.now);
   const caughtUp = asOf ? listed.filter((p) => monthsBehind(p.now?.employment, asOf) === 0).length : 0;
-  const employmentAbroad = posts.reduce((a, p) => a + p.employment, 0);
+  const employmentAbroad = index.issuedTo ? posts.reduce((a, p) => a + (p.employment ?? 0), 0) : null;
   // One chart per category of State's tool: employment, family preference and immediate relative.
   const behindIn = (cat: IvCategory): BarRow[] =>
     asOf
@@ -141,9 +141,11 @@ export default async function ConsularPostsPage() {
         <Figure kind="official"
           label="Employment visas issued abroad"
           icon={<StampIcon weight="bold" className="text-primary-text" />}
-          value={formatInt(employmentAbroad)}
+          value={employmentAbroad === null ? "Not available" : formatInt(employmentAbroad)}
           note={
-            index.issuedFrom && index.issuedTo
+            employmentAbroad === null
+              ? "State's monthly tables of the visas each consulate issued couldn't be read just now. The count comes back with the next refresh."
+              : index.issuedFrom && index.issuedTo
               ? `${monthName(index.issuedFrom)} to ${monthName(index.issuedTo)}. ${monthName(index.issuedTo)} is the newest month State has posted: it posts each month's issuances months later`
               : undefined
           }

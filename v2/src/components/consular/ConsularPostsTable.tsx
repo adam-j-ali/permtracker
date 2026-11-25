@@ -12,6 +12,15 @@ import { formatInt } from "@/lib/format";
  * back that is from State's update, and the immigrant visas the post issued in the newest 12
  * published months. Sorted by employment visas, so the posts most PERM cases reach come first.
  */
+/** A post's visas issued, or a plain word when State's tables couldn't be read (never a 0 that isn't one). */
+function IssuedCell({ n }: { n: number | null }) {
+  return n === null ? (
+    <span className="text-muted-foreground">Not available</span>
+  ) : (
+    <span className="tabular-nums">{formatInt(n)}</span>
+  );
+}
+
 export function ConsularPostsTable({ posts, asOf }: { posts: PostSummary[]; asOf: string | null }) {
   const month = (cat: IvCategory): StatColumn<PostSummary> => ({
     key: cat,
@@ -49,7 +58,7 @@ export function ConsularPostsTable({ posts, asOf }: { posts: PostSummary[]; asOf
       label: "Employment visas, 12 months",
       numeric: true,
       sortValue: (p) => p.employment,
-      render: (p) => <span className="tabular-nums">{formatInt(p.employment)}</span>,
+      render: (p) => <IssuedCell n={p.employment} />,
     },
     {
       key: "issued",
@@ -57,7 +66,7 @@ export function ConsularPostsTable({ posts, asOf }: { posts: PostSummary[]; asOf
       numeric: true,
       secondary: true,
       sortValue: (p) => p.issued,
-      render: (p) => <span className="tabular-nums">{formatInt(p.issued)}</span>,
+      render: (p) => <IssuedCell n={p.issued} />,
     },
   ];
   const csv: CsvSpec<PostSummary> = {

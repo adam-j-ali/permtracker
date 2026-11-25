@@ -25,9 +25,12 @@ export interface PostSummary {
   name: string;
   /** The newest reading's three months; null for a post the tool doesn't list. */
   now: Record<IvCategory, IvCell> | null;
-  /** Immigrant visas the post issued in the newest 12 published months, all classes and employment. */
-  issued: number;
-  employment: number;
+  /**
+   * Immigrant visas the post issued in the newest 12 published months, all classes and employment. Null when State's
+   * monthly tables couldn't be read: a failed read is never "none issued" (Nov 25 2026).
+   */
+  issued: number | null;
+  employment: number | null;
 }
 
 export interface ConsularIndex {
@@ -110,7 +113,15 @@ export const getConsularIndex = cache(async (): Promise<ConsularIndex> => {
     .filter(([, e]) => e.tool.length || e.issued > 0)
     .map(([key, e]) => {
       const name = postName(key, e.label, e.toolName);
-      return { key, slug: postSlug(name), name, now: e.tool.length ? cellsOf(e.tool) : null, issued: e.issued, employment: e.eb };
+      const known = summary !== null;
+      return {
+        key,
+        slug: postSlug(name),
+        name,
+        now: e.tool.length ? cellsOf(e.tool) : null,
+        issued: known ? e.issued : null,
+        employment: known ? e.eb : null,
+      };
     })
     .sort((a, b) => a.name.localeCompare(b.name));
   return { asOf, readings, posts, issuedFrom, issuedTo };
