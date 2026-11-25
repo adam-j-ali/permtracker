@@ -72,6 +72,12 @@ export const TABLE_RETENTION: Record<string, { kind: RetentionKind; rule: string
   siteReviews: { kind: "record", rule: "kept, a deleted account's too (owner, Nov 4 2026); spam declined" },
   siteReviewTally: { kind: "bounded", rule: "one row, the count by stars" },
   employerAlerts: { kind: "subscription", rule: "deleted when stopped or unconfirmed after 30 days" },
+  uscisWatches: {
+    kind: "subscription",
+    rule: "a receipt alert: deleted when stopped, unconfirmed after 30 days, with the account, or a year after a final status with nothing new",
+  },
+  uscisReceipts: { kind: "bounded", rule: "one row per watched receipt (its newest status), deleted when its last watch goes" },
+  uscisWatchMeta: { kind: "bounded", rule: "one row, the count of watched receipts held to the 2,000 cap" },
   firmClaims: { kind: "bounded", rule: "one row per address and firm" },
   firmProfiles: { kind: "bounded", rule: "one row per verified firm" },
   alertOutbox: { kind: "pruned", rule: "a row is deleted once its email is sent" },

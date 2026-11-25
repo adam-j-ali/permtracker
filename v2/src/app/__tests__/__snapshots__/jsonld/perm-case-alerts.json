@@ -37,6 +37,14 @@
    },
    {
     "@type": "Question",
+    "name": "Can I get alerts for my USCIS receipt too?",
+    "acceptedAnswer": {
+     "@type": "Answer",
+     "text": "Yes, in a beta. Enter the receipt number from the I-797 notice in the USCIS receipt box on this page. We check it with USCIS every 4 hours and after USCIS's overnight updates, and email you when its status changes. Each email says when we checked."
+    }
+   },
+   {
+    "@type": "Question",
     "name": "What happens after DOL decides my case?",
     "acceptedAnswer": {
      "@type": "Answer",

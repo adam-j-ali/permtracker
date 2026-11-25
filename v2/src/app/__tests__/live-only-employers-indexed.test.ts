@@ -194,13 +194,13 @@ describe("the search returns live-only employers as their own shape", () => {
     // The client now asks on EVERY settled query rather than only when its
     // downloaded slice came up empty, because whether the table filled says
     // nothing about whether an unpublished employer also matches. That would
-    // be a cost regression if both halves ran every time: `searchByName` is a
+    // be a cost regression if both halves ran every time: `searchNameOrLetters` (the substring LIKE and its letters twin) is a
     // LIKE the database serves by walking 71,512 employer rows, against an
     // indexed prefix range whose worst measured 2-char prefix touches 5,365.
     // `scope=live` is what keeps the expensive half on its original trigger.
     const route = source("app/api/perm-entities/[kind]/route.ts");
     expect(route).toContain('url.searchParams.get("scope") === "live"');
-    expect(route).toMatch(/liveOnly \? Promise\.resolve\(\[\]\) : searchByName/);
+    expect(route).toMatch(/liveOnly \? Promise\.resolve\(\[\]\) : searchNameOrLetters/);
 
     // A server-side control no client uses is dead code that reads as
     // protection - the same defect as the concurrency header whose only
