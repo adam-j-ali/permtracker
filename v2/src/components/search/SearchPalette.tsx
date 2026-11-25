@@ -97,6 +97,19 @@ const RECENT_GROUP =
 /** The page groups, in the order the Data menu has them. */
 const PAGE_GROUPS = ["Go to", ...GROUPS, "Learn"] as const;
 
+/**
+ * Every group the index files a page under, in the menu's order, the index's own groups (USCIS offices, form pages,
+ * review stages) before Learn. Until Nov 25 2026 only PAGE_GROUPS rendered, so those pages were in the index and never
+ * shown: "hartford field office" found no office.
+ */
+function groupsOf(pages: readonly { group: string }[]): string[] {
+  const used = [...new Set(pages.map((p) => p.group))];
+  const known = new Set<string>(PAGE_GROUPS);
+  const head = PAGE_GROUPS.filter((g) => g !== "Learn" && used.includes(g));
+  const extra = used.filter((g) => !known.has(g));
+  return [...head, ...extra, ...(used.includes("Learn") ? ["Learn"] : [])];
+}
+
 /** Rows per kind in the palette. The route says whether more match. */
 const PALETTE_PER_KIND = 5;
 
@@ -147,6 +160,7 @@ export function SearchPalette({
   // compiler can see the computation it is memoizing. Behaviour is identical,
   // staticIndex takes no arguments.
   const pages = React.useMemo(() => staticIndex(), []);
+  const pageGroups = React.useMemo(() => groupsOf(pages), [pages]);
   const caseNumber = normaliseCaseNumber(query);
   // A USCIS receipt typed here goes to its own page, which reads it and saves it in this browser (Nov 25 2026).
   const receipt = caseNumber ? null : normaliseReceipt(query);
@@ -580,7 +594,7 @@ export function SearchPalette({
               All results for &ldquo;{query.trim()}&rdquo;
             </Command.Item>
           ) : null}
-          {PAGE_GROUPS.map(
+          {pageGroups.map(
             (group) => (
               <Command.Group
                 key={group}
