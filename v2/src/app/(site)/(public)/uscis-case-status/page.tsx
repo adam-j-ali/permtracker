@@ -56,7 +56,7 @@ import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 
 const TITLE = "USCIS Case Status by Receipt Number";
 const DESCRIPTION =
-  "Look up a USCIS receipt number like EAC2190123456: which office issued it, what its digits encode, and where USCIS shows the case status today.";
+  "Look up a USCIS receipt number like EAC3512345678: which office issued it, what its digits encode, and where USCIS shows the case status today.";
 
 const USCIS_STATUS_URL = "https://egov.uscis.gov/casestatus/landing.do";
 const USCIS_EMMA_URL = "https://www.uscis.gov/tools/meet-emma-our-virtual-assistant";
@@ -86,7 +86,7 @@ function faqsFor(enabled: boolean) {
   return [
     {
       q: "What is a USCIS receipt number?",
-      a: "The 13-character identifier USCIS assigns to a filing: three letters and ten digits, like EAC2190123456. USCIS's glossary says the letters are the office that took the case (EAC, WAC, LIN, SRC, NBC, MSC or IOE) and the ten digits are the number itself. It's the key to the case at USCIS, the way a G-100 number is the key to a PERM case at the Department of Labor.",
+      a: "The 13-character identifier USCIS assigns to a filing: three letters and ten digits, like EAC3512345678. USCIS's glossary says the letters are the office that took the case (EAC, WAC, LIN, SRC, NBC, MSC or IOE) and the ten digits are the number itself. It's the key to the case at USCIS, the way a G-100 number is the key to a PERM case at the Department of Labor.",
     },
     {
       q: "Where do I find my receipt number?",

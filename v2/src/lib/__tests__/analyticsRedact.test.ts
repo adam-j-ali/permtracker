@@ -34,12 +34,12 @@ describe("click events never carry a client's details or a filing's identifiers"
       $el_text: "G-100-25123-123456",
       $elements_chain:
         'a.case:text="G-100-25123-123456"href="/perm-case-status?case=G-100-25123-123456"nth-child="1"nth-of-type="1";' +
-        'li:text="Adobe Inc. JO-A-300-26001-000123 IOE0912345678 me@example.com"nth-child="3"nth-of-type="3"',
+        'li:text="Adobe Inc. JO-A-300-26001-000123 IOE9912345678 me@example.com"nth-child="3"nth-of-type="3"',
     };
     scrubClickEvent(props);
     expect(props.$el_text).toBe("[redacted]");
     const chain = String(props.$elements_chain);
-    expect(chain).not.toMatch(/G-100-25123|JO-A-300|IOE0912345678|me@example\.com/);
+    expect(chain).not.toMatch(/G-100-25123|JO-A-300|IOE9912345678|me@example\.com/);
     expect(chain).toContain('text="Adobe Inc. [redacted]');
     expect(chain).toContain("href=\"/perm-case-status?case=[redacted]\"");
   });

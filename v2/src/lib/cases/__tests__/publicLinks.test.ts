@@ -9,7 +9,7 @@ describe("a case's numbers and codes, linked where the public site has a page", 
   });
 
   it("links a USCIS receipt to its lookup, and a job code to its wage levels", () => {
-    expect(receiptPageHref("eac2190123456")).toBe("/uscis-case-status?receipt=EAC2190123456");
+    expect(receiptPageHref("eac3590123456")).toBe("/uscis-case-status?receipt=EAC3590123456");
     expect(socWagePageHref("15-1252.00")).toMatch(/^\/tools\/wage-levels\?soc=15-1252/);
   });
 

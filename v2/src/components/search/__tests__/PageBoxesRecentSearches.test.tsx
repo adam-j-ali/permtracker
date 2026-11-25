@@ -72,7 +72,7 @@ describe("the case box", () => {
     render(<CaseLookupForm />);
     const box = screen.getByRole("textbox", { name: "Your PERM case number" });
 
-    fireEvent.change(box, { target: { value: "EAC2190123456" } });
+    fireEvent.change(box, { target: { value: "EAC3590123456" } });
     fireEvent.submit(box.closest("form")!);
 
     expect(window.localStorage.getItem(RECENT_SEARCHES_KEY)).toBeNull();

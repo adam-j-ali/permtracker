@@ -101,8 +101,8 @@ describe("reads a page can live without", () => {
 
   it.each<[string, () => Promise<unknown>, unknown]>([
     ["publicData.liveOnlyLastChanged", () => liveOnlyLastChanged("acme"), null],
-    ["uscisCaseStatus.readStored", () => readStored("IOE0912345678"), null],
-    ["uscisCaseStatus.touchRead", () => touchRead("IOE0912345678", new Date(0)), undefined],
+    ["uscisCaseStatus.readStored", () => readStored("IOE9912345678"), null],
+    ["uscisCaseStatus.touchRead", () => touchRead("IOE9912345678", new Date(0)), undefined],
     ["visaIssuances.employmentBy", () => employmentBy("fsc", "2026-01", "2026-06"), []],
     ["reference.cityGeo", () => cityGeo("appleton-wi"), null],
     ["reference.priceParity", () => priceParity("55087"), null],

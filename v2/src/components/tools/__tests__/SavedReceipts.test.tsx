@@ -20,36 +20,36 @@ describe("SavedReceipts", () => {
   });
 
   it("saves the receipt on the page by itself, links it back, and takes a name after (Nov 25 2026)", async () => {
-    render(<SavedReceipts current="EAC2190123456" />);
+    render(<SavedReceipts current="EAC3590123456" />);
     await act(async () => {});
-    expect(screen.getByRole("link", { name: "EAC2190123456" }).getAttribute("href")).toBe(
-      "/uscis-case-status?receipt=EAC2190123456",
+    expect(screen.getByRole("link", { name: "EAC3590123456" }).getAttribute("href")).toBe(
+      "/uscis-case-status?receipt=EAC3590123456",
     );
-    expect(JSON.parse(window.localStorage.getItem(STORAGE_KEY)!)).toEqual([{ receipt: "EAC2190123456", label: "" }]);
-    fireEvent.change(screen.getByLabelText(/A name for EAC2190123456/), { target: { value: "Mum's EAD" } });
-    fireEvent.click(screen.getByRole("button", { name: "Name it, EAC2190123456" }));
-    expect(JSON.parse(window.localStorage.getItem(STORAGE_KEY)!)).toEqual([{ receipt: "EAC2190123456", label: "Mum's EAD" }]);
+    expect(JSON.parse(window.localStorage.getItem(STORAGE_KEY)!)).toEqual([{ receipt: "EAC3590123456", label: "" }]);
+    fireEvent.change(screen.getByLabelText(/A name for EAC3590123456/), { target: { value: "Mum's EAD" } });
+    fireEvent.click(screen.getByRole("button", { name: "Name it, EAC3590123456" }));
+    expect(JSON.parse(window.localStorage.getItem(STORAGE_KEY)!)).toEqual([{ receipt: "EAC3590123456", label: "Mum's EAD" }]);
     // Named already: no second offer, and nothing to save by hand.
     expect(screen.queryByRole("button", { name: /^Name it/ })).toBeNull();
     expect(screen.queryByRole("button", { name: /^Save / })).toBeNull();
   });
 
   it("puts the newest receipt first and doesn't add one twice", async () => {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify([{ receipt: "IOE0912345678", label: "Mine" }]));
-    const { unmount } = render(<SavedReceipts current="eac 2190123456" />);
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify([{ receipt: "IOE9912345678", label: "Mine" }]));
+    const { unmount } = render(<SavedReceipts current="eac 3590123456" />);
     await act(async () => {});
     unmount();
-    render(<SavedReceipts current="EAC2190123456" />);
+    render(<SavedReceipts current="EAC3590123456" />);
     await act(async () => {});
-    expect(readSaved().map((s) => s.receipt)).toEqual(["EAC2190123456", "IOE0912345678"]);
+    expect(readSaved().map((s) => s.receipt)).toEqual(["EAC3590123456", "IOE9912345678"]);
   });
 
   it("removes a receipt", async () => {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify([{ receipt: "IOE0912345678", label: "" }]));
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify([{ receipt: "IOE9912345678", label: "" }]));
     render(<SavedReceipts current={null} />);
     await act(async () => {});
-    fireEvent.click(screen.getByRole("button", { name: "Remove IOE0912345678" }));
-    expect(screen.queryByRole("link", { name: "IOE0912345678" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Remove IOE9912345678" }));
+    expect(screen.queryByRole("link", { name: "IOE9912345678" })).toBeNull();
     expect(JSON.parse(window.localStorage.getItem(STORAGE_KEY)!)).toEqual([]);
   });
 
@@ -78,10 +78,10 @@ describe("SavedReceipts", () => {
     } as unknown as Storage;
     const refuse = vi.spyOn(window, "localStorage", "get").mockReturnValue(refusing);
     try {
-      render(<SavedReceipts current="EAC2190123456" />);
+      render(<SavedReceipts current="EAC3590123456" />);
       await act(async () => {});
       expect(screen.getByRole("status").textContent).toMatch(/isn't letting the page save/);
-      expect(screen.getByRole("link", { name: "EAC2190123456" })).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: "EAC3590123456" })).toBeInTheDocument();
     } finally {
       refuse.mockRestore();
     }

@@ -17,13 +17,13 @@ import {
  */
 describe("normaliseReceipt", () => {
   it("accepts USCIS's documented shape, upper-cased, separators stripped", () => {
-    expect(normaliseReceipt("EAC2190123456")).toBe("EAC2190123456");
-    expect(normaliseReceipt(" eac-21-901-23456 ")).toBe("EAC2190123456");
-    expect(normaliseReceipt("wac 21 901 23456")).toBe("WAC2190123456");
+    expect(normaliseReceipt("EAC3590123456")).toBe("EAC3590123456");
+    expect(normaliseReceipt(" eac-35-901-23456 ")).toBe("EAC3590123456");
+    expect(normaliseReceipt("wac 35 901 23456")).toBe("WAC3590123456");
   });
 
   it("accepts USCIS's masked form, three letters then * and nine digits", () => {
-    expect(normaliseReceipt("EAC*190123456")).toBe("EAC*190123456");
+    expect(normaliseReceipt("EAC*590123456")).toBe("EAC*590123456");
   });
 
   it("refuses everything that USCIS's 422 would refuse", () => {
@@ -51,7 +51,7 @@ describe("normaliseReceipt", () => {
 
 describe("decodeReceipt", () => {
   it("names the office for every glossary prefix", () => {
-    const d = decodeReceipt("EAC2190123456");
+    const d = decodeReceipt("EAC3590123456");
     expect(d).not.toBeNull();
     expect(d!.prefix).toBe("EAC");
     expect(d!.office?.name).toBe("Vermont Service Center");
@@ -65,9 +65,9 @@ describe("decodeReceipt", () => {
   });
 
   it("reads a 9 after the year as the lockbox series, a counter for the year, never a day 9xx", () => {
-    // Nov 22 2026: the page printed "Day 901" for EAC2190123456; no fiscal year has a 901st day.
-    expect(decodeReceipt("EAC2190123456")!.digits).toEqual({ series: "lockbox", fiscalYear: 2021, counter: 123456 });
-    expect(decodeReceipt("MSC2690000001")!.digits).toEqual({ series: "lockbox", fiscalYear: 2026, counter: 1 });
+    // Nov 22 2026: the page printed "Day 901" for EAC3590123456; no fiscal year has a 901st day.
+    expect(decodeReceipt("EAC3590123456")!.digits).toEqual({ series: "lockbox", fiscalYear: 2035, counter: 123456 });
+    expect(decodeReceipt("MSC3690000001")!.digits).toEqual({ series: "lockbox", fiscalYear: 2036, counter: 1 });
   });
 
   it("gives an online (IOE) number no year or day: its digits are one running count", () => {
@@ -81,15 +81,15 @@ describe("decodeReceipt", () => {
   });
 
   it("keeps an unknown prefix rather than refusing it, because USCIS's regex accepts any three letters", () => {
-    const d = decodeReceipt("ZZZ2190123456");
+    const d = decodeReceipt("ZZZ3590123456");
     expect(d).not.toBeNull();
     expect(d!.office).toBeNull();
     expect(d!.digits.series).toBe("lockbox");
   });
 
   it("gives a masked receipt nothing to read, IOE included", () => {
-    expect(decodeReceipt("SRC*190123456")!.masked).toBe(true);
-    expect(decodeReceipt("SRC*190123456")!.digits).toEqual({ series: "masked" });
+    expect(decodeReceipt("SRC*590123456")!.masked).toBe(true);
+    expect(decodeReceipt("SRC*590123456")!.digits).toEqual({ series: "masked" });
     expect(decodeReceipt("IOE*093912345")!.digits).toEqual({ series: "masked" });
   });
 
@@ -115,7 +115,7 @@ describe("decodeReceipt", () => {
 describe("looksLikeReceipt", () => {
   it("catches a half-typed receipt so the DOL page can point at the right one", () => {
     expect(looksLikeReceipt("EAC2190")).toBe(true);
-    expect(looksLikeReceipt("ioe0912345678")).toBe(true);
+    expect(looksLikeReceipt("ioe9912345678")).toBe(true);
     expect(looksLikeReceipt("EAC*1234")).toBe(true);
   });
 
@@ -178,7 +178,7 @@ describe("readPartialReceipt: a receipt read as it's typed (RT1, Nov 25 2026)", 
     expect(readPartialReceipt("LIN26042I4850").suggestion).toBe("LIN2604214850"); // I for one
     expect(readPartialReceipt("LIN26042l4850").suggestion).toBe("LIN2604214850"); // l for one
     expect(readPartialReceipt("L1N2604214850").suggestion).toBe("LIN2604214850"); // 1 for I in the letters
-    expect(readPartialReceipt("I0E0912345678").suggestion).toBe("IOE0912345678"); // 0 for O in the letters
+    expect(readPartialReceipt("I0E9912345678").suggestion).toBe("IOE9912345678"); // 0 for O in the letters
     expect(readPartialReceipt("LIN2604214850").suggestion).toBeNull();
     expect(readPartialReceipt("LIN26XX214850").suggestion).toBeNull(); // two wrong characters: no guess
   });

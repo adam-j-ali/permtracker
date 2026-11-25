@@ -70,7 +70,7 @@ const FULL: FullCaseData = {
   rfeEntries: [],
   i140FilingDate: "2026-09-01",
   i140ReceiptDate: "2026-09-03",
-  i140ReceiptNumber: "IOE0912345678",
+  i140ReceiptNumber: "IOE9912345678",
   i140ApprovalDate: undefined,
   i140DenialDate: undefined,
   i140Category: "EB-2",

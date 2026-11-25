@@ -3,7 +3,7 @@ import { uscisAnswers } from "@/lib/uscis/torchClient";
 import { lookupUscisCase } from "@/lib/db/uscisCaseStatus";
 
 /**
- * `GET /api/uscis-case-status?receipt=EAC2190123456`
+ * `GET /api/uscis-case-status?receipt=EAC3512345678`
  *
  * Only handler names may be exported from a route file; everything else is
  * in `src/lib/uscis/routeHandler.ts`. Dynamic by construction: it reads the

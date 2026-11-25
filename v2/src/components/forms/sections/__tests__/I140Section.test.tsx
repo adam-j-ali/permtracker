@@ -397,7 +397,7 @@ describe("I140Section - Form Fields", () => {
     const values = createMockValues({
       i140FilingDate: "2024-12-01",
       i140ReceiptDate: "2024-12-05",
-      i140ReceiptNumber: "WAC2412345678",
+      i140ReceiptNumber: "WAC3512345678",
       i140ApprovalDate: "2025-01-15",
       i140Category: "EB-2",
       i140ServiceCenter: "Texas",
@@ -408,7 +408,7 @@ describe("I140Section - Form Fields", () => {
 
     expect(screen.getByLabelText(/Filing date/i)).toHaveValue("2024-12-01");
     expect(screen.getByLabelText(/Receipt date/i)).toHaveValue("2024-12-05");
-    expect(screen.getByLabelText(/Receipt number/i)).toHaveValue("WAC2412345678");
+    expect(screen.getByLabelText(/Receipt number/i)).toHaveValue("WAC3512345678");
     expect(screen.getByLabelText(/Approval date/i)).toHaveValue("2025-01-15");
     expect(screen.getByLabelText(/Category/i)).toHaveValue("EB-2");
     expect(screen.getByRole("group", { name: "Service center" })).toBeInTheDocument();

@@ -1872,7 +1872,7 @@ export default function PrivacyPage() {
             </p>{" "}
             <h3 className="font-heading text-lg font-bold mt-6 mb-3">What you give and what we send</h3>{" "}
             <ul className="list-disc list-inside text-soft space-y-2 ml-4">
-              <li>You type a receipt number (thirteen characters, such as IOE0912345678). No account is needed and no name is asked for.</li>{" "}
+              <li>You type a receipt number (thirteen characters, such as IOE9912345678). No account is needed and no name is asked for.</li>{" "}
               <li>By looking up a receipt number, you confirm that it is your own case or that its owner has asked you to check it.</li>{" "}
               <li>We send that receipt number to USCIS over an encrypted connection with our API credentials. USCIS&apos;s own terms of use and privacy policy apply to what USCIS does with the request.</li>{" "}
               <li>USCIS answers with the form type, the current status text, and a dated history of status changes. It doesn&apos;t return your name or any other identifier.</li>

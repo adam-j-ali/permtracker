@@ -189,7 +189,7 @@ function looksLikeName(input: string): boolean {
 /** The whole page, rendered by `page.tsx`. */
 export async function CaseStatusPage({ raw }: { raw: string | undefined }) {
   const typed = typeof raw === "string" ? raw : "";
-  // A USCIS receipt (EAC2190123456) is a different agency's record and has
+  // A USCIS receipt (EAC3512345678) is a different agency's record and has
   // its own page. Checked before anything DOL-shaped: a reader holding an
   // I-140 receipt is on the wrong page, not holding a bad number, and
   // "not the shape of a PERM case number" would be true and useless.
@@ -262,7 +262,7 @@ export async function CaseStatusPage({ raw }: { raw: string | undefined }) {
       {malformed && looksLikeReceipt(typed) ? (
         <div className="mt-4 bg-tint p-5 border-2 border-border">
           <p className="text-base leading-relaxed">
-            <b className="font-semibold">Holding a USCIS receipt number?</b><KeepWhole>{" Three letters and ten digits, like EAC2190123456, is USCIS's record of the I-140 or I-485. DOL's PERM record uses a different number, and the USCIS receipt has its own page."}</KeepWhole>
+            <b className="font-semibold">Holding a USCIS receipt number?</b><KeepWhole>{" Three letters and ten digits, like EAC3512345678, is USCIS's record of the I-140 or I-485. DOL's PERM record uses a different number, and the USCIS receipt has its own page."}</KeepWhole>
           </p>{" "}
           <p className="mt-3">
             <Link href="/uscis-case-status" className={buttonVariants({ variant: "outline" })}>

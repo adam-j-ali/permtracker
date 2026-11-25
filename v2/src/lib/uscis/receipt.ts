@@ -6,7 +6,7 @@
  * for DOL numbers: the lookup form uses it to say "that is a USCIS number,
  * not a DOL one" before a round trip, and the server uses the same rule to
  * route. It is deliberately separate from `permCaseNumber.ts`: a DOL case
- * number (`G-100-26125-868956`) and a USCIS receipt (`EAC2190123456`) are
+ * number (`G-100-26125-868956`) and a USCIS receipt (`EAC3512345678`) are
  * different agencies, different records and different lookups, and one
  * parser that accepts both would let a P-100 row leak into the PERM table.
  *
@@ -248,7 +248,7 @@ export function looksLikeReceipt(input: string): boolean {
  * hint and the server notice cannot say different things.
  */
 export const RECEIPT_SHAPE_MESSAGE =
-  "A USCIS receipt number is three letters and ten digits, like EAC2190123456, with no spaces or dashes. It's on the top of every I-797 notice.";
+  "A USCIS receipt number is three letters and ten digits, like EAC3512345678, with no spaces or dashes. It's on the top of every I-797 notice.";
 
 /** What the characters typed so far say, in one line. The day digits wait for the result, where their caveat is. */
 export function receiptReadingLine(r: PartialReceipt): string {

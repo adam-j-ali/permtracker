@@ -454,12 +454,12 @@ describe("normalisation", () => {
   it("gives an IOE record (no dates) null dates rather than inventing them", () => {
     const s = normaliseCaseStatus(
       {
-        receiptNumber: "IOE0912345678",
+        receiptNumber: "IOE9912345678",
         formType: "I-765",
         current_case_status_text_en: "Case Was Approved",
         current_case_status_desc_en: "…",
       },
-      "IOE0912345678",
+      "IOE9912345678",
     );
     expect(s?.submittedAt).toBeNull();
     expect(s?.modifiedAt).toBeNull();

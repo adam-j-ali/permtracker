@@ -345,7 +345,7 @@ export function I140Section(props: I140SectionProps) {
                 value={values.i140ReceiptNumber || ""}
                 onChange={handleInputChange}
                 aria-invalid={!!errors?.i140ReceiptNumber}
-                placeholder="e.g., WAC2412345678"
+                placeholder="e.g., WAC3512345678"
               />
             </CharLimit>
           </FormField>

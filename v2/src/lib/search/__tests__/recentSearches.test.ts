@@ -61,9 +61,9 @@ describe("what a recent search keeps of what was typed", () => {
   });
 
   it("never keeps a USCIS receipt number, whole, masked or overlong", () => {
-    expect(recentSearchLabel("EAC2190123456")).toBeNull();
-    expect(recentSearchLabel("ioe 0912345678")).toBeNull();
-    expect(recentSearchLabel("EAC*190123456")).toBeNull();
+    expect(recentSearchLabel("EAC3590123456")).toBeNull();
+    expect(recentSearchLabel("ioe 9912345678")).toBeNull();
+    expect(recentSearchLabel("EAC*590123456")).toBeNull();
     expect(recentSearchLabel("EAC21901234567890")).toBeNull();
     // Short groups: no run of digits, nothing shaped like a phone number, still a receipt.
     expect(recentSearchLabel("EAC-21-90-12-34-56")).toBeNull();
@@ -169,7 +169,7 @@ describe("the list of recent searches", () => {
 
   it("refuses what it shouldn't keep, and says so", () => {
     const s = store();
-    expect(recordSearch({ label: "EAC2190123456", href: "/uscis-case-status?receipt=EAC2190123456" }, s, T0)).toBeNull();
+    expect(recordSearch({ label: "EAC3590123456", href: "/uscis-case-status?receipt=EAC3590123456" }, s, T0)).toBeNull();
     expect(recordSearch({ label: "Acme", href: "https://evil.example/?q=Acme" }, s, T0)).toBeNull();
     expect(s.items.size).toBe(0);
     expect(recordSearch({ label: "g10026125868956", href: "/perm-case-status?case=G-100-26125-868956" }, s, T0)).toEqual({
@@ -182,7 +182,7 @@ describe("the list of recent searches", () => {
   it("reads past anything malformed in storage, and drops entries it would refuse today", () => {
     const raw = JSON.stringify([
       { label: "Acme", href: "/case-search?q=Acme", at: T0 },
-      { label: "EAC2190123456", href: "/uscis-case-status?receipt=EAC2190123456", at: T0 + 1 },
+      { label: "EAC3590123456", href: "/uscis-case-status?receipt=EAC3590123456", at: T0 + 1 },
       { label: "Bad", href: "//evil.example", at: T0 + 2 },
       { label: "No time", href: "/x" },
       "a string",

@@ -1033,7 +1033,7 @@ describe("filterBySearch", () => {
           _id: "n1",
           employerName: "Gamma LLC",
           caseNumber: "G-100-26254-230507",
-          i140ReceiptNumber: "IOE0912345678",
+          i140ReceiptNumber: "IOE9912345678",
         }),
         "2025-01-15"
       ),
@@ -1051,7 +1051,7 @@ describe("filterBySearch", () => {
     });
 
     it("finds a case by its I-140 receipt or the firm's own reference", () => {
-      expect(filterBySearch(numbered, "IOE0912345678").map((c) => c._id)).toEqual(["n1"]);
+      expect(filterBySearch(numbered, "IOE9912345678").map((c) => c._id)).toEqual(["n1"]);
       expect(filterBySearch(numbered, "acm 2026 014").map((c) => c._id)).toEqual(["n2"]);
     });
 

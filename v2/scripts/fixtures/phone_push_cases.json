@@ -4,7 +4,7 @@
     ["from 203.0.113.7 and 198.51.100.0/24", "from an address and an address"],
     ["2001:db8::1, 2001:0db8:85a3:0000:0000:8a2e:0370:7334, fe80::1", "an address, an address, an address"],
     ["to a.b+c@example.co.uk now", "to an email address now"],
-    ["IOE0912345678 EAC*2190012345", "a receipt number a receipt number"],
+    ["IOE9912345678 EAC*2190012345", "a receipt number a receipt number"],
     ["permtracker-web@1.service failed", "permtracker-web@1.service failed"],
     ["permtracker-cron@flag-notice.service", "permtracker-cron@flag-notice.service"],
     ["at 12:05:30 and 8:05 AM", "at 12:05:30 and 8:05 AM"],

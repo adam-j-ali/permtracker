@@ -35,7 +35,7 @@ describe("redactAddresses", () => {
       },
       $set: { $referrer: lookup },
       // The same first page, as posthog-js sends it with every event once someone is identified.
-      $set_once: { $initial_current_url: lookup, $initial_referrer: "https://permtracker.app/uscis-case-status?receipt=IOE0912345678" },
+      $set_once: { $initial_current_url: lookup, $initial_referrer: "https://permtracker.app/uscis-case-status?receipt=IOE9912345678" },
     };
     redactEventAddresses(event);
     expect(event.properties.$current_url).toBe(clean);
@@ -59,7 +59,7 @@ describe("redactAddresses", () => {
   });
 
   it("redacts a USCIS receipt number, which the receipt box puts in the address", () => {
-    expect(run({ $current_url: "https://permtracker.app/uscis-case-status?receipt=IOE0912345678" }).$current_url).toBe(
+    expect(run({ $current_url: "https://permtracker.app/uscis-case-status?receipt=IOE9912345678" }).$current_url).toBe(
       "https://permtracker.app/uscis-case-status?receipt=redacted",
     );
     expect(run({ $referrer: "/uscis-case-status?form=I-140&receipt=WAC2190012345#result" }).$referrer).toBe(
@@ -83,7 +83,7 @@ describe("redactAddresses", () => {
     expect(run({ $current_url: "/case-search?q=G-100-26125-868956&program=perm" }).$current_url).toBe(
       "/case-search?q=[redacted]&program=perm",
     );
-    expect(run({ $current_url: "/case-search?q=ioe0912345678" }).$current_url).toBe("/case-search?q=[redacted]");
+    expect(run({ $current_url: "/case-search?q=ioe9912345678" }).$current_url).toBe("/case-search?q=[redacted]");
     expect(run({ $pathname: "/x/A-12345-67890/y" }).$pathname).toBe("/x/[redacted]/y");
     // An email address, plain or percent-encoded.
     expect(run({ url: "/prefs?who=someone@example.com" }).url).toBe("/prefs?who=[redacted]");
@@ -106,7 +106,7 @@ describe("redactAddresses", () => {
     const p = run({
       $referrer: "https://permtracker.app/perm-case-status?case=P-100-26125-868956",
       $initial_current_url: "https://permtracker.app/perm-case-status?case=G-100-26125-868956",
-      $initial_referrer: "https://permtracker.app/uscis-case-status?receipt=IOE0912345678",
+      $initial_referrer: "https://permtracker.app/uscis-case-status?receipt=IOE9912345678",
     });
     expect(p.$referrer).toBe("https://permtracker.app/perm-case-status?case=redacted");
     expect(p.$initial_current_url).toBe("https://permtracker.app/perm-case-status?case=redacted");
@@ -135,7 +135,7 @@ describe("redactAddresses", () => {
   it("reads an address of any length in step with its length, and redacts all of it", () => {
     // A referrer can be any length, and someone else controls it. With an unbounded
     // email pattern this one took a minute; bounded, it's a few milliseconds.
-    const long = `https://elsewhere.example/?case=G-100-26125-868956&x=${"a".repeat(200_000)}&receipt=IOE0912345678&who=${"b".repeat(200_000)}%40example.com`;
+    const long = `https://elsewhere.example/?case=G-100-26125-868956&x=${"a".repeat(200_000)}&receipt=IOE9912345678&who=${"b".repeat(200_000)}%40example.com`;
     const started = performance.now();
     const out = String(run({ $referrer: long }).$referrer);
     expect(performance.now() - started).toBeLessThan(3_000);

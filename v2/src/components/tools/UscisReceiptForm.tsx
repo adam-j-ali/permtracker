@@ -80,7 +80,7 @@ export function UscisReceiptForm({ defaultValue = "", className, live = false }:
             setValue(e.target.value);
             setEdited(true);
           }}
-          placeholder="EAC2190123456"
+          placeholder="EAC3512345678"
           autoComplete="off"
           autoCapitalize="characters"
           spellCheck={false}

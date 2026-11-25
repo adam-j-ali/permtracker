@@ -194,7 +194,7 @@
  },
  {
   "name": "uscis-case-status-result",
-  "url": "https://permtracker.app/uscis-case-status?receipt=EAC2190123456",
+  "url": "https://permtracker.app/uscis-case-status?receipt=EAC3512345678",
   "clip": "section[aria-labelledby=\"decoded-heading\"]",
   "wait": "main",
   "width": 1280,
