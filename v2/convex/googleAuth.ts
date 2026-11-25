@@ -380,10 +380,18 @@ export const disconnectWithRevocation = action({
         userId,
       });
 
+      // A token that won't decrypt (a changed key, a damaged row) can't be revoked, but must never stop the clear below,
+      // or the person can't disconnect at all (Nov 25 2026). It's recorded, and the revoke is skipped.
+      let accessToken: string | null = null;
       if (tokenResult.hasToken && tokenResult.encryptedToken) {
-        // Decrypt the token
-        const accessToken = await decryptToken(tokenResult.encryptedToken);
+        try {
+          accessToken = await decryptToken(tokenResult.encryptedToken);
+        } catch (decryptError) {
+          await recordError(ctx, "action", "googleAuth.disconnect.decrypt", decryptError, { userId });
+        }
+      }
 
+      if (accessToken) {
         // Revoke the token with Google
         // https://developers.google.com/identity/protocols/oauth2/web-server#tokenrevoke
         try {
