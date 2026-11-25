@@ -37,6 +37,7 @@ import {
 import type { CaseDetailData } from "./case-detail-types";
 import { fmtISODate } from "./case-detail-utils";
 import { PublicNumber } from "./PublicNumber";
+import { BulletinAlertSwitch } from "./BulletinAlertSwitch";
 
 interface GreenCardTabProps {
   caseData: CaseDetailData;
@@ -183,6 +184,7 @@ function BulletinLineCard({ caseData }: { caseData: CaseDetailData }) {
             ) : priority ? (
               <p className="text-soft">Reading the bulletin&hellip;</p>
             ) : null}
+            <BulletinAlertSwitch caseId={caseData._id} />
           </>
         ) : (
           <p className="text-soft">
