@@ -3,7 +3,7 @@
  *
  * Online (IOE) numbers aren't issued in the order cases are received, so a day's receipts can't be counted by received
  * day. The census walks each online block up to the newest issued number every day; the cases it finds between two
- * walks that each reached that edge are the cases issued in between (the kit's issued_runs, loaded as
+ * walks that each reached that edge are the cases issued in between (counted in the sample's own export, loaded as
  * perm_docs 'uscis_sample_issued'). One walk's span can be a few overnight hours, when few people file, so the figure
  * is never one run: it's the newest runs of each block summed until they cover a full week, so every weekday and the
  * weekend count once.

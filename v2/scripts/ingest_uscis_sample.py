@@ -106,7 +106,7 @@ BLOCK = re.compile(r"^[A-Z]{3}[0-9]{2}$")
 
 
 def check_issued(runs) -> None:
-    """The cases issued between census runs (the kit's issued_runs, Nov 25 2026): each run a day, a block (three letters
+    """The cases issued between census runs (counted in the sample's own export, Nov 25 2026): each run a day, a block (three letters
     and two digits), a count, the hours since the last edge and the count by form, adding up. Raises SampleError."""
     if not isinstance(runs, list):
         raise SampleError("sample-figures.json's issued runs aren't a list")
