@@ -114,7 +114,8 @@ def main() -> int:
 
     # The sweep's own index statements, read from the script, now find their tables.
     src = (HERE / "ingest_case_status_direct.py").read_text()
-    indexes = re.findall(r"CREATE INDEX IF NOT EXISTS \w+\s+ON perm_case_(?:status|events) \([^)]*\)", src)
+    # One level of nesting inside the column list: case_status_month indexes substr(filing_date,1,7).
+    indexes = re.findall(r"CREATE INDEX IF NOT EXISTS \w+\s+ON perm_case_(?:status|events) \((?:[^()]|\([^()]*\))*\)", src)
     errors = []
     for ddl in indexes:
         try:
