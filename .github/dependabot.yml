@@ -44,6 +44,10 @@ updates:
       # suite, src/lib/__tests__/sentry-config.test.ts included, passes with it.
       - dependency-name: "@sentry/nextjs"
         versions: [">=11.15.0"]
+      # Convex Auth 2 is held: it drops features the app uses (emailed sign-in codes among them), so it comes in by
+      # hand once a 2.x release carries them (v2/.planning/VERSION-DECISIONS.md, Nov 24 2026).
+      - dependency-name: "@convex-dev/auth"
+        update-types: ["version-update:semver-major"]
 
   # GitHub Actions dependencies
   - package-ecosystem: "github-actions"
