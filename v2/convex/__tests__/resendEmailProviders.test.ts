@@ -33,7 +33,8 @@ vi.mock("resend", () => ({
 // React-email render is irrelevant to this contract — stub it to avoid pulling
 // the full renderer into edge-runtime and to keep the test focused on the
 // failure-handling branch.
-vi.mock("@react-email/render", () => ({
+vi.mock("react-email", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("react-email")>()),
   render: vi.fn(async () => "<html>code</html>"),
 }));
 

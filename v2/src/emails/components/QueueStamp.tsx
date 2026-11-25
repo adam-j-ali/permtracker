@@ -34,7 +34,7 @@
  * @module
  */
 
-import { Section, Text } from "@react-email/components";
+import { Section, Text } from "react-email";
 import * as React from "react";
 
 export interface QueueStampProps {

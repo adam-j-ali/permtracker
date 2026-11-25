@@ -5,7 +5,7 @@
  * runs the sweep by hand. What changed, that nothing applies until they accept, one button to the page that takes
  * the click (a POST behind it, so a mail scanner opening the link accepts nothing), and their way out.
  */
-import { Section, Text } from "@react-email/components";
+import { Section, Text } from "react-email";
 import { EmailButton, EmailLayout } from "./components";
 import { SANS_STACK } from "./components/QueueStamp";
 

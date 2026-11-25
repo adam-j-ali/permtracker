@@ -7,7 +7,7 @@
  * optional greeting/sign-off for a professional appearance.
  */
 
-import { Text, Section, Hr } from "@react-email/components";
+import { Text, Section, Hr } from "react-email";
 import * as React from "react";
 import { EmailLayout, EmailHeader, EmailButton } from "./components";
 import { SITE_URL } from "../../convex/lib/links";
@@ -132,8 +132,8 @@ const styles = {
     margin: "0 0 16px 0",
   },
   divider: {
-    borderColor: "#e4e4e7",
-    borderWidth: "1px",
+    // The whole top rule, never its colour alone: React Email 6 writes its own default rule after a colour.
+    borderTop: "1px solid #e4e4e7",
     margin: "24px 0",
   },
   signOffSection: {

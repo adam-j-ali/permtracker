@@ -22,7 +22,7 @@
  *   or start tracking a caseload. A reader who came for the numbers leaves
  *   with the one thing to do next.
  */
-import { Link, Section, Text } from "@react-email/components";
+import { Link, Section, Text } from "react-email";
 
 import type { DigestData } from "../../convex/lib/newsletterCompose";
 import { CHECK_CASE_URL, dateLabel, monthLabel, monthsLabel, SIGNUP_URL, uscisIsNews } from "../../convex/lib/newsletterCompose";

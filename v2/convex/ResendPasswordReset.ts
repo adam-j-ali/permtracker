@@ -1,7 +1,7 @@
 import { Email } from "@convex-dev/auth/providers/Email";
 import { ConvexError } from "convex/values";
 import { Resend as ResendAPI } from "resend";
-import { render } from "@react-email/render";
+import { render } from "react-email";
 import { generateSecureOTP } from "./lib/crypto";
 import { isEmailBlocked } from "./lib/emailBlocklist";
 import { chargeAuthMail, recordAuthSend, type ChargeCtx } from "./lib/authMailGate";

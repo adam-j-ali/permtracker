@@ -272,7 +272,7 @@ async function sendOne(
   const oneClick = oneClickUnsubscribeUrl(await makeUnsubscribeToken(email, secret, "prefs"), "alerts");
   let html: string | undefined;
   try {
-    const { render } = await import("@react-email/render");
+    const { render } = await import("react-email");
     const { PolicyChange } = await import("../src/emails/PolicyChange");
     html = await render(PolicyChange({ acceptUrl: link, prefsUrl, summary }));
   } catch (error) {

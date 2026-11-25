@@ -27,7 +27,7 @@
  * @module
  */
 
-import { Link, Section, Text } from "@react-email/components";
+import { Link, Section, Text } from "react-email";
 import { EmailButton, EmailLayout, EmailLinkList, QueueStamp } from "./components";
 import { MONO_STACK, SANS_STACK } from "./components/QueueStamp";
 import { SITE_URL } from "../../convex/lib/links";

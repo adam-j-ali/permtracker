@@ -23,7 +23,7 @@ import { sendOwnerMail } from "./lib/ownerMail";
 import { isSentNow } from "./lib/alertRoutes";
 import { action, internalAction, type ActionCtx } from "./_generated/server";
 import { v } from "convex/values";
-import { render } from "@react-email/render";
+import { render } from "react-email";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { loggers } from "./lib/logging";
@@ -576,7 +576,7 @@ export const sendTestEmail = action({
     const settingsUrl = `${appUrl}${NOTIFICATION_SETTINGS_PATH}`;
 
     // Render branded test email template
-    const { render } = await import("@react-email/render");
+    const { render } = await import("react-email");
     const { TestEmail } = await import("../src/emails/TestEmail");
     const html = await render(TestEmail({ settingsUrl }));
 

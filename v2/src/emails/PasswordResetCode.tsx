@@ -10,7 +10,7 @@
  * - Dark mode support via CSS classes
  */
 
-import { Text, Section, Link } from "@react-email/components";
+import { Text, Section, Link } from "react-email";
 import { EmailLayout } from "./components";
 import { SITE_URL } from "../../convex/lib/links";
 

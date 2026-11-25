@@ -15,7 +15,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { render } from "@react-email/render";
+import { render } from "react-email";
 import { CaseAlertConfirm } from "../CaseAlertConfirm";
 import { CaseStatusChanged } from "../CaseStatusChanged";
 import type { CaseStatusChangedProps } from "../CaseStatusChanged";

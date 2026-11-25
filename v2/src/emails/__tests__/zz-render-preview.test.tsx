@@ -10,7 +10,7 @@
  * the false "DOL is now adjudicating cases filed then".
  */
 import { describe, expect, it } from "vitest";
-import { render } from "@react-email/render";
+import { render } from "react-email";
 import { writeFileSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

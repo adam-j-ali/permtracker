@@ -380,7 +380,7 @@ export const clearConfirmationCooldown = internalMutation({
  * The renderer and the templates are imported DYNAMICALLY, and that is
  * load-bearing rather than stylistic. Convex loads a module for any function in
  * it, and this file also holds `subscribe`, the mutation behind the
- * unauthenticated HTTP route. A static `@react-email/render` import made every
+ * unauthenticated HTTP route. A static `react-email` import (its render) made every
  * cold subscribe pay for a React renderer it never uses: measured, it pushed
  * the "reject a long address cheaply" test from under 1s to 1.3-2.5s. The
  * length-cap-before-regex guard was still correct; the cost was module load.
@@ -397,7 +397,7 @@ async function renderOrTextOnly(
   build: () => Promise<ReactElement>,
 ): Promise<string | undefined> {
   try {
-    const { render } = await import("@react-email/render");
+    const { render } = await import("react-email");
     return await render(await build());
   } catch (error) {
     log.error("email render failed, sending text only", { where });

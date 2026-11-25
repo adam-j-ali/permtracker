@@ -27,7 +27,7 @@
  * @module
  */
 
-import { Section, Text } from "@react-email/components";
+import { Section, Text } from "react-email";
 import { MONO_STACK, SANS_STACK } from "./QueueStamp";
 
 export interface FigureRow {

@@ -8,7 +8,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { render } from "@react-email/render";
+import { render } from "react-email";
 import { describe, expect, it } from "vitest";
 
 import { UscisAlertConfirm, type UscisConfirmReceipt } from "../UscisAlertConfirm";

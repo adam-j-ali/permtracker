@@ -315,7 +315,7 @@ export const replyToEmail = internalAction({
     const referencesHeader = refsArray.join(" ");
 
     // Render branded HTML using AdminEmail template
-    const { render } = await import("@react-email/render");
+    const { render } = await import("react-email");
     const { AdminEmail } = await import("../src/emails/AdminEmail");
 
     // The template adds the greeting and sign-off, so the body is the message alone.

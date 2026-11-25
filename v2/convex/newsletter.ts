@@ -355,7 +355,7 @@ export async function readRuleMoves(sinceIso: string, weekOf: string): Promise<D
 }
 
 async function renderHtml(data: DigestData): Promise<string> {
-  const { render } = await import("@react-email/render");
+  const { render } = await import("react-email");
   const { BulletinWeekly } = await import("../src/emails/BulletinWeekly");
   return await render(BulletinWeekly(data));
 }

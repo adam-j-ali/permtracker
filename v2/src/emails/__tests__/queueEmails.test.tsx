@@ -14,7 +14,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { render } from "@react-email/render";
+import { render } from "react-email";
 import { QueueAlertConfirm } from "../QueueAlertConfirm";
 import { QueueReached } from "../QueueReached";
 

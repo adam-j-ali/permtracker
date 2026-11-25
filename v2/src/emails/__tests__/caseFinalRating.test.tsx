@@ -4,7 +4,7 @@
  * "it isn't a decision" disclaimer on a status that IS DOL's decision (Oct 6 2026).
  */
 import { describe, expect, it } from "vitest";
-import { render } from "@react-email/render";
+import { render } from "react-email";
 
 import { CaseStatusChanged, type CaseStatusChangedProps } from "../CaseStatusChanged";
 import { ratingHref } from "../components/RatingRow";

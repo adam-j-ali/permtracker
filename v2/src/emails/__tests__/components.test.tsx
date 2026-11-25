@@ -13,8 +13,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { render } from "@react-email/render";
-import { Text } from "@react-email/components";
+import { render, Text } from "react-email";
 import * as React from "react";
 import { EmailLayout } from "../components/EmailLayout";
 import { EmailButton } from "../components/EmailButton";

@@ -13,7 +13,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { render } from "@react-email/render";
+import { render } from "react-email";
 import { DeadlineDigest } from "../DeadlineDigest";
 import type { DeadlineDigestItem } from "@convex/lib/reminderDigest";
 import { StatusChange } from "../StatusChange";

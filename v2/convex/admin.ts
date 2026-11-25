@@ -23,7 +23,7 @@ import { createLogger } from "./lib/logging";
 const log = createLogger("Admin");
 import { recordError } from "./lib/errorRecording";
 import { buildDefaultProfile } from "./lib/userDefaults";
-import { render } from "@react-email/render";
+import { render } from "react-email";
 import { AdminEmail } from "../src/emails/AdminEmail";
 import { POLICY_CONSENT_VERSION } from "./lib/policyConsent";
 

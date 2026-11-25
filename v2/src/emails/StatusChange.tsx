@@ -8,7 +8,7 @@
  * green chip (owner, Oct 15 2026: lime or dark, never the highlighter green).
  */
 
-import { Text, Section } from "@react-email/components";
+import { Text, Section } from "react-email";
 import { EmailLayout, EmailButton } from "./components";
 import { StatusRail } from "./components/StatusRail";
 import { SANS_STACK } from "./components/QueueStamp";

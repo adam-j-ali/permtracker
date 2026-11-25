@@ -9,7 +9,7 @@
  * - CTA to view case
  */
 
-import { Text, Section } from "@react-email/components";
+import { Text, Section } from "react-email";
 import { EmailLayout, EmailButton, EmailHeader } from "./components";
 import { labelStyle, valueStyle, detailsSectionStyle, ctaSectionStyle } from "./components/emailStyles";
 import { SITE_URL } from "../../convex/lib/links";

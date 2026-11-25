@@ -7,7 +7,7 @@
  * - Dark mode via CSS classes
  */
 
-import { Section, Text } from "@react-email/components";
+import { Section, Text } from "react-email";
 
 export interface EmailHeaderProps {
   /** Header title text */

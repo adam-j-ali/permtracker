@@ -258,7 +258,7 @@ async function renderOrTextOnly(
   build: () => Promise<ReactElement>,
 ): Promise<string | undefined> {
   try {
-    const { render } = await import("@react-email/render");
+    const { render } = await import("react-email");
     return await render(await build());
   } catch (error) {
     log.error("email render failed, sending text only", { where });

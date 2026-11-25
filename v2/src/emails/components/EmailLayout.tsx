@@ -10,16 +10,7 @@
  * - All inline styles (email client compatibility)
  */
 
-import {
-  Body,
-  Container,
-  Head,
-  Html,
-  Preview,
-  Section,
-  Text,
-  Link,
-} from "@react-email/components";
+import { Body, Container, Head, Html, Preview, Section, Text, Link } from "react-email";
 import * as React from "react";
 
 import { POSTAL_ADDRESS } from "../../lib/constants/about";

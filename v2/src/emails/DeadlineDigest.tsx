@@ -17,7 +17,7 @@
  * - later:    #2563EB (blue), 15+ days
  */
 
-import { Text, Section, Link } from "@react-email/components";
+import { Text, Section, Link } from "react-email";
 import * as React from "react";
 import { EmailLayout } from "./components";
 import {

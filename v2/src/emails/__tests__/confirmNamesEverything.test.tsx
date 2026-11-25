@@ -7,7 +7,7 @@
  * by one email (`subscribeList`). The click is consent only for what the email said, so each of them has to be
  * in it: above the button, or under it for a list too long to sit there, with a sentence above that says so.
  */
-import { render } from "@react-email/render";
+import { render } from "react-email";
 import { describe, expect, it } from "vitest";
 
 import { CaseAlertConfirm, LIST_ABOVE_BUTTON_MAX } from "../CaseAlertConfirm";

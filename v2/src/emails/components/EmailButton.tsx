@@ -10,7 +10,7 @@
  * - Dark mode via CSS class
  */
 
-import { Button } from "@react-email/components";
+import { Button } from "react-email";
 import * as React from "react";
 
 export interface EmailButtonProps {

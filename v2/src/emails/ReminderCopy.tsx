@@ -7,7 +7,7 @@
  * The second person has no account, so there's no link into the app and no settings link: the stop link is the way
  * out. Nothing of the case beyond the employer, the job title and the deadlines is shown.
  */
-import { Link, Section, Text } from "@react-email/components";
+import { Link, Section, Text } from "react-email";
 import { EmailLayout } from "./components";
 import { SANS_STACK } from "./components/QueueStamp";
 import { urgencyHeadStyle, urgencyHeadText, urgencyRow, urgencyRowLast } from "./components/emailStyles";

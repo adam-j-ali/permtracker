@@ -15,7 +15,7 @@
  * - later (15+): #2563EB (blue)
  */
 
-import { Text, Section, Link, Hr } from "@react-email/components";
+import { Text, Section, Link, Hr } from "react-email";
 import * as React from "react";
 import { EmailLayout } from "./components";
 import type { DigestContent, DigestDeadline, DigestCaseUpdate } from "../../convex/lib/digestHelpers";

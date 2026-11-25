@@ -10,7 +10,7 @@
  * other account email ("Hi Name,").
  */
 
-import { Text, Section, Link } from "@react-email/components";
+import { Text, Section, Link } from "react-email";
 import { EmailLayout } from "./components";
 import { SITE_URL } from "../../convex/lib/links";
 import { NOTIFICATION_SETTINGS_PATH } from "../../convex/lib/mailKinds";

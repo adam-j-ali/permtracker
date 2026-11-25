@@ -22,7 +22,7 @@
  * @module
  */
 
-import { Link, Section, Text } from "@react-email/components";
+import { Link, Section, Text } from "react-email";
 import { SANS_STACK } from "./QueueStamp";
 
 export interface EmailLinkListItem {

@@ -13,7 +13,7 @@
  * - Dark mode support via CSS classes
  */
 
-import { Text, Section, Link, Hr } from "@react-email/components";
+import { Text, Section, Link, Hr } from "react-email";
 import { EmailLayout } from "./components";
 import { ctaSectionStyle } from "./components/emailStyles";
 import { REVIEW_URL } from "../lib/constants/externalLinks";

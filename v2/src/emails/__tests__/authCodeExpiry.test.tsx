@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
-import { render } from "@react-email/render";
+import { render } from "react-email";
 
 import { VerificationCode } from "../VerificationCode";
 import { PasswordResetCode } from "../PasswordResetCode";

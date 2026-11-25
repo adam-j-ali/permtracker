@@ -15,7 +15,7 @@
  * @module
  */
 
-import { Link, Section, Text } from "@react-email/components";
+import { Link, Section, Text } from "react-email";
 import { EmailButton, EmailLayout, EmailLinkList, StatusRail } from "./components";
 import { MONO_STACK, SANS_STACK } from "./components/QueueStamp";
 

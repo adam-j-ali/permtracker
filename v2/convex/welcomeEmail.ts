@@ -11,7 +11,7 @@
 
 import { internalAction, type ActionCtx } from "./_generated/server";
 import { v } from "convex/values";
-import { render } from "@react-email/render";
+import { render } from "react-email";
 import { getResend, FROM_EMAIL, sendOrQueue } from "./lib/email";
 import { WelcomeEmail } from "../src/emails/WelcomeEmail";
 import { createLogger } from "./lib/logging";

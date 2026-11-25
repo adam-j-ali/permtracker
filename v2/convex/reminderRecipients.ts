@@ -420,7 +420,7 @@ export const sendInvite = internalAction({
       );
       let html: string | undefined;
       try {
-        const { render } = await import("@react-email/render");
+        const { render } = await import("react-email");
         const { ReminderInvite } = await import("../src/emails/ReminderInvite");
         html = await render(
           ReminderInvite({ inviter: details.inviter, caseLine: details.caseLine, confirmUrl: link, declineUrl: never }),
@@ -670,7 +670,7 @@ export const sendCopy = internalAction({
       const overdue = items.filter((i) => i.urgency === "overdue").length;
       let html: string | undefined;
       try {
-        const { render } = await import("@react-email/render");
+        const { render } = await import("react-email");
         const { ReminderCopy } = await import("../src/emails/ReminderCopy");
         html = await render(
           ReminderCopy({ caseLine: admitted.caseLine, items, checkedAt, stopUrl: stop }),

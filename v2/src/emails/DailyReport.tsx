@@ -10,7 +10,7 @@
  * characters a line. An OK section's detail stays in the text part (reportText)
  * and on /admin#monitor, never in this HTML.
  */
-import { Section, Text } from "@react-email/components";
+import { Section, Text } from "react-email";
 
 import {
   type DailyReport as Report,

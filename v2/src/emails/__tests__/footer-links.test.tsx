@@ -6,7 +6,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
-import { render } from "@react-email/render";
+import { render } from "react-email";
 
 import { NOTIFICATION_SETTINGS_PATH } from "@convex/lib/mailKinds";
 import { ReengagementNudge } from "../ReengagementNudge";

@@ -4,7 +4,7 @@
  * Mirrors the alert confirmations: what was asked for, one button, and a line for someone who didn't ask. No
  * onward links: everything on it is subordinate to the confirm button.
  */
-import { Section, Text } from "@react-email/components";
+import { Section, Text } from "react-email";
 import { EmailButton, EmailLayout } from "./components";
 import { SANS_STACK } from "./components/QueueStamp";
 

@@ -18,7 +18,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { render } from "@react-email/render";
+import { render } from "react-email";
 import { QueueAlertConfirm } from "../QueueAlertConfirm";
 import { CaseAlertConfirm } from "../CaseAlertConfirm";
 import { BulletinAlertConfirm } from "../BulletinAlertConfirm";

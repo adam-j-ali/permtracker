@@ -354,7 +354,7 @@ async function permsSince(slug: string, since: string): Promise<{ rows: PermCand
 
 async function renderHtml(build: () => Promise<ReactElement>): Promise<string | undefined> {
   try {
-    const { render } = await import("@react-email/render");
+    const { render } = await import("react-email");
     return await render(await build());
   } catch (error) {
     log.error("match email render failed, sending text only", { error });

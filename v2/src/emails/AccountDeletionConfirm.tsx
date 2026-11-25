@@ -11,7 +11,7 @@
  * Subject line: "Account Deletion Scheduled - PERM Tracker"
  */
 
-import { Text, Section, Link } from "@react-email/components";
+import { Text, Section, Link } from "react-email";
 import { EmailLayout, EmailButton, EmailHeader } from "./components";
 import { SITE_URL } from "../../convex/lib/links";
 

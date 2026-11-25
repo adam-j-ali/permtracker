@@ -385,7 +385,7 @@ async function sendFirmEmail(
             : `Edit the profile for ${args.firmName} on PERM Tracker`;
   let html: string | undefined;
   try {
-    const { render } = await import("@react-email/render");
+    const { render } = await import("react-email");
     const { FirmClaimEmail } = await import("../src/emails/FirmClaimEmail");
     html = await render(FirmClaimEmail(args));
   } catch (error) {

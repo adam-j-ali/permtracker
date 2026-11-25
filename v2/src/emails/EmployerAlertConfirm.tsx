@@ -6,7 +6,7 @@
  * visible before they confirm it. The name comes from our own records, never
  * from the form, so a stranger cannot put words in this email.
  */
-import { Section, Text } from "@react-email/components";
+import { Section, Text } from "react-email";
 import { EmailButton, EmailLayout } from "./components";
 import { SANS_STACK } from "./components/QueueStamp";
 

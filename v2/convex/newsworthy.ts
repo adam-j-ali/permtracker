@@ -10,7 +10,7 @@
  * Returns only a boolean: the GitHub log prints what this returns, and that
  * log is public.
  */
-import { render } from "@react-email/render";
+import { render } from "react-email";
 import { v } from "convex/values";
 
 import { AdminEmail } from "../src/emails/AdminEmail";

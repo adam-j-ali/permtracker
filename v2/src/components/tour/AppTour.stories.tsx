@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import { useEffect, useState, type ReactNode } from "react";
-import { render } from "@react-email/render";
+import { render } from "react-email";
 
 import type { ActionMode } from "@/components/chat/ActionModeToggle";
 import { ChatPanel } from "@/components/chat/ChatPanel";

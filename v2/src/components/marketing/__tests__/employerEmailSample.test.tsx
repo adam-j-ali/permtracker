@@ -6,7 +6,7 @@
  */
 import { writeFileSync } from "node:fs";
 
-import { render } from "@react-email/render";
+import { render } from "react-email";
 import { describe, expect, it } from "vitest";
 
 import { EmployerMoved } from "@/emails/EmployerMoved";

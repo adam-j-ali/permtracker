@@ -12,7 +12,7 @@
  * the form, so a stranger can't put words of their choosing in this email.
  * Like the alert confirmations it carries no opt-out: there's no subscription.
  */
-import { Section, Text } from "@react-email/components";
+import { Section, Text } from "react-email";
 import { EmailButton, EmailLayout } from "./components";
 import { SANS_STACK } from "./components/QueueStamp";
 

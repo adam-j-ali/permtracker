@@ -6,7 +6,7 @@
  * subscriber getting "C -> U" deserves to be told the category shut, in
  * words, not initials.
  */
-import { Link, Section, Text } from "@react-email/components";
+import { Link, Section, Text } from "react-email";
 import { EmailLayout } from "./components";
 import { SANS_STACK } from "./components/QueueStamp";
 import { SITE_URL } from "../../convex/lib/links";

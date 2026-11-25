@@ -358,7 +358,7 @@ async function renderOrUndefined(
   build: () => Promise<ReactElement>,
 ): Promise<string | undefined> {
   try {
-    const { render } = await import("@react-email/render");
+    const { render } = await import("react-email");
     return await render(await build());
   } catch (error) {
     await recordError(ctx, "action", "alertOutbox.sendBundles.render", error);

@@ -11,7 +11,7 @@
  * The workflow is public, so the report travels as the `send` argument and
  * never through the Actions log; `send` returns only the verdict.
  */
-import { render } from "@react-email/render";
+import { render } from "react-email";
 import { v } from "convex/values";
 
 import { DailyReport as DailyReportEmail } from "../src/emails/DailyReport";

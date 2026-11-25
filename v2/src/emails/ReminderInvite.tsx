@@ -7,7 +7,7 @@
  * link confirms nothing. Ignored, nothing else is ever sent. Under the button, "Don't invite me again" opens a page whose button puts the address on
  * the refusal list, so no account can invite it again.
  */
-import { Link, Section, Text } from "@react-email/components";
+import { Link, Section, Text } from "react-email";
 import { EmailButton, EmailLayout } from "./components";
 import { SANS_STACK } from "./components/QueueStamp";
 import { INVITE_DAYS, sentenceStart } from "../../convex/lib/reminderRecipients";

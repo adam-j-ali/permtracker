@@ -5,7 +5,7 @@
  * what happens if it's ignored. The reminder lists that case's deadlines, says the reader confirmed them and when it
  * was checked in Eastern time, names nobody, and carries its one-click stop and no settings link.
  */
-import { render } from "@react-email/render";
+import { render } from "react-email";
 import { describe, expect, it } from "vitest";
 
 import { ReminderCopy } from "../ReminderCopy";

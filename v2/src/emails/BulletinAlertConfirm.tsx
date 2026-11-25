@@ -5,7 +5,7 @@
  * showing the series the reader picked, so a mis-click (EB2 instead of EB3,
  * India instead of worldwide) is visible before they confirm it.
  */
-import { Section, Text } from "@react-email/components";
+import { Section, Text } from "react-email";
 import { EmailButton, EmailLayout } from "./components";
 import { SANS_STACK } from "./components/QueueStamp";
 
