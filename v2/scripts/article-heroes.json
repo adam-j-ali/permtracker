@@ -1619,5 +1619,20 @@
     },
     "credit": "Screenshot of permtracker.app, November 24, 2026",
     "alt": "PERM wages by job with its filters for occupation, worksite state, fiscal year and outcome, above the median and percentile figures"
+  },
+  "changelog/receipts-read-as-you-type": {
+    "capture": {
+      "url": "/uscis-case-status",
+      "steps": [
+        {
+          "fill": "Your USCIS receipt number",
+          "text": "LIN2604"
+        }
+      ],
+      "clip": "sel:form[action='/uscis-case-status']",
+      "maxHeight": 650
+    },
+    "credit": "Screenshot of permtracker.app, November 25, 2026",
+    "alt": "The USCIS receipt box with LIN2604 typed: it names the Nebraska Service Center and fiscal year 2026, and shows the number in its parts with six digits to come"
   }
 }
