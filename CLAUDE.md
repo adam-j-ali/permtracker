@@ -99,7 +99,7 @@ Each was decided once and holds until the owner changes it. The reasons are in t
 **Shipping and the server**
 - Push to `main` once `pnpm check` passes; the site ships only in the 1 to 5 AM ET night run, `-f when=now` for an urgent fix; Convex deploys once GitHub's suite is green (Oct 8, Oct 18).
 - Off-site backups keep the newest 8 copies and the first of each of the 2 newest months (Nov 23; 15 and 3 before).
-- The disk is 150 GB of Oracle's free 200 on purpose: the rest is room for a second free server (Sep 28). The server's Oracle identity holds `manage all-resources in tenancy` (Oct 13).
+- The disk is 150 GB of Oracle's free 200 on purpose: the other 50 GB is a second free server (Sep 28; built Nov 25 as an AMD micro, since the account's Arm limit is 2 cores in total). The server's Oracle identity holds `manage all-resources in tenancy` (Oct 13).
 - The server's alarms go by email and to the owner's phone, never by phone alone; the Mac's go to the phone (Oct 10; the phone added Nov 23). The database RAM lock is retired (Oct 29).
 - Limits are lax and broad, set from measurements: performance, experience and SEO first (Sep 29).
 - Where every alert goes is one list, `scripts/data/alert_routes.json`, read by every sender and shown at /admin#monitor: phone and email for what needs the owner, the morning report for a one-off failure the next run fixes, the admin page only for the defense acting on a scraper (Nov 23).
