@@ -171,6 +171,9 @@ export default async function UscisReceiptBlockPage({ params }: { params: Promis
             <h2 id="moves-title" className="font-heading text-2xl font-bold">
               The newest moves the sample saw
             </h2>{" "}
+            <p className="mt-2 max-w-2xl text-base text-muted-foreground">
+              Each is dated by the day the sample first saw it. USCIS may have made the change a few days before.
+            </p>{" "}
             {moves.length ? (
               <ul className="mt-4 max-w-2xl space-y-2 text-base">
                 {moves.map((m) => (
@@ -183,7 +186,7 @@ export default async function UscisReceiptBlockPage({ params }: { params: Promis
               </ul>
             ) : (
               <p className="mt-3 max-w-2xl text-base text-muted-foreground">
-                No status changes seen here yet. The sample checks each number again later, so moves appear as it does.
+                No status changes seen here yet. The sample checks a pending case again each week, so moves appear as it does.
               </p>
             )}
           </section>
