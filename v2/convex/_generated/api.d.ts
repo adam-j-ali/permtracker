@@ -168,6 +168,7 @@ import type * as lib_perm_calculators_h1bMaxOut from "../lib/perm/calculators/h1
 import type * as lib_perm_calculators_i140 from "../lib/perm/calculators/i140.js";
 import type * as lib_perm_calculators_i140Queue from "../lib/perm/calculators/i140Queue.js";
 import type * as lib_perm_calculators_index from "../lib/perm/calculators/index.js";
+import type * as lib_perm_calculators_premiumClock from "../lib/perm/calculators/premiumClock.js";
 import type * as lib_perm_calculators_priorityDate from "../lib/perm/calculators/priorityDate.js";
 import type * as lib_perm_calculators_priorityDateRetention from "../lib/perm/calculators/priorityDateRetention.js";
 import type * as lib_perm_calculators_pwd from "../lib/perm/calculators/pwd.js";
@@ -467,6 +468,7 @@ declare const fullApi: ApiFromModules<{
   "lib/perm/calculators/i140": typeof lib_perm_calculators_i140;
   "lib/perm/calculators/i140Queue": typeof lib_perm_calculators_i140Queue;
   "lib/perm/calculators/index": typeof lib_perm_calculators_index;
+  "lib/perm/calculators/premiumClock": typeof lib_perm_calculators_premiumClock;
   "lib/perm/calculators/priorityDate": typeof lib_perm_calculators_priorityDate;
   "lib/perm/calculators/priorityDateRetention": typeof lib_perm_calculators_priorityDateRetention;
   "lib/perm/calculators/pwd": typeof lib_perm_calculators_pwd;
