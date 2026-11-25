@@ -484,11 +484,16 @@
     "alt": "The first page of Form I-485, the Application to Register Permanent Residence or Adjust Status"
   },
   "guides/uscis-processing-times-median-vs-80-percent": {
-    "capture": {
-      "url": "/uscis-processing-times"
+    "photo": {
+      "file": "uscis-processing-times-median-vs-80-percent.jpg",
+      "focus": [
+        0.45,
+        0.5
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 15, 2026",
-    "alt": "USCIS processing times by form, the median from USCIS's own quarterly files"
+    "credit": "Photo: DHS, USCIS Multimedia, still from a 2021 video / Wikimedia Commons, public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:BRoll_NBC.mp4.webm",
+    "alt": "An open office floor at the USCIS National Benefits Center, staff at their desks beside long rows of shelves for case files"
   },
   "guides/eb2-vs-eb3-perm": {
     "photo": {
@@ -581,11 +586,16 @@
     "alt": "The wide granite steps up to the Frances Perkins Building, the Labor Department's headquarters, with its name over the doors"
   },
   "blog/eb2-vs-eb3-by-the-numbers": {
-    "capture": {
-      "url": "/visa-bulletin/categories"
+    "photo": {
+      "file": "eb2-vs-eb3-by-the-numbers.jpg",
+      "focus": [
+        0.45,
+        0.6
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 28, 2026",
-    "alt": "Every visa bulletin line on permtracker.app, each employment category and country with its cutoff"
+    "credit": "Photo: U.S. Department of State, Linda D. Epstein / Wikimedia Commons, public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:Exterior_of_the_United_States_Department_of_State_Harry_S._Truman_Building,_Washington,_D.C.,_spring_2024_-_8.jpg",
+    "alt": "Orange tulips in front of the sign for the Harry S Truman Building, the State Department's headquarters, which publishes the visa bulletin"
   },
   "blog/companies-sponsoring-most-green-cards": {
     "photo": {
@@ -910,12 +920,16 @@
     "alt": "The Labor Department's headquarters seen in the distance across the Capitol Reflecting Pool, with people walking along the pool's edge"
   },
   "guides/eb2-india-forecasts-how-close": {
-    "capture": {
-      "url": "/visa-bulletin/categories/eb2-india",
-      "clip": "h:A fiscal year at a time"
+    "photo": {
+      "file": "eb2-india-forecasts-how-close.jpg",
+      "focus": [
+        0.4,
+        0.45
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 17, 2026",
-    "alt": "The EB-2 India final action cutoff, a fiscal year at a time, from every visa bulletin"
+    "credit": "Photo: Tony Webster / Wikimedia Commons, CC BY 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Harry_S._Truman_Building_-_United_States_Department_of_State_(53839637354).jpg",
+    "alt": "A wing of the State Department's headquarters in Washington behind green trees under a deep blue sky"
   },
   "guides/employer-barred-from-perm": {
     "photo": {
@@ -993,12 +1007,16 @@
     "alt": "20 CFR 656.17(e), the required pre-filing recruitment and its 30 and 180 days"
   },
   "guides/i140-revoked-before-after-180-days": {
-    "capture": {
-      "url": "/tools/priority-date-retention",
-      "width": 1000
+    "photo": {
+      "file": "i140-revoked-before-after-180-days.jpg",
+      "focus": [
+        0.6,
+        0.5
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 17, 2026",
-    "alt": "The priority date retention and I-485 portability calculator on permtracker.app"
+    "credit": "Photo: DHS, USCIS Multimedia, still from a 2021 video / Wikimedia Commons, public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:BRoll_NBC.mp4.webm",
+    "alt": "A USCIS employee's hands turning the pages of a case file at the National Benefits Center, a typed USCIS notice on top"
   },
   "guides/i485-inventory-month-by-month": {
     "photo": {
@@ -1144,12 +1162,16 @@
     "alt": "USCIS's guide to adjusting status: the petition, the visa bulletin chart and the I-485"
   },
   "guides/priority-date-retrogressed-after-filing": {
-    "capture": {
-      "url": "/visa-bulletin/categories/eb2-india",
-      "clip": "h:How the cutoff has moved"
+    "photo": {
+      "file": "priority-date-retrogressed-after-filing.jpg",
+      "focus": [
+        0.45,
+        0.5
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 17, 2026",
-    "alt": "How the EB-2 India cutoff has moved, forward and back, bulletin by bulletin"
+    "credit": "Photo: U.S. Department of State, Evan Eile / Wikimedia Commons, public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:Harry_S._Truman_Building_(54731407980).jpg",
+    "alt": "Red hibiscus flowers in front of the curved entrance of the Harry S Truman Building, the State Department's headquarters, which publishes the visa bulletin"
   },
   "guides/salary-high-enough-perm-h1b": {
     "photo": {
@@ -1700,22 +1722,28 @@
     "alt": "The Homeland Security seal over the words National Benefits Center, Lee's Summit, Missouri, on a wall at the USCIS center"
   },
   "guides/i485-interview-to-green-card": {
-    "capture": {
-      "url": "/green-card-timelines",
-      "clip": "h:Approvals reported this week",
-      "width": 1000
+    "photo": {
+      "file": "i485-interview-to-green-card.jpg",
+      "focus": [
+        0.55,
+        0.55
+      ]
     },
-    "credit": "Screenshot of permtracker.app, November 20, 2026",
-    "alt": "The work permits and green cards people reported this week on PERM Tracker, counted from every source"
+    "credit": "Photo: Carol M. Highsmith, Library of Congress / Wikimedia Commons, public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:Sculpture_%22La_Tormenta_(The_Storm)%22_interior_atrium_of_U.S._Citizenship_and_Immigration_Services,_DHS,_Chicago,_Illinois_LCCN2010719947.tif",
+    "alt": "A large silver sculpture hanging in the atrium of the USCIS office in Chicago, above rows of empty waiting-room seats"
   },
   "guides/i485-transferred-to-field-office": {
-    "capture": {
-      "url": "/i485-by-field-office/san-fernando-valley-california",
-      "clip": "h:How long each step took here, as people report it",
-      "width": 1000
+    "photo": {
+      "file": "i485-transferred-to-field-office.jpg",
+      "focus": [
+        0.5,
+        0.45
+      ]
     },
-    "credit": "Screenshot of permtracker.app, November 20, 2026",
-    "alt": "The days from filing an I-485 to its move to a field office, and from the move to the green card, from the cases people reported to PERM Tracker"
+    "credit": "Photo: DHS, USCIS Multimedia, still from a 2021 video / Wikimedia Commons, public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:BRoll_Exterior.mp4.webm",
+    "alt": "The U.S. Citizenship and Immigration Services sign and the Homeland Security seal on a stone wall outside the USCIS field office in Tampa, Florida"
   },
   "changelog/every-reported-case-every-figure": {
     "capture": {
