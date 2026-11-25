@@ -72,6 +72,16 @@ async function approveAll(t: ReturnType<typeof createTestContext>) {
   });
 }
 
+/** One legacy milestone report, written straight to its closed table (nothing else writes it any more). */
+async function legacyReport(
+  t: ReturnType<typeof createTestContext>,
+  kind: "i140-filed" | "i140-approved" | "i485-filed" | "i485-approved",
+  eventDate: string,
+  ipHash: string,
+) {
+  await t.run((ctx) => ctx.db.insert("caseMilestones", { caseNumber: CASE, kind, eventDate, submittedAt: Date.now(), ipHash }));
+}
+
 const save = (over: Record<string, unknown> = {}, who: { key?: string; ip?: string; caseNumber?: string } = {}) => ({
   caseNumber: who.caseNumber ?? CASE,
   editKeyHash: who.key ?? KEY,
@@ -260,18 +270,8 @@ describe("the case summary", () => {
   it("counts timelines and legacy milestone reports toward the same stops", async () => {
     const t = createTestContext();
     await t.mutation(internal.communityTimelines.save, save({ i140ApprovedOn: "2026-05-12" }));
-    await t.mutation(internal.caseMilestones.report, {
-      caseNumber: CASE,
-      kind: "i140-approved",
-      eventDate: "2026-05-15",
-      ipHash: IP_B,
-    });
-    await t.mutation(internal.caseMilestones.report, {
-      caseNumber: CASE,
-      kind: "i485-filed",
-      eventDate: "2026-06-01",
-      ipHash: "c".repeat(64),
-    });
+    await legacyReport(t, "i140-approved", "2026-05-15", IP_B);
+    await legacyReport(t, "i485-filed", "2026-06-01", "c".repeat(64));
     await approveAll(t);
     const s = await t.query(internal.communityTimelines.caseSummary, { caseNumber: CASE });
     expect(s.withheld).toBe(false);
@@ -284,9 +284,9 @@ describe("the case summary", () => {
   it("withholds every count until three people have added dates for the case", async () => {
     const t = createTestContext();
     await t.mutation(internal.communityTimelines.save, save({ i140ApprovedOn: "2026-05-12" }));
-    await t.mutation(internal.caseMilestones.report, { caseNumber: CASE, kind: "i140-approved", eventDate: "2026-05-15", ipHash: IP_B });
+    await legacyReport(t, "i140-approved", "2026-05-15", IP_B);
     // The same address twice is one person.
-    await t.mutation(internal.caseMilestones.report, { caseNumber: CASE, kind: "i485-filed", eventDate: "2026-06-01", ipHash: IP_B });
+    await legacyReport(t, "i485-filed", "2026-06-01", IP_B);
     await approveAll(t);
     const s = await t.query(internal.communityTimelines.caseSummary, { caseNumber: CASE });
     expect(s.withheld).toBe(true);

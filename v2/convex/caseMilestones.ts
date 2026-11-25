@@ -1,24 +1,17 @@
 import { v } from "convex/values";
 
-import { internalMutation, internalQuery } from "./_generated/server";
-import { checkAndRecordRateLimit } from "./lib/rateLimit";
-import { MS_PER_DAY, MS_PER_HOUR } from "./lib/time";
+import { internalQuery } from "./_generated/server";
 
 /**
- * Milestones people report for a case after DOL: the I-140 and the I-485.
+ * Milestones people reported for a case after DOL: the I-140 and the I-485.
  *
  * USCIS publishes nothing per case, so once a PERM is certified the public
- * record stops. These reports are the only per-case trace of what came next,
- * and they are labelled as unverified user reports everywhere they render.
- * Nothing here is ever blended into an estimate.
- *
- * Public endpoint checklist (convex/http.ts): the mutation is internal, the
- * HTTP layer narrows every field, cheap shape checks run before any limit,
- * the per-IP limit raises the cost of naive abuse and the GLOBAL daily budget
- * bounds the table's growth no matter how many addresses rotate, and a repeat
- * report of the same kind on the same case from the same address updates its
- * own row rather than adding one, so a visitor cannot inflate a count by
- * clicking. GET never mutates.
+ * record stops. These reports were the first per-case trace of what came
+ * next; community timelines (convex/communityTimelines.ts) replaced them, and
+ * this table is closed: nothing adds a row any more, and its rows still count
+ * toward a case's stops there and read back here. They are labelled as
+ * unverified user reports everywhere they render, and nothing here is ever
+ * blended into an estimate.
  */
 
 export const MILESTONE_KINDS = ["i140-filed", "i140-approved", "i485-filed", "i485-approved"] as const;
@@ -33,63 +26,6 @@ export const MILESTONE_LABEL: Record<MilestoneKind, string> = {
 
 /** PERM numbers only: the FLAG form and the older A- form. */
 const PERM_CASE = /^(G-\d{3}-\d{5}-\d{6}|A-\d{5}-\d{5})$/;
-const ISO = /^\d{4}-\d{2}-\d{2}$/;
-
-/** Twenty reports an hour from one address. */
-export const PER_IP = { limit: 20, windowMs: MS_PER_HOUR };
-/** A thousand reports a day across everyone: the cap on the table's growth. */
-export const GLOBAL_BUDGET = { limit: 1000, windowMs: MS_PER_DAY };
-
-const reportResult = v.object({
-  ok: v.boolean(),
-  message: v.string(),
-  throttled: v.optional(v.boolean()),
-});
-
-export const report = internalMutation({
-  args: {
-    caseNumber: v.string(),
-    kind: v.string(),
-    eventDate: v.string(),
-    /** SHA-256 of the forwarded address, computed by the HTTP layer. */
-    ipHash: v.string(),
-  },
-  returns: reportResult,
-  handler: async (ctx, a) => {
-    // Cheap shape checks first, before anything is charged or written.
-    const caseNumber = a.caseNumber.trim().toUpperCase();
-    if (caseNumber.length > 24 || !PERM_CASE.test(caseNumber)) {
-      return { ok: false, message: "Milestones are recorded against PERM case numbers only." };
-    }
-    const kind = MILESTONE_KINDS.find((k) => k === a.kind);
-    if (!kind) return { ok: false, message: "That is not a milestone this page records." };
-    const today = new Date().toISOString().slice(0, 10);
-    if (!ISO.test(a.eventDate) || a.eventDate < "2015-01-01" || a.eventDate > today || Number.isNaN(Date.parse(`${a.eventDate}T00:00:00Z`))) {
-      return { ok: false, message: "Enter the date as YYYY-MM-DD, not in the future." };
-    }
-    if (a.ipHash.length !== 64) return { ok: false, message: "Malformed request." };
-
-    const perIp = await checkAndRecordRateLimit(ctx, a.ipHash, "milestone-report", PER_IP);
-    if (!perIp.allowed) {
-      return { ok: false, throttled: true, message: "That is enough reports for one hour. Try again later." };
-    }
-    const budget = await checkAndRecordRateLimit(ctx, "all", "milestone-report-global", GLOBAL_BUDGET);
-    if (!budget.allowed) {
-      return { ok: false, throttled: true, message: "Reports are paused for today. Try again tomorrow." };
-    }
-
-    const existing = await ctx.db
-      .query("caseMilestones")
-      .withIndex("by_case_ip_kind", (q) => q.eq("caseNumber", caseNumber).eq("ipHash", a.ipHash).eq("kind", kind))
-      .first();
-    if (existing) {
-      await ctx.db.patch(existing._id, { eventDate: a.eventDate, submittedAt: Date.now() });
-      return { ok: true, message: "Your earlier report of this milestone was updated." };
-    }
-    await ctx.db.insert("caseMilestones", { caseNumber, kind, eventDate: a.eventDate, submittedAt: Date.now(), ipHash: a.ipHash });
-    return { ok: true, message: "Recorded beside the case as a user report." };
-  },
-});
 
 const summaryResult = v.object({
   caseNumber: v.string(),

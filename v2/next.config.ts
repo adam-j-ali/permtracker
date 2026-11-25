@@ -247,7 +247,7 @@ const nextConfig: NextConfig = {
           // Across all Convex-rendered HTML a relative `action=`/`href=`
           // appears exactly twice, both pointing at /prefs/update. Every other
           // Convex route is reached by a client fetch that builds an absolute
-          // .convex.site URL (/contact, /milestone/*, /prefs/request,
+          // .convex.site URL (/contact, /prefs/request, /timeline/*,
           // /queue-alert/subscribe), so none of those depend on a rewrite.
           //
           // /resend-inbound is deliberately absent: Resend is configured with

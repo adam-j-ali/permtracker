@@ -1,26 +1,46 @@
 import { describe, expect, it } from "vitest";
 
-import { createTestContext, fillRateWindow } from "../../test-utils/convex";
+import { createTestContext } from "../../test-utils/convex";
 import { internal } from "../_generated/api";
-import { GLOBAL_BUDGET, PER_IP } from "../caseMilestones";
 
 /**
- * The milestone report endpoint: what it refuses, what it dedupes, and that
- * both limits actually refuse. The budget test fills until the endpoint says
- * no and THROWS if it never does, so an unexhausted budget cannot read as a
- * pass (the same shape as subscribeBudgetOrder.test.ts).
+ * The legacy milestone reports: a closed table. Community timelines took their
+ * place (convex/communityTimelines.ts), so nothing may add a row any more,
+ * over HTTP or otherwise, and the rows already there still read back as
+ * counts.
  */
 
 const HASH_A = "a".repeat(64);
 const HASH_B = "b".repeat(64);
 const CASE = "G-100-25324-425560";
 
-describe("caseMilestones.report", () => {
-  it("records a report and reads it back as a count with the latest date", async () => {
+type Kind = "i140-filed" | "i140-approved" | "i485-filed" | "i485-approved";
+
+async function seed(t: ReturnType<typeof createTestContext>, kind: Kind, eventDate: string, ipHash: string) {
+  await t.run((ctx) => ctx.db.insert("caseMilestones", { caseNumber: CASE, kind, eventDate, submittedAt: Date.now(), ipHash }));
+}
+
+describe("the milestone write route", () => {
+  it("is gone: a report sent over HTTP finds no route and writes nothing", async () => {
     const t = createTestContext();
-    const r = await t.mutation(internal.caseMilestones.report, { caseNumber: CASE, kind: "i140-filed", eventDate: "2026-06-01", ipHash: HASH_A });
-    expect(r.ok).toBe(true);
-    await t.mutation(internal.caseMilestones.report, { caseNumber: CASE, kind: "i140-filed", eventDate: "2026-06-03", ipHash: HASH_B });
+    const res = await t.fetch("/milestone/report", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ caseNumber: CASE, kind: "i140-filed", eventDate: "2026-06-01" }),
+    });
+    expect(res.status).toBe(404);
+    const preflight = await t.fetch("/milestone/report", { method: "OPTIONS" });
+    expect(preflight.status).toBe(404);
+    const rows = await t.run((ctx) => ctx.db.query("caseMilestones").take(10));
+    expect(rows).toHaveLength(0);
+  });
+});
+
+describe("caseMilestones.summary", () => {
+  it("reads the rows already there back as counts with the latest date", async () => {
+    const t = createTestContext();
+    await seed(t, "i140-filed", "2026-06-01", HASH_A);
+    await seed(t, "i140-filed", "2026-06-03", HASH_B);
     const s = await t.query(internal.caseMilestones.summary, { caseNumber: CASE });
     expect(s.reports).toBe(2);
     expect(s.reporters).toBe(2);
@@ -28,75 +48,18 @@ describe("caseMilestones.report", () => {
     expect(s.kinds.find((k) => k.kind === "i485-filed")).toMatchObject({ count: 0, latest: null });
   });
 
-  it("updates the same reporter's earlier report of the same kind instead of adding one", async () => {
+  it("reads nothing for a number that isn't a PERM case", async () => {
     const t = createTestContext();
-    await t.mutation(internal.caseMilestones.report, { caseNumber: CASE, kind: "i140-approved", eventDate: "2026-07-01", ipHash: HASH_A });
-    const again = await t.mutation(internal.caseMilestones.report, { caseNumber: CASE, kind: "i140-approved", eventDate: "2026-07-02", ipHash: HASH_A });
-    expect(again.ok).toBe(true);
-    expect(again.message).toMatch(/updated/);
-    const s = await t.query(internal.caseMilestones.summary, { caseNumber: CASE });
-    expect(s.reports).toBe(1);
-    expect(s.kinds.find((k) => k.kind === "i140-approved")?.latest).toBe("2026-07-02");
-  });
-
-  it("refuses bad shapes without writing and without charging a limit", async () => {
-    const t = createTestContext();
-    const bad = [
-      { caseNumber: "P-100-26125-868956", kind: "i140-filed", eventDate: "2026-06-01", ipHash: HASH_A },
-      { caseNumber: CASE, kind: "married", eventDate: "2026-06-01", ipHash: HASH_A },
-      { caseNumber: CASE, kind: "i140-filed", eventDate: "2099-01-01", ipHash: HASH_A },
-      { caseNumber: CASE, kind: "i140-filed", eventDate: "June 1", ipHash: HASH_A },
-      { caseNumber: CASE, kind: "i140-filed", eventDate: "2026-06-01", ipHash: "short" },
-    ];
-    for (const b of bad) {
-      const r = await t.mutation(internal.caseMilestones.report, b);
-      expect(r.ok, JSON.stringify(b)).toBe(false);
-      expect(r.throttled).toBeUndefined();
-    }
-    const s = await t.query(internal.caseMilestones.summary, { caseNumber: CASE });
+    await seed(t, "i140-filed", "2026-06-01", HASH_A);
+    const s = await t.query(internal.caseMilestones.summary, { caseNumber: "P-100-26125-868956" });
     expect(s.reports).toBe(0);
-    const limits = await t.run(async (ctx) => ctx.db.query("rateLimits").take(1000));
-    expect(limits).toHaveLength(0);
   });
 
-  it("throttles one address after its hourly reports", async () => {
+  it("still answers over HTTP", async () => {
     const t = createTestContext();
-    for (let i = 0; i < PER_IP.limit; i++) {
-      const r = await t.mutation(internal.caseMilestones.report, {
-        caseNumber: `G-100-25324-4${String(i).padStart(5, "0")}`,
-        kind: "i485-filed",
-        eventDate: "2026-06-01",
-        ipHash: HASH_A,
-      });
-      expect(r.ok, `report ${i}`).toBe(true);
-    }
-    const next = await t.mutation(internal.caseMilestones.report, { caseNumber: CASE, kind: "i485-filed", eventDate: "2026-06-01", ipHash: HASH_A });
-    expect(next.ok).toBe(false);
-    expect(next.throttled).toBe(true);
-  });
-
-  it("refuses everyone once the daily budget is spent, and nothing is written past it", async () => {
-    const t = createTestContext();
-    const LEFT = 3;
-    await fillRateWindow(t, "all", "milestone-report-global", GLOBAL_BUDGET.limit - LEFT);
-    const CAP = LEFT + 20;
-    let refusedAt = -1;
-    for (let i = 0; i < CAP; i++) {
-      const r = await t.mutation(internal.caseMilestones.report, {
-        caseNumber: `G-100-25324-${String(100000 + i)}`,
-        kind: "i140-filed",
-        eventDate: "2026-06-01",
-        ipHash: String(i).padStart(64, "0"),
-      });
-      if (!r.ok) {
-        expect(r.throttled).toBe(true);
-        refusedAt = i;
-        break;
-      }
-    }
-    if (refusedAt < 0) throw new Error(`budget not exhausted after ${CAP} reports`);
-    expect(refusedAt).toBe(LEFT);
-    const rows = await t.run(async (ctx) => ctx.db.query("caseMilestones").take(LEFT + 50));
-    expect(rows).toHaveLength(LEFT);
+    await seed(t, "i485-filed", "2026-07-01", HASH_A);
+    const res = await t.fetch(`/milestone/summary?case=${CASE}`, { method: "GET" });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ caseNumber: CASE, reports: 1 });
   });
 });

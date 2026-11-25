@@ -2029,54 +2029,17 @@ http.route({
 });
 
 
-/**
- * User-reported milestones for a PERM case. GET reads, POST writes through
- * an internal mutation that owns every limit; the address is hashed here,
- * because the mutation runtime has no crypto and the raw address has no
- * business in the table. See convex/caseMilestones.ts.
- */
+/** A hex SHA-256, for the edit keys and push endpoints below: only the hash is stored. */
 async function sha256Hex(input: string): Promise<string> {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
   return Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-http.route({
-  path: "/milestone/report",
-  method: "OPTIONS",
-  handler: httpAction(async (_ctx, req) => {
-    return new Response(null, { status: 204, headers: corsHeaders(req.headers.get("Origin")) });
-  }),
-});
-
-http.route({
-  path: "/milestone/report",
-  method: "POST",
-  handler: httpAction(async (ctx, req) => {
-    const cors = corsHeaders(req.headers.get("Origin"));
-    const json = (body: unknown, status = 200) =>
-      new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
-    let body: unknown;
-    try {
-      body = await req.json();
-    } catch {
-      return json({ ok: false, message: "Malformed request." }, 400);
-    }
-    if (typeof body !== "object" || body === null) return json({ ok: false, message: "Malformed request." }, 400);
-    const { caseNumber, kind, eventDate } = body as Record<string, unknown>;
-    if (typeof caseNumber !== "string" || typeof kind !== "string" || typeof eventDate !== "string") {
-      return json({ ok: false, message: "A case number, a milestone and a date are all required." }, 400);
-    }
-    // Length caps BEFORE anything else looks at the strings.
-    if (caseNumber.length > 24 || kind.length > 20 || eventDate.length > 10) {
-      return json({ ok: false, message: "Malformed request." }, 400);
-    }
-    const ip = callerIp(req);
-    const ipHash = await hashIp("milestone", ip);
-    const result = await ctx.runMutation(internal.caseMilestones.report, { caseNumber, kind, eventDate, ipHash });
-    return json(result, result.ok ? 200 : result.throttled ? 429 : 400);
-  }),
-});
-
+/**
+ * The legacy milestone reports for a PERM case, read only. The table is
+ * closed: community timelines (/timeline/*, below) took its place, so it has
+ * no write route. See convex/caseMilestones.ts.
+ */
 http.route({
   path: "/milestone/summary",
   method: "GET",
