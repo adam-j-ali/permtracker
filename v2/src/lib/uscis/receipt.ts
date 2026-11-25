@@ -36,6 +36,8 @@ const FULL = /^[A-Z]{3}\d{10}$/;
 
 /** USCIS's masked form: three letters, an asterisk, nine digits. */
 const MASKED = /^[A-Z]{3}\*\d{9}$/;
+/** Spaces, hyphens, the Unicode dashes and dots, which a pasted number often carries. */
+const TYPED_NOISE = /[\s\-\u2010-\u2015.]+/g;
 
 export interface ReceiptPrefix {
   /** The office the prefix names. */
@@ -71,7 +73,9 @@ export const RECEIPT_PREFIXES: Readonly<Record<string, ReceiptPrefix>> = {
 
 /** Whether this text is a USCIS receipt by shape, ignoring case, spaces and dashes. */
 export function normaliseReceipt(input: string): string | null {
-  const raw = input.trim().toUpperCase().replace(/[\s-]+/g, "");
+  // The same noise the box strips (TYPED_NOISE): a number pasted from a PDF with an en dash or dots read as whole in
+  // the box and as malformed here until Nov 25 2026.
+  const raw = input.toUpperCase().replace(TYPED_NOISE, "");
   return FULL.test(raw) || MASKED.test(raw) ? raw : null;
 }
 
@@ -167,8 +171,6 @@ export interface PartialReceipt {
 
 const RECEIPT_LENGTH = 13;
 const PREFIX_LENGTH = 3;
-/** Spaces, hyphens, the Unicode dashes and dots, which a pasted number often carries. */
-const TYPED_NOISE = /[\s\-\u2010-\u2015.]+/g;
 /** An Alien Registration Number: an A and eight or nine digits. */
 const A_NUMBER = /^A\d{8,9}$/;
 const LETTER_FIXES: Readonly<Record<string, string>> = { "0": "O", "1": "I" };
@@ -237,7 +239,7 @@ export function readPartialReceipt(input: string): PartialReceipt {
  * rather than holding a malformed number.
  */
 export function looksLikeReceipt(input: string): boolean {
-  const raw = input.trim().toUpperCase().replace(/[\s-]+/g, "");
+  const raw = input.toUpperCase().replace(TYPED_NOISE, "");
   return /^[A-Z]{3}\*?\d{4,}$/.test(raw) && !/^[A-Z]-/.test(input.trim().toUpperCase());
 }
 

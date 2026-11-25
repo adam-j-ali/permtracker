@@ -203,3 +203,14 @@ describe("readPartialReceipt: a receipt read as it's typed (RT1, Nov 25 2026)", 
     expect(r.problem).toBeNull();
   });
 });
+
+describe("the box and the results page read a pasted receipt the same way (review, Nov 25 2026)", () => {
+  it.each(["EAC.219.001.2345", "EAC\u20132190012345", "EAC2190012345.", " eac-219-001-2345 "])(
+    "normalises %s, which the box already reads as a full number",
+    (pasted) => {
+      expect(readPartialReceipt(pasted).full).not.toBeNull();
+      expect(normaliseReceipt(pasted)).toBe("EAC2190012345");
+      expect(looksLikeReceipt(pasted)).toBe(true);
+    },
+  );
+});

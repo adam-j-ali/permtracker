@@ -48,6 +48,13 @@ describe("the USCIS receipt box reads the number as it's typed (RT1, Nov 25 2026
     expect(hint()).toMatch(/A-number/);
   });
 
+  it("reads an A-number written with dashes as an A-number, never as a DOL number", () => {
+    render(<UscisReceiptForm />);
+    fireEvent.change(field(), { target: { value: "A-123-456-789" } });
+    expect(hint()).toMatch(/A-number/);
+    expect(hint()).not.toMatch(/Department of Labor/);
+  });
+
   it("still routes a DOL number to the PERM page", () => {
     render(<UscisReceiptForm />);
     fireEvent.change(field(), { target: { value: "G-100-26125-868956" } });

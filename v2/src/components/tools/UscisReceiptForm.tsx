@@ -70,10 +70,12 @@ export function UscisReceiptForm({ defaultValue = "", className, live = false }:
   const [edited, setEdited] = useState(false);
 
   const typed = value.trim();
-  const isDol = edited && DOL_SHAPE.test(typed);
   const reading = readPartialReceipt(typed);
+  // An A-number written with dashes (A-123-456-789) starts like a DOL number; its eight or nine digits tell it apart
+  // (a legacy DOL number has ten), so it's read first.
+  const aNumber = edited && typed.length > 0 && reading.otherKind === "a-number";
+  const isDol = edited && !aNumber && DOL_SHAPE.test(typed);
   const showReading = edited && typed.length > 0 && !isDol;
-  const aNumber = showReading && reading.otherKind === "a-number";
   const problem = showReading && !aNumber ? problemLine(reading) : null;
   const malformed = problem !== null || aNumber;
 

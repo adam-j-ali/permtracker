@@ -103,6 +103,15 @@ describe("the site palette's recent searches", () => {
     expect(readRecentSearches()).toEqual([]);
   });
 
+  it("never sends a half-typed receipt to the name search (Nov 25 2026)", async () => {
+    const user = userEvent.setup();
+    render(<SearchPalette open onOpenChange={noop} />);
+    await user.type(screen.getByRole("combobox"), "LIN260421485");
+    await new Promise((r) => setTimeout(r, 400));
+    const asked = vi.mocked(fetch).mock.calls.map((c) => String(c[0]));
+    expect(asked.filter((u) => u.includes("LIN260421485"))).toEqual([]);
+  });
+
   it("keeps a page found by typing, and not a page picked with nothing typed", async () => {
     const user = userEvent.setup();
     const { unmount } = render(<SearchPalette open onOpenChange={noop} />);
