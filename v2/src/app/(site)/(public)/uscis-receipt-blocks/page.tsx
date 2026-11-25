@@ -168,7 +168,9 @@ export default async function UscisReceiptBlocksPage() {
               <p className="mt-2 max-w-2xl text-base leading-relaxed text-muted-foreground">
                 The same shares for online filings, by receipt month. A month&apos;s newest cases are the least decided,
                 so its share approved climbs as the month ages. Each case counts in the month USCIS received it, as its
-                own status page says, because USCIS doesn&apos;t number cases in the order it receives them.
+                own status page says, because USCIS doesn&apos;t number cases in the order it receives them. A case the
+                sample first saw already decided isn&apos;t counted here, because its page shows only the day of the
+                decision and leaves out the day USCIS received it.
               </p>{" "}
               <div className="mt-4">
                 <MonthTable series={monthSeries} />
