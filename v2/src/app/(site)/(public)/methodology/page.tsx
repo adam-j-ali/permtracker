@@ -504,8 +504,8 @@ export default async function MethodologyPage() {
           <p>
             Each month&apos;s range of online (IOE) receipt numbers is found from the receipt dates USCIS prints.
             Numbers in it are drawn at random, with extra draws in the blocks people ask us about. The newest stretch is
-            also checked number by number. Every number is checked again later, and a case counts once, at its newest
-            status.
+            also checked number by number, and that count gives the receipts USCIS issues a day. A case still pending is
+            checked again each week, and a case counts once, at its newest status.
           </p>{" "}
           <p>
             Each share is weighted to the size of the part it stands for. The counted stretch counts as it is, and the

@@ -238,9 +238,9 @@ export default async function UscisReceiptBlocksPage() {
         <p className="mt-3 text-base leading-relaxed">
           Each day we check a spread of receipt numbers on USCIS&apos;s public Case Status page and record the status it
           shows. The numbers are drawn at random across each month&apos;s range, with extra draws in the blocks people ask
-          about, and each is checked again later to see it move. A number counts once, at its newest status. Shares are
-          weighted to the size of each range, and each comes with a 95% margin from the number of cases behind it. The
-          receipt numbers themselves are never shown here or shared.
+          about, and a case still pending is checked again each week to see it move. A number counts once, at its newest
+          status. Shares are weighted to the size of each range, and each comes with a 95% margin from the number of
+          cases behind it. The receipt numbers themselves are never shown here or shared.
         </p>{" "}
         <p className="mt-3 text-base leading-relaxed">
           Every day we also check each online block up to the newest number USCIS has given out. The cases found between
