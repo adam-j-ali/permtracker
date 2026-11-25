@@ -66,6 +66,12 @@ export default function UscisCaseStatusesPage() {
             Look up a receipt&apos;s status
           </Link>{" "}
           <span className="text-soft">and get an email when it changes.</span>
+        </p>{" "}
+        <p className="mt-2 text-base">
+          <Link href="/guides/what-uscis-case-statuses-mean" className="link">
+            How to read a USCIS case status
+          </Link>{" "}
+          <span className="text-soft">explains why statuses read the way they do and what one can&apos;t tell you.</span>
         </p>
       </header>{" "}
       <nav aria-label="The ten kinds" className="mt-8">
