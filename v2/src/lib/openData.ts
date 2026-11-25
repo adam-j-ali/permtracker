@@ -46,6 +46,56 @@ export function openDataCreditHtml(siteUrl: string): string {
   return `Source: <a href="${base}/open-data">PERM Tracker</a>, from U.S. Department of State and Department of Labor records. <a href="${OPEN_DATA_LICENSE.url}">${OPEN_DATA_LICENSE.short}</a>.`;
 }
 
+/**
+ * Figures to quote that aren't files (Batch 8): USCIS's own figures the site loads, our sample of USCIS's case pages,
+ * and the timelines people report, each a set of totals on its own page, dated by the registry the ingests keep
+ * (`getFreshness`, the same dates the pages' source lines print). Aggregates only: no receipt number, name or single
+ * case is in any of them. The Terms open only the two files above for reuse as data, so these are quoted with credit
+ * and a link, like every figure on the site, and offered as no download.
+ */
+export const CITABLE_FIGURES: ReadonlyArray<{ dataset: string; href: string; what: string }> = [
+  {
+    dataset: "uscis-sample",
+    href: "/uscis-receipt-blocks",
+    what: "The share of online (IOE) filings USCIS shows as approved, waiting or asked for more evidence, by receipt month and by block of 100,000 numbers. Each share has its 95% margin and the number of cases behind it.",
+  },
+  {
+    dataset: "uscis-posted-times",
+    href: "/uscis-processing-times",
+    what: "Every time USCIS's processing-times page has posted since March 2022, by form, category and office: the time within which it decided 8 cases in 10.",
+  },
+  {
+    dataset: "uscis-form-quarters",
+    href: "/uscis-processing-times",
+    what: "Each USCIS form's receipts, approvals, denials, pending count and median months to a decision, quarter by quarter.",
+  },
+  {
+    dataset: "uscis-i485-offices",
+    href: "/i485-by-field-office",
+    what: "I-485s received, approved, denied and pending at each USCIS field office and service center, each quarter.",
+  },
+  {
+    dataset: "uscis-eb-awaiting-visa",
+    href: "/i140-awaiting-visa",
+    what: "Approved I-140, I-360 and I-526 petitions still waiting for a visa number, by preference and country of birth.",
+  },
+  {
+    dataset: "uscis-rfe",
+    href: "/uscis-rfe-rates",
+    what: "How often USCIS asked for more evidence on the I-129 petitions it decided each month since FY2015, by visa classification.",
+  },
+  {
+    dataset: "i485-inventory",
+    href: "/tools/i485-queue-position",
+    what: "Pending employment-based I-485s by priority date and country, as USCIS counts them.",
+  },
+  {
+    dataset: "reported-cases",
+    href: "/green-card-timelines",
+    what: "How long each green card step took for the cases people reported themselves, as medians and counts, each person once. Self-reported and unchecked.",
+  },
+];
+
 export const OPEN_DATA_PATHS = {
   bulletinCsv: "/open-data/visa-bulletins.csv",
   bulletinJson: "/open-data/visa-bulletins.json",

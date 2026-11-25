@@ -61,6 +61,17 @@ describe("DataProvenance", () => {
     expect(line).not.toContain("through Aug 24");
   });
 
+  it("gives a listed dataset its date as a sentence's start, as the source line dates it (sourceDate, /open-data)", async () => {
+    const { sourceDate } = await import("../DataProvenance");
+    expect(sourceDate(row({ dataset: "uscis-sample", asOf: "2026-11-25" }) as never)).toBe("Data through Nov 25, 2026");
+    expect(sourceDate(row({ asOf: "2026-06" }) as never)).toBe("Data through Jun 2026");
+    const checked = Date.UTC(2026, 10, 2, 15, 0);
+    expect(sourceDate(row({ dataset: "policy-notices-balca", asOf: "2026-08-24", fetchedAt: checked }) as never)).toBe(
+      "Checked Nov 2, 2026, newest Aug 24, 2026",
+    );
+    expect(sourceDate(row({ asOf: null }) as never)).toBeNull();
+  });
+
   it("says how the figures are counted and how to report a mistake", async () => {
     await renderProvenance({ "perm-month-stats": row() });
     expect(screen.getByRole("link", { name: "How these figures are counted" })).toHaveAttribute("href", "/methodology");

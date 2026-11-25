@@ -10,7 +10,7 @@
 
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BuildingsIcon, EnvelopeSimpleIcon, FileCsvIcon, GlobeHemisphereWestIcon, IdentificationCardIcon } from "@phosphor-icons/react/ssr";
+import { BuildingsIcon, EnvelopeSimpleIcon, FileCsvIcon, GlobeHemisphereWestIcon, IdentificationCardIcon, UsersThreeIcon } from "@phosphor-icons/react/ssr";
 
 import { SiteImage } from "@/components/ui/site-image";
 import { CopyButton } from "@/components/badges/BadgeCatalogue";
@@ -22,6 +22,7 @@ import { formatInt, formatShare } from "@/lib/format";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { PAGE_CARD_ALT, pageCardUrl, type PageCardSlug } from "@/lib/pageCards";
 import { pressCreditHtml } from "@/lib/pressCredit";
+import { pageName } from "@/lib/siteMap";
 import { withSocialCard } from "@/lib/socialCard";
 import { getEmployerStages } from "@/lib/db/employerStages";
 import { buttonVariants } from "@/components/ui/button";
@@ -58,7 +59,34 @@ const TOPICS: { slug: PageCardSlug; href: string; name: string; line: string }[]
 const SOURCES = [
   { icon: BuildingsIcon, name: "Department of Labor", what: "Case status for every pending case, and the quarterly disclosure files" },
   { icon: GlobeHemisphereWestIcon, name: "State Department", what: "Every monthly visa bulletin" },
-  { icon: IdentificationCardIcon, name: "USCIS", what: "Quarterly processing and inventory data" },
+  { icon: IdentificationCardIcon, name: "USCIS", what: "Quarterly processing and inventory data, posted processing times, and the case statuses we sample" },
+  { icon: UsersThreeIcon, name: "People's own reports", what: "Green card timelines people share, kept apart from the agencies' figures and marked as self-reported" },
+];
+
+/**
+ * The USCIS figures and people's reports a reporter can quote (Batch 8), each with how to credit it: the agency's own
+ * figures name the agency, our sample of USCIS's case pages names us and its limits, and people's reports say they're
+ * self-reported. /open-data lists each dataset with its date.
+ */
+const MORE_DATA: { href: string; name: string; line: string; cite: string }[] = [
+  {
+    href: "/uscis-processing-times",
+    name: "USCIS's own figures",
+    line: "Its posted processing times and its quarterly counts by form and office, as USCIS publishes them. They include the approved petitions still waiting for a visa number.",
+    cite: "Name USCIS as the source, and PERM Tracker with a link as where you found it.",
+  },
+  {
+    href: "/uscis-receipt-blocks",
+    name: "Our sample of USCIS case statuses",
+    line: "The share of online (IOE) filings approved, by receipt month and by block, from receipt numbers we check on USCIS's Case Status page every day.",
+    cite: "Call it PERM Tracker's sample, say it covers online filings only, and give the margin and the date with each share.",
+  },
+  {
+    href: "/green-card-timelines",
+    name: "Timelines people report",
+    line: "How long each green card step took for the cases people shared, as medians and counts, each person once.",
+    cite: "Say the figures are self-reported to PERM Tracker and unchecked, and give the number of cases behind them.",
+  },
 ];
 
 const link = "font-bold underline decoration-primary decoration-2 underline-offset-2 hover:text-primary";
@@ -157,6 +185,36 @@ export default async function PressPage() {
         </ul>
       </section>{" "}
 
+      <section aria-labelledby="press-more" className="mt-20">
+        <h2 id="press-more" className="font-heading text-2xl font-bold sm:text-3xl">
+          USCIS figures and people&apos;s reports
+        </h2>{" "}
+        <p className="mt-3 max-w-2xl text-lg leading-relaxed text-soft">
+          The site also carries USCIS&apos;s own figures and our daily check of USCIS&apos;s case pages. It carries what
+          people report about their own cases too. Each page labels its kind and dates every figure.
+        </p>{" "}
+        <ul className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3 [&>*]:min-w-0">
+          {MORE_DATA.map((d) => (
+            <li key={d.href} className="flex flex-col border-2 border-border bg-card p-5 shadow-hard-sm">
+              <h3 className="font-heading text-lg font-bold">{keepWhole(d.name)}</h3>{" "}
+              <p className="mt-2 text-base leading-relaxed text-soft">{keepWhole(d.line)}</p>{" "}
+              <p className="mt-3 text-base leading-relaxed">
+                <span className="font-bold">To credit it: </span>
+                {keepWhole(d.cite)}
+              </p>{" "}
+              <Link href={d.href} className={`${link} mt-auto inline-flex min-h-11 items-center pt-2`}>
+                {keepWhole(pageName(d.href) ?? d.name)}
+              </Link>{" "}
+            </li>
+          ))}
+        </ul>{" "}
+        <p className="mt-5 text-base">
+          <Link href="/open-data#figures" className={link}>
+            Every dataset with the date it runs to
+          </Link>
+        </p>
+      </section>{" "}
+
       <section aria-labelledby="press-credit" className="mt-20 grid grid-cols-1 items-center gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] [&>*]:min-w-0">
         <div>
           <h2 id="press-credit" className="font-heading text-2xl font-bold sm:text-3xl">
@@ -204,9 +262,9 @@ export default async function PressPage() {
 
       <section aria-labelledby="press-sources" className="mt-20">
         <h2 id="press-sources" className="font-heading text-2xl font-bold sm:text-3xl">
-          Federal records only
+          Where the figures come from
         </h2>{" "}
-        <ul className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3 [&>*]:min-w-0">
+        <ul className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 [&>*]:min-w-0">
           {SOURCES.map((s) => (
             <li key={s.name} className="flex items-start gap-4 border-border p-5 border-2 shadow-hard-sm bg-card">
               <s.icon size={26} className="shrink-0 text-primary-text" aria-hidden="true" />{" "}

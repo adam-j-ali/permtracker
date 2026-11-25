@@ -10,15 +10,24 @@
  */
 
 import type { Metadata } from "next";
+import Link from "next/link";
 import { DownloadSimpleIcon, FileCsvIcon, BracketsCurlyIcon } from "@phosphor-icons/react/ssr";
 
 import { CopyButton } from "@/components/badges/BadgeCatalogue";
+import { sourceDate } from "@/components/data/DataProvenance";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { SITE_URL } from "@/lib/constants/site";
+import { datasetKind, datasetLabel } from "@/lib/datasetCoverage";
+import { getFreshness, type DatasetFreshness } from "@/lib/db/publicData";
+import { pageName } from "@/lib/siteMap";
+import { softFail } from "@/lib/softRead";
+import type { SourceKind } from "@/lib/sourceKind";
+import { SOURCE_VIEWS } from "@/lib/sourceView";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
 import { getDatasetSchema } from "@/lib/structuredData";
 import {
+  CITABLE_FIGURES,
   OPEN_DATA_CREDIT,
   OPEN_DATA_EXTRA,
   OPEN_DATA_LICENSE,
@@ -64,6 +73,9 @@ function dayLabel(iso: string | undefined): string {
 }
 const fmt = (n: number) => n.toLocaleString("en-US");
 
+/** Each kind of source by the name the sources switch gives it, so a figure's kind reads the same everywhere. */
+const KIND_NAME = Object.fromEntries(SOURCE_VIEWS.flatMap((v) => (v.kind ? [[v.kind, v.label]] : []))) as Record<SourceKind, string>;
+
 /** Calendar months between the first and last held that aren't held. */
 function missingMonths(held: string[]): number {
   if (held.length < 2) return 0;
@@ -98,7 +110,12 @@ export default async function OpenDataPage() {
   // No fallback to empty lists: a page saying "0 bulletins" would describe
   // files that aren't empty. A failed read reaches the error screen, and a
   // failed regeneration keeps the last good page.
-  const [bulletins, readings] = await Promise.all([getVisaBulletinsArchive(), getProcessingTimesArchive()]);
+  const [bulletins, readings, freshness] = await Promise.all([
+    getVisaBulletinsArchive(),
+    getProcessingTimesArchive(),
+    // The dates on the figures to quote; a failed read leaves each without its date line, never the list.
+    getFreshness().catch(softFail<Record<string, DatasetFreshness>>("open-data/page.getFreshness", {})),
+  ]);
   const bRows = bulletinRows(bulletins);
   const dRows = dolRows(readings);
 
@@ -195,6 +212,34 @@ export default async function OpenDataPage() {
           fields={DOL_FIELDS}
         />
       </div>{" "}
+
+      <section id="figures" aria-labelledby="figures-title" className="mt-12 scroll-mt-24">
+        <h2 id="figures-title" className="font-heading text-2xl font-bold">
+          USCIS figures and people&rsquo;s reports
+        </h2>{" "}
+        <p className="mt-2 max-w-2xl text-base leading-relaxed text-soft">
+          These aren&rsquo;t files. Each is a set of totals on its own page, with the date it runs to, and you can quote
+          any of them with credit and a link to that page. None of them holds a receipt number or one person&rsquo;s case.
+        </p>{" "}
+        <ul className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 [&>*]:min-w-0">
+          {CITABLE_FIGURES.map((f) => {
+            const r = freshness[f.dataset];
+            const date = r ? sourceDate(r) : null;
+            const kind = datasetKind(f.dataset);
+            return (
+              <li key={f.dataset} className="flex flex-col border-2 border-border bg-card p-5">
+                <p className="text-sm font-bold text-muted-foreground">{KIND_NAME[kind ?? "official"]}</p>{" "}
+                <h3 className="mt-1 font-heading text-lg font-bold">{keepWhole(datasetLabel(f.dataset))}</h3>{" "}
+                <p className="mt-2 text-base leading-relaxed text-soft">{keepWhole(f.what)}</p>{" "}
+                {date ? <p className="mt-3 text-sm font-semibold text-muted-foreground">{`${date}.`}</p> : null}{" "}
+                <Link href={f.href} className="link mt-auto inline-flex min-h-11 items-center pt-2 font-bold">
+                  {keepWhole(pageName(f.href) ?? f.href)}
+                </Link>{" "}
+              </li>
+            );
+          })}
+        </ul>
+      </section>{" "}
 
       <section className="mt-12 border-3 shadow-hard p-5 sm:p-6 bg-card border-border">
         <h2 className="font-heading text-2xl font-bold">Credit</h2>{" "}

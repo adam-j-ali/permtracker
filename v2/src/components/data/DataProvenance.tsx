@@ -152,6 +152,16 @@ function agePhrase(r: DatasetFreshness): string {
 const label = datasetLabel;
 
 /**
+ * The date a dataset's source line gives it, as a sentence's start: "Data through Nov 25, 2026", or a news feed's
+ * "Checked Nov 25, 2026". For a page that lists datasets under their names rather than drawing their figures
+ * (/open-data), so it dates each one as this block does.
+ */
+export function sourceDate(r: DatasetFreshness): string | null {
+  const w = when(r, "data through").trim();
+  return w ? w.charAt(0).toUpperCase() + w.slice(1) : null;
+}
+
+/**
  * The date a source line gives a dataset: what its data runs to, or for a news feed when we last checked it and its
  * newest item (isNewsFeed), so a quiet feed doesn't read as one nobody has looked at.
  */
