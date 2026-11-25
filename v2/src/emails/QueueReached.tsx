@@ -192,12 +192,19 @@ export function QueueReached({
           },
           {
             href: `${SITE_URL}/perm-processing-times`,
-            text: "See the current figures",
+            text: "PERM processing times: today's figures from DOL",
           },
-          {
-            href: `${SITE_URL}/tools/perm-timeline-calculator`,
-            text: "The deadlines on your side of the process",
-          },
+          // The step after each queue: a wage request's is recruitment and the PERM filing, so its deadlines; a
+          // PERM's is the decision, so the likely day. Each link's words name the tool it opens.
+          isPwd
+            ? {
+                href: `${SITE_URL}/tools/perm-deadline-calculator`,
+                text: "PERM deadlines: recruitment and the filing window, from your wage",
+              }
+            : {
+                href: `${SITE_URL}/tools/perm-timeline-calculator`,
+                text: "Timeline calculator: the likely decision day and its range",
+              },
           {
             href: `${SITE_URL}/perm-cases`,
             text: "Every PERM decision DOL has published",

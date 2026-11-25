@@ -40,6 +40,7 @@ import {
   EmailLayout,
   EmailLinkList,
   FigureTable,
+  NextStepsBlock,
   StatusRail,
 } from "./components";
 import type { FigureRow } from "./components/FigureTable";
@@ -316,40 +317,6 @@ export function CaseStatusChanged({
   );
 }
 
-/**
- * The step after this one, set apart by a lime rule so it reads as the
- * email's second message rather than another table. One optional outline
- * button (the onward alert), then plain links.
- */
-function NextStepsBlock({ next }: { next: NextSteps }) {
-  return (
-    <Section style={styles.next}>
-      <Text className="em-text" style={styles.nextHeading}>
-        What comes next
-      </Text>
-      {next.steps.map((s) => (
-        <Text key={s.title} className="em-text-body" style={styles.nextStep}>
-          <strong>{s.title}.</strong> {s.body}
-        </Text>
-      ))}
-      {next.button ? (
-        <Section style={styles.nextButton}>
-          <EmailButton href={next.button.href} variant="outline">
-            {next.button.text}
-          </EmailButton>
-        </Section>
-      ) : null}
-      {next.links.map((l) => (
-        <Text key={l.href} style={styles.nextLinkRow}>
-          <Link href={l.href} className="em-link-strong" style={styles.nextLink}>
-            {l.text}
-          </Link>
-        </Text>
-      ))}
-    </Section>
-  );
-}
-
 const styles = {
   identity: {
     marginBottom: "28px",
@@ -401,44 +368,6 @@ const styles = {
   ask: {
     marginTop: "28px",
     marginBottom: "4px",
-  },
-  next: {
-    margin: "8px 0 28px 0",
-    padding: "4px 0 0 16px",
-    borderLeft: "4px solid #2ECC40",
-  },
-  nextHeading: {
-    fontFamily: SANS_STACK,
-    color: "#000001",
-    fontSize: "18px",
-    fontWeight: 700 as const,
-    lineHeight: "24px",
-    margin: "0 0 10px 0",
-  },
-  nextStep: {
-    fontFamily: SANS_STACK,
-    color: "#2A2A2A",
-    fontSize: "16px",
-    lineHeight: "25px",
-    margin: "0 0 12px 0",
-  },
-  nextButton: {
-    margin: "4px 0 8px 0",
-  },
-  nextLinkRow: {
-    margin: "0",
-  },
-  nextLink: {
-    fontFamily: SANS_STACK,
-    color: "#1A1A1A",
-    fontSize: "15px",
-    fontWeight: 600 as const,
-    textDecorationLine: "underline" as const,
-    // A standalone link on its own line: inline-block puts the padding inside
-    // the hit box, so each one is a 44px tap target like the link list's.
-    display: "inline-block",
-    padding: "12px 0",
-    lineHeight: "20px",
   },
   footerExtra: {
     color: "#5F5F67",

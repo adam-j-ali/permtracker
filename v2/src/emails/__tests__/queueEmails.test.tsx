@@ -402,6 +402,21 @@ describe("alert: the way to the reader's own case", () => {
     expect(hrefs(html)).toContain("https://permtracker.app/perm-cases");
   });
 
+  it("names each tool its link opens, and gives a wage request the PERM's deadlines", async () => {
+    const perm = await render(QueueReached(alertProps));
+    expect(linkNamed(perm, "Timeline calculator: the likely decision day and its range")).toBe(
+      "https://permtracker.app/tools/perm-timeline-calculator",
+    );
+    expect(linkNamed(perm, "PERM processing times: today&#x27;s figures from DOL")).toBe("https://permtracker.app/perm-processing-times");
+    // The text said "deadlines" and the link opened the decision-day estimate until Nov 25 2026.
+    expect(perm).not.toContain("The deadlines on your side of the process");
+    const pwd = await render(QueueReached(PWD));
+    expect(linkNamed(pwd, "PERM deadlines: recruitment and the filing window, from your wage")).toBe(
+      "https://permtracker.app/tools/perm-deadline-calculator",
+    );
+    expect(hrefs(pwd)).not.toContain("https://permtracker.app/tools/perm-timeline-calculator");
+  });
+
   it("would catch the button going back to the figures", () => {
     const was = '<a href="https://permtracker.app/perm-processing-times" style="x"><span>See the current figures</span></a>';
     expect(linkNamed(was, "Check my case")).toBeNull();

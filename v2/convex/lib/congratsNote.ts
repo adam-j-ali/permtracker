@@ -34,7 +34,11 @@ export const LOOK_BACK_MS = 21 * 24 * 60 * 60 * 1000;
 
 export const NOTE_SUBJECT = "Congrats, and a quick question";
 
-/** The approved wording for each program (Oct 22 2026); `things` and `verb` serve a note about several cases. */
+/**
+ * The approved wording for each program (Oct 22 2026); `things` and `verb` serve a note about several cases.
+ * `next` names what the site offers for the step that follows, each with its address (Nov 25 2026: the I-140
+ * calculator and the USCIS receipt lookup with its beta alert). The beta is never called paid or free.
+ */
 const WORDS: Record<
   NoteProgram,
   { thing: string; things: string; done: string; verb: string; next: string; help: string }
@@ -45,10 +49,13 @@ const WORDS: Record<
     done: "DOL has certified it",
     verb: "certified",
     next:
-      "Next comes the I-140. If you want a heads-up on the green card line, you can get an email whenever your " +
-      "visa bulletin cutoff moves: pick your category and country at permtracker.app/visa-bulletin. As your " +
-      "I-140 and I-485 move, you can add your dates at permtracker.app/green-card-timelines, so others waiting " +
-      "can see how long each step takes.",
+      "Next comes the I-140. Your employer has 180 days from the certification to file it. You can see how long " +
+      "USCIS is taking, with the clock for premium processing, at permtracker.app/tools/i140-calculator. Once " +
+      "it's filed, you can look up its receipt number at permtracker.app/uscis-case-status, where a beta " +
+      "emails you when USCIS changes its status. If you want a heads-up on the green card line, you can get an " +
+      "email whenever your visa bulletin cutoff moves: pick your category and country at " +
+      "permtracker.app/visa-bulletin. As your I-140 and I-485 move, you can add your dates at " +
+      "permtracker.app/green-card-timelines, so others waiting can see how long each step takes.",
     help: "the I-140, the I-485, priority date alerts, or something else?",
   },
   lca: {
@@ -57,8 +64,8 @@ const WORDS: Record<
     done: "DOL has certified it",
     verb: "certified",
     next:
-      "Next comes the H-1B petition. Checking a petition's status by its receipt number is built and waiting on " +
-      "USCIS to approve our access, and I'll let you know when it's live.",
+      "Next comes the H-1B petition. Once it's filed, you can look up its receipt number at " +
+      "permtracker.app/uscis-case-status, where a beta emails you when USCIS changes its status.",
     help: "the H-1B petition, a green card case later on, or something else?",
   },
   pwd: {

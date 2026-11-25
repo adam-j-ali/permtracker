@@ -45,6 +45,8 @@ import { SITE_URL } from "./lib/links";
 import { caseInSentence } from "./lib/caseLabel";
 import { NOTIFICATION_SETTINGS_PATH } from "./lib/mailKinds";
 import { deadlineDigestWords } from "./lib/deadlineDigestWords";
+import { forSavedCase, nextStepsFor, type NextSteps } from "./lib/alertNextSteps";
+import { isProgramApproval, programOf } from "../src/lib/flagCaseNumber";
 
 // App URL for generating links (falls back to production URL)
 function getAppUrl(): string {
@@ -143,6 +145,34 @@ async function sendNotificationEmail(
 // ============================================================================
 
 /**
+ * What comes next after DOL decided a saved case: the public case alert's steps (convex/lib/alertNextSteps.ts), the
+ * bulletin alert pointed at the case's own Green card tab. No priority date is named: the step's sentence calls the
+ * date DOL's record, and a saved case's filing date is the one its owner typed. The case page shows it.
+ */
+function decidedCaseNext(
+  caseNumber: string,
+  status: string,
+  decision: { decidedOn: string },
+  caseUrl: string,
+): NextSteps | null {
+  const program = programOf(caseNumber);
+  const s = status.trim().toUpperCase();
+  const isPerm = program === "perm";
+  return forSavedCase(
+    nextStepsFor({
+      program,
+      caseNumber,
+      status: s,
+      isFinal: true,
+      approved: isProgramApproval(program, s),
+      certifiedOn: isPerm && s === "CERTIFIED" ? decision.decidedOn : null,
+      deniedOn: isPerm && s === "DENIED" ? decision.decidedOn : null,
+    }),
+    caseUrl,
+  );
+}
+
+/**
  * Send a status change email.
  */
 export const sendStatusChangeEmail = internalAction({
@@ -157,9 +187,15 @@ export const sendStatusChangeEmail = internalAction({
     changedAt: v.string(),
     caseId: v.string(),
     caseNumber: v.optional(v.string()),
+    /**
+     * Set only when `newStatus` is DOL's own final status for a saved case (convex/appCaseWatch.ts), with the day
+     * DOL's record moved: the email then says what comes next.
+     */
+    dolDecision: v.optional(v.object({ decidedOn: v.string() })),
   },
   handler: async (ctx, args) => {
     const { caseUrl } = buildEmailUrls(args.caseId);
+    const next = args.dolDecision && args.caseNumber ? decidedCaseNext(args.caseNumber, args.newStatus, args.dolDecision, caseUrl!) : null;
 
     const html = await render(
       StatusChange({
@@ -171,6 +207,7 @@ export const sendStatusChangeEmail = internalAction({
         changedAt: args.changedAt,
         caseUrl: caseUrl!,
         caseNumber: args.caseNumber,
+        next,
       })
     );
 

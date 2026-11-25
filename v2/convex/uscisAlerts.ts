@@ -49,6 +49,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { internalAction, internalMutation, internalQuery, type MutationCtx } from "./_generated/server";
 import { admitConfirmation, queueConfirmation, replayArgs } from "./confirmationQueue";
 import { BUDGETS, CONFIRMATION_COOLDOWN_MS, noteQueued, SUBSCRIBE_IP_LIMIT, windowFor } from "./lib/alertBudgets";
+import { nextStepsText, receiptNextSteps } from "./lib/alertNextSteps";
 import { claimHolds, deliverAlert, deliveredSince } from "./lib/alertDelivery";
 import { FROM_EMAIL, getResend, sendOrQueue } from "./lib/email";
 import { isPlausibleEmail } from "./lib/emailShape";
@@ -769,10 +770,12 @@ export const sendForAddress = internalAction({
         dolCaseUrl: i.dolCaseNumber ? `${SITE_URL}/perm-case-status?case=${encodeURIComponent(i.dolCaseNumber)}` : null,
       }));
       const one = items.length === 1 ? items[0]! : null;
+      // What comes next, from each receipt's form and status group (convex/lib/alertNextSteps.ts).
+      const next = receiptNextSteps(items);
 
       const html = await renderOrTextOnly(ctx, "uscisAlerts.sendForAddress.render", async () => {
         const { UscisStatusChanged } = await import("../src/emails/UscisStatusChanged");
-        return UscisStatusChanged({ items, unsubscribeUrl, prefsUrl });
+        return UscisStatusChanged({ items, unsubscribeUrl, prefsUrl, next });
       });
 
       const result = await deliverAlert(ctx, {
@@ -804,6 +807,7 @@ export const sendForAddress = internalAction({
             ...(i.dolCaseUrl ? [`Your PERM case ${i.dolCaseNumber}: ${i.dolCaseUrl}`] : []),
             "",
           ]),
+          ...nextStepsText(next),
           "USCIS is the authority on every case. Its own page has today's status: https://egov.uscis.gov/casestatus/landing.do",
           "",
           `Email preferences: ${prefsUrl}`,

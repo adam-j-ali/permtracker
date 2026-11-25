@@ -38,6 +38,7 @@ import type { ReactElement } from "react";
 import { FROM_EMAIL, getResend, sendOrQueue } from "./lib/email";
 import { recordConsentAtConfirm } from "./lib/policyConsentStore";
 import { deliverAlert } from "./lib/alertDelivery";
+import { bulletinNextSteps, nextStepsText } from "./lib/alertNextSteps";
 import { dropQueued } from "./lib/alertOutboxStore";
 import { BUDGETS, noteRefusal, windowFor, CONFIRMATION_COOLDOWN_MS, SUBSCRIBE_IP_LIMIT, SWEEP_RESUME_DELAY_MS } from "./lib/alertBudgets";
 import { scaled } from "./lib/emailAllowance";
@@ -648,8 +649,7 @@ export const sweep = internalAction({
             "This is the State Department's own published figure. It isn't advice",
             "and it isn't a prediction of your case.",
             "",
-            `History and the full board: ${SITE_URL}/tools/priority-date-calculator`,
-            "",
+            ...nextStepsText(bulletinNextSteps()),
             `Stop these alerts: ${unsubUrl}`,
             "",
             "PERM Tracker",

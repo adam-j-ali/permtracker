@@ -18,7 +18,7 @@
  */
 
 import { SITE_URL } from "./links";
-import { nextStepsFor, type ConfirmOffer } from "./alertNextSteps";
+import { allLinks, NEXT_PATHS, nextStepsFor, type ConfirmOffer } from "./alertNextSteps";
 import { isProgramApproval, programOf } from "../../src/lib/flagCaseNumber";
 import {
   EMAIL_PREFERENCES_PATH,
@@ -242,27 +242,20 @@ ${nextSteps(status, caseNumber)
 }
 
 /**
- * What comes after the status the last alert reported, for the case's own program. An LCA or a wage request takes the
- * alert email's own next steps (`nextStepsFor`): read by status alone, a certified LCA had been sent PERM's (Nov 2 2026).
+ * What comes after the status the last alert reported: the alert email's own next steps (`nextStepsFor`), every link
+ * of them, for the case's own program. Read by status alone, a certified LCA had been sent PERM's (Nov 2 2026). A
+ * certified PERM keeps the guide to the whole wait after its steps.
  */
 export function nextSteps(status: string | null, caseNumber = ""): Array<{ href: string; label: string }> {
   const s = (status ?? "").trim().toUpperCase();
   const program = caseNumber ? programOf(caseNumber) : "perm";
-  if (program !== "perm") {
-    const next = nextStepsFor({ program, caseNumber, status: s, isFinal: true, approved: isProgramApproval(program, s) });
-    return (next?.links ?? []).map((l) => ({ href: l.href, label: l.text }));
-  }
-  if (s === "CERTIFIED") {
-    return [
-      { href: `${SITE_URL}/guides/waiting-on-your-green-card`, label: "The steps after PERM, and how long each takes" },
-      { href: `${SITE_URL}/tools/green-card-line`, label: "Where your green card line stands" },
-    ];
-  }
-  if (s.startsWith("DENIED")) {
-    return [{ href: `${SITE_URL}/guides/perm-denied-what-happens-next`, label: "What a denial means, and the options after one" }];
+  const next = nextStepsFor({ program, caseNumber, status: s, isFinal: true, approved: isProgramApproval(program, s) });
+  const links = allLinks(next).map((l) => ({ href: l.href, label: l.text }));
+  if (program === "perm" && s === "CERTIFIED") {
+    links.push({ href: `${SITE_URL}${NEXT_PATHS.waitingGuide}`, label: "The steps after PERM, and how long each takes" });
   }
   // Withdrawn, expired or anything else final: the case page says what DOL recorded.
-  return [];
+  return links;
 }
 
 // ============================================================================

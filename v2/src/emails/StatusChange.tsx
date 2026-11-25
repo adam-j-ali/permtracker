@@ -6,15 +6,21 @@
  * the DOL status alert uses (StatusRail): the old stage quiet above, the new
  * one as the solid lime block. No arrow glyph (a font dependency), no pale
  * green chip (owner, Oct 15 2026: lime or dark, never the highlighter green).
+ *
+ * When the change is DOL deciding a saved case, "What comes next" follows the
+ * button: the same steps the public case alert carries
+ * (convex/lib/alertNextSteps.ts), with the bulletin alert as the case's own
+ * switch on its Green card tab (`forSavedCase`).
  */
 
 import { Text, Section } from "react-email";
-import { EmailLayout, EmailButton } from "./components";
+import { EmailLayout, EmailButton, NextStepsBlock } from "./components";
 import { StatusRail } from "./components/StatusRail";
 import { SANS_STACK } from "./components/QueueStamp";
 import { ctaSectionStyle } from "./components/emailStyles";
 import { SITE_URL } from "../../convex/lib/links";
 import { caseInSentence } from "../../convex/lib/caseLabel";
+import type { NextSteps } from "../../convex/lib/alertNextSteps";
 
 export interface StatusChangeProps {
   /** Beneficiary name ("" when the case names none) */
@@ -33,6 +39,8 @@ export interface StatusChangeProps {
   caseUrl: string;
   /** Case reference number */
   caseNumber?: string;
+  /** What comes next, when DOL has decided the case; null or omitted otherwise. */
+  next?: NextSteps | null;
 }
 
 /** A stage that ends the case takes the rail's closed block, not the lime. */
@@ -47,6 +55,7 @@ export function StatusChange({
   changedAt,
   caseUrl,
   caseNumber,
+  next = null,
 }: StatusChangeProps) {
   // A new case has no previous stage: it says so instead of "N/A to Created".
   const isNew = !previousStatus || previousStatus === "N/A";
@@ -80,6 +89,8 @@ export function StatusChange({
       <Section style={ctaSectionStyle}>
         <EmailButton href={caseUrl}>View case</EmailButton>
       </Section>
+
+      {next ? <NextStepsBlock next={next} /> : null}
     </EmailLayout>
   );
 }

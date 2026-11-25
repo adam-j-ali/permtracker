@@ -5,11 +5,15 @@
  * and "U" are expanded because they are opposites that read alike, and a
  * subscriber getting "C -> U" deserves to be told the category shut, in
  * words, not initials.
+ *
+ * Then what comes next (`bulletinNextSteps` in convex/lib/alertNextSteps.ts):
+ * the reader's own date against the new cutoff, and the step that follows
+ * once the bulletin reaches it. The plain-text part reads the same steps.
  */
 import { Link, Section, Text } from "react-email";
-import { EmailLayout } from "./components";
+import { EmailLayout, NextStepsBlock } from "./components";
 import { SANS_STACK } from "./components/QueueStamp";
-import { SITE_URL } from "../../convex/lib/links";
+import { bulletinNextSteps } from "../../convex/lib/alertNextSteps";
 
 export interface BulletinMovedProps {
   /** "EB2 India". */
@@ -73,16 +77,7 @@ export function BulletinMoved({
         isn&rsquo;t advice and it isn&rsquo;t a prediction of your case.
       </Text>
 
-      <Text className="em-text-secondary" style={styles.note}>
-        The full board and every bulletin since October 2014:{" "}
-        <Link
-          href={`${SITE_URL}/tools/priority-date-calculator`}
-          className="em-link"
-          style={styles.footerLink}
-        >
-          permtracker.app/tools/priority-date-calculator
-        </Link>
-      </Text>
+      <NextStepsBlock next={bulletinNextSteps()} />
     </EmailLayout>
   );
 }
@@ -141,13 +136,6 @@ const styles = {
     fontSize: "15px",
     lineHeight: "24px",
     margin: "0 0 16px 0",
-  },
-  note: {
-    fontFamily: SANS_STACK,
-    color: "#5A5A5A",
-    fontSize: "14px",
-    lineHeight: "20px",
-    margin: 0,
   },
   footerExtra: {
     fontSize: "14px",

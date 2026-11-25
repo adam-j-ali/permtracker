@@ -12,12 +12,19 @@
  * says so. Each receipt links its status on /uscis-case-status and its block on /uscis-receipt-blocks, and the
  * PERM case when one was given at sign-up.
  *
+ * ## What comes next
+ *
+ * The step the new status leads to, from the form and the status group alone (`receiptNextSteps` in
+ * convex/lib/alertNextSteps.ts): how long the form takes while it waits, the response deadline after a request
+ * for evidence, and the visa bulletin after an approved I-140. A denial or a withdrawal gets none.
+ *
  * @module
  */
 
 import { Link, Section, Text } from "react-email";
-import { EmailButton, EmailLayout, EmailLinkList, StatusRail } from "./components";
+import { EmailButton, EmailLayout, EmailLinkList, NextStepsBlock, StatusRail } from "./components";
 import { MONO_STACK, SANS_STACK } from "./components/QueueStamp";
+import type { NextSteps } from "../../convex/lib/alertNextSteps";
 
 export interface UscisChangedItem {
   receipt: string;
@@ -40,9 +47,11 @@ export interface UscisStatusChangedProps {
   items: readonly UscisChangedItem[];
   unsubscribeUrl: string;
   prefsUrl: string;
+  /** What comes next (`receiptNextSteps`), or null when nothing honest follows. Optional for older callers. */
+  next?: NextSteps | null;
 }
 
-export function UscisStatusChanged({ items, unsubscribeUrl, prefsUrl }: UscisStatusChangedProps) {
+export function UscisStatusChanged({ items, unsubscribeUrl, prefsUrl, next = null }: UscisStatusChangedProps) {
   const several = items.length > 1;
   const first = items[0];
   return (
@@ -106,6 +115,12 @@ export function UscisStatusChanged({ items, unsubscribeUrl, prefsUrl }: UscisSta
           <EmailButton href={first.statusUrl} variant="primary">
             See this receipt
           </EmailButton>
+        </Section>
+      ) : null}
+
+      {next ? (
+        <Section style={styles.next}>
+          <NextStepsBlock next={next} />
         </Section>
       ) : null}
 
@@ -188,6 +203,9 @@ const styles = {
   cta: {
     marginTop: "28px",
     marginBottom: "4px",
+  },
+  next: {
+    marginTop: "28px",
   },
   authority: {
     fontFamily: SANS_STACK,

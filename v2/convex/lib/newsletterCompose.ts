@@ -16,6 +16,7 @@ import { formatInt } from "./format";
 import { MONTH_NAMES, shortDate } from "./months";
 import type { RuleStepKind } from "./ruleSteps";
 import { TEXT_LEGAL_LINE } from "./textFooter";
+import { programOf } from "../../src/lib/flagCaseNumber";
 
 export interface DigestNotice {
   title: string;
@@ -31,6 +32,16 @@ export interface WatchedCase {
   status: string | null;
   /** The live lookup for this case, on the public site. */
   url: string;
+}
+
+/**
+ * What comes next for the watched case, in a line, or null. A certified PERM case's page carries the next two
+ * alerts (the visa bulletin, then the USCIS receipt: src/components/tools/CertifiedNextWatch.tsx), and the
+ * email's button opens that page. Nothing for a case still waiting: its status is the news.
+ */
+export function watchedCaseNext(w: WatchedCase): string | null {
+  if (!w.status || programOf(w.caseNumber) !== "perm" || w.status.trim().toUpperCase() !== "CERTIFIED") return null;
+  return "Next comes the I-140. This case's page can email you when the visa bulletin moves, and when USCIS changes the I-140's status.";
 }
 
 export interface UscisMedian {
@@ -302,6 +313,8 @@ export function composeText(d: DigestData): string {
         ? `Status when we last checked it for you: ${d.watchedCase.status}.`
         : "We haven't recorded a status for it yet.",
     );
+    const next = watchedCaseNext(d.watchedCase);
+    if (next) lines.push(next);
     lines.push(`Check it live: ${d.watchedCase.url}`);
     lines.push("");
   }

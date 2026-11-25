@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { render } from "react-email";
 
 import { BulletinWeekly } from "../BulletinWeekly";
-import type { DigestData } from "@convex/lib/newsletterCompose";
+import { composeText, watchedCaseNext, type DigestData } from "@convex/lib/newsletterCompose";
 
 const base: DigestData = {
   weekOf: "2026-09-08",
@@ -57,6 +57,24 @@ describe("BulletinWeekly", () => {
     expect(personal).toContain("https://permtracker.app/perm-case-status?case=G-100-26120-123456");
     const generic = await render(BulletinWeekly(base));
     expect(generic).not.toContain("Your case");
+    // A case still waiting: its status is the news, with no step after it.
+    expect(personal).not.toContain("Next comes");
+  });
+
+  it("names the step after a certified PERM case, in both parts", async () => {
+    const watchedCase = {
+      caseNumber: "G-100-26120-123456",
+      status: "CERTIFIED",
+      url: "https://permtracker.app/perm-case-status?case=G-100-26120-123456",
+    };
+    const line =
+      "Next comes the I-140. This case's page can email you when the visa bulletin moves, and when USCIS changes the I-140's status.";
+    const html = (await render(BulletinWeekly({ ...base, watchedCase }))).replace(/&#x27;/g, "'");
+    expect(html).toContain(line);
+    expect(composeText({ ...base, watchedCase })).toContain(line);
+    // Never for an LCA or a wage request, whose certified page carries neither alert.
+    expect(watchedCaseNext({ ...watchedCase, caseNumber: "I-200-26120-123456" })).toBeNull();
+    expect(watchedCaseNext({ ...watchedCase, status: "CERTIFIED - EXPIRED" })).toBeNull();
   });
 
   it("carries the two doors and the per-recipient preferences link", async () => {

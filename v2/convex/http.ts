@@ -769,7 +769,12 @@ http.route({
       ? ` The beta is watching as many receipts as it can, so ${waiting} isn&rsquo;t watched yet. This link confirms it once there&rsquo;s room, for 30 days.`
       : "";
     if (result.already) {
-      return messagePage("You're already on the list", `Nothing more to do: we&rsquo;ll email you when USCIS changes the status of ${list}.`);
+      return messagePage(
+        "You're already on the list",
+        `Nothing more to do: we&rsquo;ll email you when USCIS changes the status of ${list}.`,
+        undefined,
+        confirmOffers("uscis"),
+      );
     }
     if (result.receipts.length === 0) {
       return messagePage("The beta is full right now", `Nothing was confirmed yet.${fullNote}`);
@@ -777,6 +782,8 @@ http.route({
     return messagePage(
       "You're on the list",
       `We&rsquo;ll email you each time USCIS changes the status of ${list}, and for a year after a final decision. We check every 4 hours and after USCIS&rsquo;s overnight updates, and each email says when we checked. Today&rsquo;s status isn&rsquo;t emailed: you already know it.${fullNote}`,
+      undefined,
+      confirmOffers("uscis"),
     );
   }),
 });
@@ -1419,6 +1426,8 @@ http.route({
       `We'll email you when the State Department moves the final-action cutoff for ${result.series
         .map(escapeHtml)
         .join(", ")}. The full board is always on permtracker.app/tools/priority-date-calculator.`,
+      undefined,
+      confirmOffers("bulletin"),
     );
   }),
 });

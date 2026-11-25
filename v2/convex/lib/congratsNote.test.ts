@@ -88,6 +88,11 @@ describe("the note's words", () => {
       "You signed up for alerts on your PERM case, G-100-26070-123456, and DOL has certified it, so congratulations!",
     );
     expect(body).toContain("Next comes the I-140.");
+    // What the site offers for the I-140, then for its receipt, each with its address.
+    expect(body).toContain("Your employer has 180 days from the certification to file it.");
+    expect(body).toContain("permtracker.app/tools/i140-calculator");
+    expect(body).toContain("look up its receipt number at permtracker.app/uscis-case-status, where a beta emails you");
+    expect(body).toContain("pick your category and country at permtracker.app/visa-bulletin");
     // The shared timelines: a certified case's next steps are the ones people compare.
     expect(body).toContain("you can add your dates at permtracker.app/green-card-timelines");
     expect(body).toContain("3. What would help you next: the I-140, the I-485, priority date alerts, or something else?");
@@ -99,7 +104,11 @@ describe("the note's words", () => {
     expect(composeNote("lca", "I-200-26070-123456").body).toContain(
       "your H-1B LCA, I-200-26070-123456, and DOL has certified it",
     );
-    expect(composeNote("lca", "I-200-26070-123456").body).toContain("Next comes the H-1B petition.");
+    const lca = composeNote("lca", "I-200-26070-123456").body;
+    expect(lca).toContain("Next comes the H-1B petition.");
+    // The receipt beta is live: no promise to write again when it is.
+    expect(lca).toContain("look up its receipt number at permtracker.app/uscis-case-status");
+    expect(lca).not.toContain("I'll let you know when it's live");
     const pwd = composeNote("pwd", "P-100-26070-123456").body;
     expect(pwd).toContain("your prevailing wage request, P-100-26070-123456, and DOL has issued the determination");
     expect(pwd).toContain("the PERM filing, recruitment deadlines, or something else?");
@@ -110,6 +119,12 @@ describe("the note's words", () => {
       const { body } = composeNote(p, "G-100-26070-123456");
       expect(body).not.toMatch(/—/);
       expect(body).not.toMatch(/ {2}/);
+    }
+  });
+
+  it("never prices the receipt beta", () => {
+    for (const p of ["perm", "lca", "pwd"] as const) {
+      expect(composeNote(p, "G-100-26070-123456").body).not.toMatch(/\bfree\b|\bpaid\b/i);
     }
   });
 });

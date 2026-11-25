@@ -1,24 +1,35 @@
 /**
- * What comes next, after a case alert: the step that follows the one DOL just
- * recorded, and the alert or page that helps with it.
+ * What comes next, after an alert: the step that follows the one DOL, USCIS or
+ * the State Department just recorded, and the page or alert that helps with it.
  *
  * A green card is a chain of filings (the wage request, the PERM, the I-140,
- * the visa bulletin), and a subscriber hears from us about one link of it.
- * The email that says that link is done is the one place the next link is
- * worth naming, so the final alerts carry it and the confirmation pages offer
- * the next alert in the chain.
+ * the visa bulletin, the I-485), and a subscriber hears from us about one link
+ * of it. The email that says that link is done is the one place the next link
+ * is worth naming, so the final case alerts, the receipt alerts and the
+ * bulletin alerts carry it, and the confirmation pages offer the next alert in
+ * the chain.
  *
  * ## Rules every line here follows
  *
+ * - **One step, one short sentence, one link.** The step that matters first
+ *   comes first. A second sentence is there only when a computed date needs
+ *   the caveat that says where the exact date is printed.
  * - **Links go only to pages and alerts that exist.** Each path below is held
- *   to a page under src/app by `alertNextSteps.test.ts`.
+ *   to a page under src/app by `alertNextSteps.test.ts`, and every link in
+ *   every email by `email-links-exist.test.tsx`.
+ * - **A link names its page as the site does.** A link to a page in the site
+ *   map starts with that page's one name (src/lib/siteMap.ts), then says what
+ *   it does there; the test holds the two equal.
  * - **No date is typed.** The I-140's last day comes from the central
  *   calculator (`calculateETA9089Expiration`, certification + 179, the date
- *   DOL prints), and the day it counts from is the day DOL's record changed,
- *   so the copy says "about" and points at the date on the certification.
+ *   DOL prints), a denial's from `calculateDenialReviewDeadline` (the letter's
+ *   date + 30), and the day each counts from is the day DOL's record changed,
+ *   so the copy says "about" and points at the date on DOL's own paper.
  * - **A prevailing wage request is not always a PERM step.** `P-100` is a
  *   PERM job's wage; `P-200` to `P-203` are H-1B, H-1B1 and E-3 jobs', whose
  *   next filing is the LCA. Only `P-100` is told about the PERM.
+ * - **The receipt alert is a beta, and nothing here prices it.** The owner's
+ *   call for the USCIS tracking (Nov 11 2026): no price, never paid or free.
  * - **Nothing here says a case will be approved or when.**
  *
  * @module convex/lib/alertNextSteps
@@ -28,6 +39,7 @@ import { SITE_URL } from "./links";
 import { longDate } from "./months";
 import { EASTERN_TIMEZONE, easternDay, MS_PER_DAY } from "./time";
 import { calculateETA9089Expiration } from "./perm/calculators/eta9089";
+import { calculateDenialReviewDeadline } from "./perm/calculators/denialReview";
 import type { FlagProgram } from "../../src/lib/flagCaseNumber";
 
 export interface NextLink {
@@ -40,14 +52,17 @@ export interface NextLink {
 export interface NextStep {
   /** A short label, sentence case: "The I-140". */
   title: string;
-  /** One or two sentences. */
+  /** One short sentence; two only when a computed date needs its caveat. */
   body: string;
+  /** The one page or alert for this step. Its text stands alone: the rating page shows it without the step. */
+  link?: NextLink;
+  /** Draw `link` as the block's button: the onward alert. One step at most. */
+  button?: boolean;
 }
 
 export interface NextSteps {
   steps: NextStep[];
-  /** One onward alert worth a button, when there is one. */
-  button: NextLink | null;
+  /** Further reading after the steps, each one standing alone. */
   links: NextLink[];
 }
 
@@ -63,6 +78,8 @@ export interface NextStepInput {
   priorityDate?: string | null;
   /** The day DOL's record showed the certification, "YYYY-MM-DD". PERM only. */
   certifiedOn?: string | null;
+  /** The day DOL's record showed the denial, "YYYY-MM-DD". PERM's DENIED only. */
+  deniedOn?: string | null;
   employerName?: string | null;
   jobTitle?: string | null;
 }
@@ -79,9 +96,16 @@ export const NEXT_PATHS = {
   bulletinAlert: "/visa-bulletin#bulletin-alert",
   queueAlert: "/tools/perm-timeline-calculator#queue-alert",
   certifiedGuide: "/guides/perm-certified-what-next",
+  waitingGuide: "/guides/waiting-on-your-green-card",
   greenCardLine: "/tools/green-card-line",
+  planner: "/tools/green-card-timeline",
+  i140Wait: "/tools/i140-calculator",
+  priorityDates: "/tools/priority-date-calculator",
   uscisTimes: "/uscis-processing-times",
   i129Times: "/uscis-processing-times/i-129",
+  uscisLookup: "/uscis-case-status",
+  uscisStatuses: "/uscis-case-statuses",
+  rfeDeadline: "/tools/rfe-response-deadline",
   denialGuide: "/guides/perm-denied-what-happens-next",
   appealGuide: "/guides/perm-appeal-reconsideration-balca",
   rfiSteps: "/perm-rfi-audit#step-by-step",
@@ -89,7 +113,6 @@ export const NEXT_PATHS = {
   deadlineTool: "/tools/perm-deadline-calculator",
   pwdValidity: "/tools/pwd-validity",
   lcaGuide: "/guides/what-an-lca-is",
-  uscisLookup: "/uscis-case-status",
   pwdGuide: "/guides/track-a-prevailing-wage-request",
   caseLookup: "/perm-case-status",
   processingTimes: "/perm-processing-times",
@@ -97,6 +120,42 @@ export const NEXT_PATHS = {
 } as const;
 
 const at = (path: string) => `${SITE_URL}${path}`;
+
+/**
+ * The links more than one email uses, worded once. Each starts with its page's
+ * name in the site map (src/lib/siteMap.ts), as `alertNextSteps.test.ts` holds.
+ */
+export const NEXT_LINKS = {
+  i140Wait: {
+    href: at(NEXT_PATHS.i140Wait),
+    text: "I-140 wait: how long USCIS takes, and the premium processing clock",
+  },
+  uscisLookup: {
+    href: at(NEXT_PATHS.uscisLookup),
+    text: "USCIS case status: look up a receipt number, and get an email when it changes",
+  },
+  planner: {
+    href: at(NEXT_PATHS.planner),
+    text: "Green card timeline and planner: every step dated from your own dates",
+  },
+  priorityDates: {
+    href: at(NEXT_PATHS.priorityDates),
+    text: "Priority date calculator: your date against every bulletin",
+  },
+  rfeDeadline: {
+    href: at(NEXT_PATHS.rfeDeadline),
+    text: "USCIS RFE response deadline: the day USCIS must receive your answer",
+  },
+  uscisTimes: {
+    href: at(NEXT_PATHS.uscisTimes),
+    text: "USCIS processing times: every form, from USCIS's own figures",
+  },
+} as const satisfies Record<string, NextLink>;
+
+/** What follows a filing at USCIS: the receipt number, and the beta that watches it. */
+function receiptSentence(filing: string): string {
+  return `Once ${filing} is filed, USCIS sends a receipt number, and a beta on our USCIS page emails you when its status changes.`;
+}
 
 /**
  * The review stages with a page of their own on the site (`/perm-rfi-audit/<slug>`: every case waiting there, how
@@ -166,6 +225,13 @@ export function i140DueBy(certifiedOn: string | null | undefined): string | null
   return Number.isNaN(due.getTime()) ? null : due.toISOString().slice(0, 10);
 }
 
+/** The last day to ask DOL to look again at a denial dated `deniedOn` (the letter's date + 30), or null. */
+export function denialReviewDueBy(deniedOn: string | null | undefined): string | null {
+  if (!deniedOn || !ISO_DAY.test(deniedOn)) return null;
+  const due = calculateDenialReviewDeadline(deniedOn);
+  return ISO_DAY.test(due) ? due : null;
+}
+
 /** A PERM job's prevailing wage request (ETA-9141 for a green card), not an H-1B or E-3 one. */
 export function isPermWageRequest(caseNumber: string): boolean {
   return /^P-100-/i.test(caseNumber.trim());
@@ -178,6 +244,23 @@ const LCA_VISA: Record<string, string> = {
   "I-203": "E-3",
 };
 
+/** The priority date and the bulletin alert for it: a certified PERM's, and an approved I-140's. */
+function priorityDateStep(body: string, priorityDate: string | null): NextStep {
+  return {
+    title: "Your priority date",
+    body,
+    link: { href: bulletinAlertUrl(priorityDate), text: "Email me when the bulletin moves" },
+    button: true,
+  };
+}
+
+/** The last stretch, for anyone whose next wait is the bulletin. */
+const REST_OF_THE_WAY: NextStep = {
+  title: "The rest of the way",
+  body: "Once the bulletin reaches your date, the I-485 or a visa interview abroad comes next.",
+  link: NEXT_LINKS.planner,
+};
+
 function permCertified(input: NextStepInput): NextSteps {
   const due = i140DueBy(input.certifiedOn);
   const pd = input.priorityDate && ISO_DAY.test(input.priorityDate) ? input.priorityDate : null;
@@ -186,45 +269,53 @@ function permCertified(input: NextStepInput): NextSteps {
       {
         title: "The I-140",
         body: due
-          ? `The employer files it with USCIS. Going by the day DOL's record changed, the 180 days run to about ${longDate(due)}. The exact last day is the expiration DOL printed on the certification.`
-          : "The employer files it with USCIS. The exact last day is the expiration DOL printed on the certification.",
+          ? `The employer files it with USCIS within 180 days of the certification, so by about ${longDate(due)}. The exact last day is the expiration date DOL printed on the certification.`
+          : "The employer files it with USCIS within 180 days of the certification. The exact last day is the expiration date DOL printed on the certification.",
+        link: NEXT_LINKS.i140Wait,
       },
       {
-        title: "Your priority date",
-        body: pd
-          ? `It's this case's PERM filing date, ${longDate(pd)}, on DOL's record, and the I-140 carries it. The visa bulletin decides when it can be used.`
-          : "It's this case's PERM filing date, and the I-140 carries it. The visa bulletin decides when it can be used.",
+        title: "The receipt number",
+        body: receiptSentence("the I-140"),
+        link: NEXT_LINKS.uscisLookup,
       },
+      priorityDateStep(
+        pd
+          ? `It's ${longDate(pd)}, this case's PERM filing date on DOL's record, and the visa bulletin decides when it can be used.`
+          : "It's this case's PERM filing date, and the visa bulletin decides when it can be used.",
+        pd,
+      ),
+      REST_OF_THE_WAY,
     ],
-    button: { href: bulletinAlertUrl(pd), text: "Email me when the bulletin moves" },
     links: [
       { href: at(NEXT_PATHS.certifiedGuide), text: "What happens after a PERM is certified, step by step" },
-      { href: at(NEXT_PATHS.greenCardLine), text: "How many people stand ahead of your date" },
-      { href: at(NEXT_PATHS.uscisTimes), text: "How long USCIS is taking with the I-140, from its own figures" },
+      { href: at(NEXT_PATHS.greenCardLine), text: "Your place in line: everyone ahead of your priority date" },
       { href: at(NEXT_PATHS.shareTimeline), text: "Add your dates to the green card timelines as your case moves" },
     ],
   };
 }
 
-function permDenied(status: string): NextSteps {
+function permDenied(input: NextStepInput, status: string): NextSteps {
   if (status === "DENIED") {
+    const due = denialReviewDueBy(input.deniedOn);
     return {
       steps: [
         {
           title: "The employer's options",
-          body: "It has 30 days from the denial to ask the officer to reconsider it, or to ask for review by DOL's appeals board. The guides below cover both.",
+          body: due
+            ? `It can ask DOL to reconsider, or ask DOL's appeals board to review the denial, by about ${longDate(due)}. The exact last day is 30 days from the date on the denial letter.`
+            : "It can ask DOL to reconsider, or ask DOL's appeals board to review the denial, within 30 days of the date on the denial letter.",
+          link: { href: at(NEXT_PATHS.appealGuide), text: "How reconsideration and the appeals board work" },
         },
         {
           title: "We're still watching",
-          body: "If the employer asks, DOL's record moves to RECONSIDERATION APPEALS or BALCA APPEALS. We watch this case for a year after the decision, and we'll email you when it moves.",
+          body: "If the employer asks, DOL's record moves to RECONSIDERATION APPEALS or BALCA APPEALS, and we'll email you when it does.",
+          link: {
+            href: at(stagePagePath("RECONSIDERATION APPEALS")!),
+            text: "How long reconsideration is taking, from the cases we've followed",
+          },
         },
       ],
-      button: null,
-      links: [
-        { href: at(NEXT_PATHS.denialGuide), text: "What a denial means, and the options after one" },
-        { href: at(NEXT_PATHS.appealGuide), text: "How reconsideration and the appeals board work" },
-        { href: at(stagePagePath("RECONSIDERATION APPEALS")!), text: "How long reconsideration is taking, from the cases we've followed" },
-      ],
+      links: [{ href: at(NEXT_PATHS.denialGuide), text: "What a denial means, and the options after one" }],
     };
   }
   // The Board's decision (DENIED - BALCA AFFIRMED, DENIED - BALCA DISMISSED).
@@ -232,11 +323,11 @@ function permDenied(status: string): NextSteps {
     steps: [
       {
         title: "The end of DOL's review",
-        body: "The appeals board's decision is the last step at DOL. The guide below covers what an employer can do after it, filing again included.",
+        body: "The appeals board's decision is the last step at DOL, and the guide covers what can follow it, filing again included.",
+        link: { href: at(NEXT_PATHS.denialGuide), text: "What a denial means, and the options after one" },
       },
     ],
-    button: null,
-    links: [{ href: at(NEXT_PATHS.denialGuide), text: "What a denial means, and the options after one" }],
+    links: [],
   };
 }
 
@@ -247,10 +338,10 @@ function pwdIssued(input: NextStepInput): NextSteps {
         {
           title: "The LCA",
           body: "This wage is for an H-1B, H-1B1 or E-3 job, so the next filing is usually the LCA, where the employer can use it as the prevailing wage.",
+          link: { href: at(NEXT_PATHS.lcaGuide), text: "What an LCA is, and how to look one up" },
         },
       ],
-      button: null,
-      links: [{ href: at(NEXT_PATHS.lcaGuide), text: "What an LCA is, and how to look one up" }],
+      links: [],
     };
   }
   const who =
@@ -262,16 +353,15 @@ function pwdIssued(input: NextStepInput): NextSteps {
       {
         title: "Recruitment, then the PERM application",
         body: "The employer has to start recruitment, or file the PERM application (the ETA-9089), while this wage is still valid. The PERM's filing date becomes your priority date.",
+        link: { href: at(NEXT_PATHS.deadlineTool), text: "PERM deadlines: the recruitment and filing dates from this wage" },
       },
       {
         title: "We'll watch for the PERM",
         body: `${who} DOL's record doesn't name the worker, so we'll say it may be yours.`,
       },
     ],
-    button: null,
     links: [
-      { href: at(NEXT_PATHS.deadlineTool), text: "Work out the recruitment and filing dates from this wage" },
-      { href: at(NEXT_PATHS.pwdValidity), text: "When this wage expires" },
+      { href: at(NEXT_PATHS.pwdValidity), text: "Wage determination validity: the day this wage expires" },
       { href: at(NEXT_PATHS.queueAlert), text: "Once the PERM is filed, an email when DOL's queue reaches its month" },
     ],
   };
@@ -283,7 +373,8 @@ function lcaCertified(caseNumber: string): NextSteps {
     visa === "H-1B"
       ? {
           title: "The H-1B petition",
-          body: "The employer files it with USCIS on Form I-129, with this certified LCA. USCIS then sends a receipt number. Our USCIS page reads what that number encodes and links to USCIS's own status page, but it can't show the status itself yet.",
+          body: `The employer files it with USCIS on Form I-129, with this certified LCA. ${receiptSentence("the petition")}`,
+          link: NEXT_LINKS.uscisLookup,
         }
       : {
           title: `The ${visa} visa`,
@@ -295,15 +386,14 @@ function lcaCertified(caseNumber: string): NextSteps {
       {
         title: "If a green card comes later",
         body: "Its first DOL step is a prevailing wage request, and you can watch that one here too, by its P- number.",
+        link: { href: at(NEXT_PATHS.pwdGuide), text: "If a green card follows: watching its wage request" },
       },
     ],
-    button: null,
     // The rating page shows these links without the steps above them, so each says what it's for on its own.
-    links: [
-      ...(visa === "H-1B" ? [{ href: at(NEXT_PATHS.i129Times), text: "How long USCIS takes with an H-1B petition (Form I-129)" }] : []),
-      { href: at(NEXT_PATHS.uscisLookup), text: "Look up a USCIS receipt number" },
-      { href: at(NEXT_PATHS.pwdGuide), text: "If a green card follows: watching its wage request" },
-    ],
+    links:
+      visa === "H-1B"
+        ? [{ href: at(NEXT_PATHS.i129Times), text: "How long USCIS takes with an H-1B petition (Form I-129)" }]
+        : [NEXT_LINKS.uscisLookup],
   };
 }
 
@@ -316,12 +406,37 @@ export function nextStepsFor(input: NextStepInput): NextSteps | null {
   const status = input.status.trim().toUpperCase();
   if (input.program === "perm") {
     if (status === "CERTIFIED") return permCertified(input);
-    if (status.startsWith("DENIED")) return permDenied(status);
+    if (status.startsWith("DENIED")) return permDenied(input, status);
     return null;
   }
   if (input.program === "pwd" && input.approved) return pwdIssued(input);
   if (input.program === "lca" && status === "CERTIFIED") return lcaCertified(input.caseNumber);
   return null;
+}
+
+/** Every link a block carries, in its order: each step's, then the further reading. */
+export function allLinks(next: NextSteps | null): NextLink[] {
+  if (!next) return [];
+  return [...next.steps.flatMap((s) => (s.link ? [s.link] : [])), ...next.links];
+}
+
+/**
+ * The same steps for the owner of a saved case: the bulletin alert is the
+ * case's own switch on its Green card tab (convex/caseBulletinAlert.ts), which
+ * reads the line from the case's category and chargeability, never the public
+ * form.
+ */
+export function forSavedCase(next: NextSteps | null, caseUrl: string): NextSteps | null {
+  if (!next) return null;
+  const bulletinForm = `${SITE_URL}${NEXT_PATHS.bulletinAlert.split("#")[0]}`;
+  return {
+    ...next,
+    steps: next.steps.map((s) =>
+      s.link && s.link.href.startsWith(bulletinForm)
+        ? { ...s, link: { href: `${caseUrl}?tab=greenCard`, text: "Turn on this case's bulletin alert" } }
+        : s,
+    ),
+  };
 }
 
 /**
@@ -350,16 +465,115 @@ export function alsoLinksFor(input: Pick<NextStepInput, "program" | "status" | "
   return out;
 }
 
-/** The plain-text part's lines for a next-steps block. */
+/** The plain-text part's lines for a next-steps block: each step, then its link. */
 export function nextStepsText(next: NextSteps | null): string[] {
   if (!next) return [];
   return [
     "What comes next:",
-    ...next.steps.map((s) => `  ${s.title}. ${s.body}`),
-    ...(next.button ? [`  ${next.button.text}: ${next.button.href}`] : []),
+    ...next.steps.flatMap((s) => [`  ${s.title}. ${s.body}`, ...(s.link ? [`  ${s.link.text}: ${s.link.href}`] : [])]),
     ...next.links.map((l) => `  ${l.text}: ${l.href}`),
     "",
   ];
+}
+
+// ============================================================================
+// After a USCIS receipt moves, and after the bulletin moves
+// ============================================================================
+
+/**
+ * The forms with a processing-time page of their own (`/uscis-processing-times/<form lowercased>`). The site's list
+ * is `FORM_PAGES` in src/lib/uscisForms.ts, which Convex can't import; `alertNextSteps.test.ts` holds the two equal.
+ */
+export const USCIS_FORMS_WITH_PAGES: readonly string[] = [
+  "I-140",
+  "I-485",
+  "I-765",
+  "I-131",
+  "I-129",
+  "I-539",
+  "I-130",
+  "I-360",
+  "I-526",
+  "I-824",
+  "I-290B",
+  "I-751",
+  "I-90",
+  "I-129F",
+  "N-400",
+];
+
+/** The form a USCIS receipt is for, as its page names it ("I-485"), or null. */
+function formOf(form: string | null): string | null {
+  const m = /^\s*([IN])-?(\d+[A-Z]?)\b/i.exec(form ?? "");
+  return m ? `${m[1]!.toUpperCase()}-${m[2]!.toUpperCase()}` : null;
+}
+
+/** What a receipt alert knows about one receipt: the form, and the tone and finality its status group gives. */
+export interface ReceiptMove {
+  form: string | null;
+  tone: "good" | "bad" | "neutral";
+  isFinal: boolean;
+}
+
+function receiptSteps(r: ReceiptMove): NextStep[] {
+  const form = formOf(r.form);
+  // A request for evidence is the one status that's bad news and not final (convex/lib/uscisWatch.ts, groupTone).
+  if (r.tone === "bad" && !r.isFinal) {
+    return [
+      {
+        title: "The answer to USCIS",
+        body: "The request for evidence gives the day USCIS must receive the answer.",
+        link: NEXT_LINKS.rfeDeadline,
+      },
+    ];
+  }
+  if (r.tone === "good" && r.isFinal && form === "I-140") {
+    return [
+      priorityDateStep("The visa bulletin decides when the I-140's priority date can be used.", null),
+      REST_OF_THE_WAY,
+    ];
+  }
+  if (r.isFinal) return [];
+  if (form === "I-140") {
+    return [{ title: "How long the I-140 takes", body: "USCIS publishes its own figures, and premium processing runs on a clock of its own.", link: NEXT_LINKS.i140Wait }];
+  }
+  if (form && USCIS_FORMS_WITH_PAGES.includes(form)) {
+    return [
+      {
+        title: `How long the ${form} takes`,
+        body: "USCIS publishes how long it takes to decide one, quarter by quarter.",
+        link: { href: at(`${NEXT_PATHS.uscisTimes}/${form.toLowerCase()}`), text: `${form} processing time: USCIS's own figures` },
+      },
+    ];
+  }
+  return [{ title: "How long it takes", body: "USCIS publishes how long each form takes to decide.", link: NEXT_LINKS.uscisTimes }];
+}
+
+/**
+ * What comes next after one or more receipts moved, or null when nothing honest follows (a denial, a withdrawal, an
+ * approval of anything but an I-140). Several receipts share one block: a step already named isn't named twice.
+ */
+export function receiptNextSteps(moves: readonly ReceiptMove[]): NextSteps | null {
+  const steps: NextStep[] = [];
+  for (const s of moves.flatMap(receiptSteps)) {
+    if (!steps.some((t) => t.title === s.title)) steps.push(s);
+  }
+  return steps.length > 0 ? { steps, links: [] } : null;
+}
+
+/** After a bulletin moved: read your own date against it, then what follows once it's reached. */
+export function bulletinNextSteps(): NextSteps {
+  return {
+    steps: [
+      {
+        title: "Your own date",
+        body: "Read your priority date against the new cutoff, and against every bulletin since October 2014.",
+        link: NEXT_LINKS.priorityDates,
+      },
+      REST_OF_THE_WAY,
+    ],
+    links: [],
+  };
 }
 
 // ============================================================================
@@ -392,21 +606,30 @@ const BULLETIN_OFFER: ConfirmOffer = {
   detail: "When a new bulletin changes the cutoff for your category and country, and not otherwise.",
 };
 
+const RECEIPT_OFFER: ConfirmOffer = {
+  href: at(NEXT_PATHS.uscisLookup),
+  label: "After the I-140 is filed, an email when USCIS changes its status",
+  detail: "Type the receipt number on the USCIS case status page, then add your email under the answer. It's a beta.",
+};
+
 /**
  * What a confirmation page offers next. Links only: turning anything on still
  * goes through its own form and its own confirmation email.
  */
 export function confirmOffers(
-  kind: "case" | "queue" | "bulletin" | "employer",
+  kind: "case" | "queue" | "bulletin" | "employer" | "uscis",
   caseNumbers: readonly string[] = [],
   programOf?: (caseNumber: string) => FlagProgram,
 ): ConfirmOffer[] {
   if (kind === "queue") return [CASE_OFFER, BULLETIN_OFFER];
   if (kind === "employer") return [CASE_OFFER];
-  if (kind === "bulletin") return [];
+  // A bulletin line is watched after the PERM: its receipts are the I-140's and the I-485's.
+  if (kind === "bulletin") return [{ ...RECEIPT_OFFER, label: "An email when USCIS changes the status of your I-140 or I-485" }];
+  // A receipt is watched after the PERM too: what's left is the bulletin reaching the priority date.
+  if (kind === "uscis") return [{ ...BULLETIN_OFFER, label: "An email when the visa bulletin moves for your category and country" }];
   const programs = new Set(caseNumbers.map((n) => (programOf ? programOf(n) : "perm")));
   const offers: ConfirmOffer[] = [];
-  if (programs.has("perm")) offers.push(QUEUE_OFFER);
+  if (programs.has("perm")) offers.push(QUEUE_OFFER, RECEIPT_OFFER);
   if (caseNumbers.some(isPermWageRequest)) {
     offers.push({
       ...QUEUE_OFFER,

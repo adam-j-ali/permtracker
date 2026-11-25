@@ -24,4 +24,7 @@ export type { FigureRow, FigureTableProps } from "./FigureTable";
 export { EmailLinkList } from "./EmailLinkList";
 export type { EmailLinkListProps, EmailLinkListItem } from "./EmailLinkList";
 
+export { NextStepsBlock } from "./NextStepsBlock";
+export type { NextStepsBlockProps } from "./NextStepsBlock";
+
 export * from "./emailStyles";

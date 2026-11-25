@@ -2066,9 +2066,20 @@ export const sweepCaseChanges = internalAction({
         const meaning = program === "perm" ? statusMeaning(status) : null;
         const approved = isProgramApproval(program, status);
         const tone = !isFinal || approved ? "live" : "closed";
-        // What comes next (convex/lib/alertNextSteps.ts). The certification
-        // day is read only for the email that uses it.
+        // What comes next (convex/lib/alertNextSteps.ts). The day DOL's record
+        // moved is read only for the two emails that count a deadline from it:
+        // a certification (the I-140's 180 days) and a denial (30 days to ask
+        // DOL to look again).
         const certified = program === "perm" && isFinal && approved;
+        const denied = program === "perm" && isFinal && /^DENIED$/i.test(status.trim());
+        const decidedOn =
+          certified || denied
+            ? await dayRecordMoved(sub.caseNumber, status).catch((error: unknown) => {
+                // The block still goes, with the rule and no computed day.
+                log.error("decision day unreadable", { caseNumber: sub.caseNumber, error });
+                return null;
+              })
+            : null;
         const next = nextStepsFor({
           program,
           caseNumber: sub.caseNumber,
@@ -2076,13 +2087,8 @@ export const sweepCaseChanges = internalAction({
           isFinal,
           approved,
           priorityDate: program === "perm" ? context.filingDay : null,
-          certifiedOn: certified
-            ? await dayRecordMoved(sub.caseNumber, status).catch((error: unknown) => {
-                // The block still goes, with the rule and no computed day.
-                log.error("certification day unreadable", { caseNumber: sub.caseNumber, error });
-                return null;
-              })
-            : null,
+          certifiedOn: certified ? decidedOn : null,
+          deniedOn: denied ? decidedOn : null,
           employerName: context.employerName,
           jobTitle: context.jobTitle,
         });

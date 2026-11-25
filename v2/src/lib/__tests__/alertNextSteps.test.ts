@@ -1,26 +1,36 @@
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { decidedOnFromSeen, SEEN_NEXT_MORNING_BEFORE_HOUR as SCORE_HOUR } from "@/lib/scorecard/score";
 import { programOf } from "@/lib/flagCaseNumber";
-import { formPage } from "@/lib/uscisForms";
+import { FORM_PAGES } from "@/lib/uscisForms";
+import { SECTIONS } from "@/lib/siteMap";
 import { reviewStages } from "@/components/rfi/stageMeta";
 import {
+  allLinks,
   alsoLinksFor,
   bulletinAlertUrl,
+  bulletinNextSteps,
   confirmOffers,
   dayDolActed,
+  denialReviewDueBy,
   filingDayOnRecord,
+  forSavedCase,
   i140DueBy,
+  NEXT_LINKS,
   NEXT_PATHS,
   nextStepsFor,
   nextStepsText,
   PWD_MATCH_SENTENCE,
+  receiptNextSteps,
   SEEN_NEXT_MORNING_BEFORE_HOUR,
+  type NextLink,
   type NextStepInput,
+  type NextSteps,
   stagePagePath,
+  USCIS_FORMS_WITH_PAGES,
 } from "@convex/lib/alertNextSteps";
+import { sitePageFor } from "../../../test-utils/sitePages";
 import { ETA9089_EXPIRATION_DAYS } from "@convex/lib/perm/constants";
 
 /**
@@ -30,24 +40,9 @@ import { ETA9089_EXPIRATION_DAYS } from "@convex/lib/perm/constants";
  * never told about a PERM.
  */
 
-const ROOT = process.cwd();
 
-/** The file a public path is served from, route groups included. */
-function pageFor(path: string): string | null {
-  const parts = path.split(/[?#]/)[0]!.split("/").filter(Boolean);
-  if (parts[0] === "guides" && parts.length === 2) {
-    const mdx = join(ROOT, "content/guides", `${parts[1]}.mdx`);
-    return existsSync(mdx) ? mdx : null;
-  }
-  const page = join(ROOT, "src/app/(site)/(public)", ...parts, "page.tsx");
-  if (existsSync(page)) return page;
-  // A USCIS form's page is one template, so the form has to be one it serves.
-  if (parts[0] === "uscis-processing-times" && parts.length === 2 && formPage(parts[1]!)) {
-    const form = join(ROOT, "src/app/(site)/(public)/uscis-processing-times/[form]/page.tsx");
-    return existsSync(form) ? form : null;
-  }
-  return null;
-}
+/** The file a public path is served from, route groups included (test-utils/sitePages.ts). */
+const pageFor = sitePageFor;
 
 const base: NextStepInput = {
   program: "perm",
@@ -86,35 +81,63 @@ describe("what comes next after a case alert", () => {
     expect(i140DueBy("2026-10-15")).toBe("2027-04-12");
     expect(i140DueBy("not a date")).toBeNull();
     const text = words(nextStepsFor(base));
-    expect(text).toContain("about April 12, 2027");
-    expect(text).toContain("the expiration DOL printed on the certification");
+    expect(text).toContain("so by about April 12, 2027");
+    expect(text).toContain("the expiration date DOL printed on the certification");
+  });
+
+  it("puts the I-140 first, then its receipt, then the bulletin, then the rest of the way", () => {
+    const next = nextStepsFor(base)!;
+    expect(next.steps.map((s) => s.title)).toEqual(["The I-140", "The receipt number", "Your priority date", "The rest of the way"]);
+    expect(next.steps.map((s) => s.link?.href)).toEqual([
+      "https://permtracker.app/tools/i140-calculator",
+      "https://permtracker.app/uscis-case-status",
+      "https://permtracker.app/visa-bulletin?pd=2026-03-11#bulletin-alert",
+      "https://permtracker.app/tools/green-card-timeline",
+    ]);
+    // One button: the onward alert.
+    expect(next.steps.filter((s) => s.button).map((s) => s.title)).toEqual(["Your priority date"]);
   });
 
   it("names the priority date from DOL's record and offers the bulletin alert for it", () => {
     const next = nextStepsFor(base)!;
     expect(words(next)).toContain("March 11, 2026");
-    expect(next.button?.href).toBe("https://permtracker.app/visa-bulletin?pd=2026-03-11#bulletin-alert");
+    expect(next.steps.find((s) => s.button)?.link?.href).toBe("https://permtracker.app/visa-bulletin?pd=2026-03-11#bulletin-alert");
     expect(bulletinAlertUrl("2026-3-1")).toBe("https://permtracker.app/visa-bulletin#bulletin-alert");
     const hrefs = next.links.map((l) => l.href);
     expect(hrefs[0]).toBe("https://permtracker.app/guides/perm-certified-what-next");
     expect(hrefs).toContain("https://permtracker.app/tools/green-card-line");
-    expect(hrefs).toContain("https://permtracker.app/uscis-processing-times");
+    // USCIS's I-140 figures are on the I-140 wait page, the first step's link.
+    expect(allLinks(next).map((l) => l.href)).toContain("https://permtracker.app/tools/i140-calculator");
   });
 
   it("still says what's next without the certification day or the filing day", () => {
     const text = words(nextStepsFor({ ...base, certifiedOn: null, priorityDate: null }));
     expect(text).not.toContain("about");
-    expect(text).toContain("It's this case's PERM filing date, and the I-140 carries it.");
+    expect(text).toContain("within 180 days of the certification.");
+    expect(text).toContain("It's this case's PERM filing date, and the visa bulletin decides when it can be used.");
   });
 
   it("gives a denial its two 30-day options and says we keep watching", () => {
     const text = words(nextStepsFor({ ...base, status: "DENIED", approved: false }));
     expect(text).toContain("30 days");
+    expect(text).not.toContain("about");
     expect(text).toContain("RECONSIDERATION APPEALS or BALCA APPEALS");
     expect(text).toContain("/guides/perm-denied-what-happens-next");
+    expect(text).toContain("/guides/perm-appeal-reconsideration-balca");
     const board = words(nextStepsFor({ ...base, status: "DENIED - BALCA AFFIRMED", approved: false }));
     expect(board).toContain("last step at DOL");
     expect(board).not.toContain("30 days");
+  });
+
+  it("dates a denial's 30 days from the central calculator, from the day DOL's record moved", () => {
+    expect(denialReviewDueBy("2026-10-15")).toBe("2026-11-14");
+    expect(denialReviewDueBy("not a date")).toBeNull();
+    const text = words(nextStepsFor({ ...base, status: "DENIED", approved: false, deniedOn: "2026-10-15" }));
+    expect(text).toContain("by about November 14, 2026");
+    expect(text).toContain("30 days from the date on the denial letter");
+    // A certification day never dates a denial, nor a denial day a certification.
+    expect(words(nextStepsFor({ ...base, status: "DENIED", approved: false, certifiedOn: "2026-10-15" }))).not.toContain("about");
+    expect(words(nextStepsFor({ ...base, certifiedOn: null, deniedOn: "2026-10-15" }))).not.toContain("about");
   });
 
   it("tells a PERM job's wage request about recruitment, the PERM and the match", () => {
@@ -138,14 +161,16 @@ describe("what comes next after a case alert", () => {
   it("points a certified LCA at the visa filing, and is honest about the USCIS page", () => {
     const h1b = words(nextStepsFor({ ...base, program: "lca", caseNumber: "I-200-26118-846661" }));
     expect(h1b).toContain("Form I-129");
-    expect(h1b).toContain("can't show the status itself yet");
+    // The beta emails a status change; the lookup itself isn't promised to show the status.
+    expect(h1b).toContain("Once the petition is filed, USCIS sends a receipt number, and a beta on our USCIS page emails you");
+    expect(h1b).not.toMatch(/shows? (you )?(its|the) status/);
     expect(h1b).toContain("prevailing wage request");
     const e3 = words(nextStepsFor({ ...base, program: "lca", caseNumber: "I-203-26118-846661" }));
     expect(e3).toContain("The E-3 visa");
   });
 
   it("gives a certified H-1B LCA links that stand alone, as the rating page shows them without their steps", () => {
-    const links = (caseNumber: string) => nextStepsFor({ ...base, program: "lca", caseNumber })!.links;
+    const links = (caseNumber: string) => allLinks(nextStepsFor({ ...base, program: "lca", caseNumber }));
     const h1b = links("I-200-26118-846661");
     expect(h1b.map((l) => l.href)).toContain(`https://permtracker.app${NEXT_PATHS.i129Times}`);
     expect(h1b.find((l) => l.href.endsWith(NEXT_PATHS.pwdGuide))?.text).toMatch(/green card/i);
@@ -196,7 +221,10 @@ describe("what comes next after a case alert", () => {
 
   it("offers the next alert in the chain on each confirmation page", () => {
     const perm = confirmOffers("case", ["G-100-26070-123456"], programOf);
-    expect(perm.map((o) => o.href)).toEqual(["https://permtracker.app/tools/perm-timeline-calculator#queue-alert"]);
+    expect(perm.map((o) => o.href)).toEqual([
+      "https://permtracker.app/tools/perm-timeline-calculator#queue-alert",
+      "https://permtracker.app/uscis-case-status",
+    ]);
     expect(confirmOffers("case", ["P-100-26118-846661"], programOf)[0]?.label).toContain("Once the PERM is filed");
     expect(confirmOffers("case", ["I-200-26118-846661"], programOf)).toEqual([]);
     expect(confirmOffers("case", ["P-200-26118-846661"], programOf)).toEqual([]);
@@ -205,9 +233,12 @@ describe("what comes next after a case alert", () => {
       "https://permtracker.app/visa-bulletin#bulletin-alert",
     ]);
     expect(confirmOffers("employer")).toHaveLength(1);
-    expect(confirmOffers("bulletin")).toEqual([]);
+    // After the bulletin, the receipts; after a receipt, the bulletin.
+    expect(confirmOffers("bulletin").map((o) => o.href)).toEqual(["https://permtracker.app/uscis-case-status"]);
+    expect(confirmOffers("uscis").map((o) => o.href)).toEqual(["https://permtracker.app/visa-bulletin#bulletin-alert"]);
+    expect(confirmOffers("uscis")[0]?.label).not.toContain("After the PERM");
     // Two programs asking for the same page get one link.
-    expect(confirmOffers("case", ["G-100-26070-123456", "P-100-26118-846661"], programOf)).toHaveLength(1);
+    expect(confirmOffers("case", ["G-100-26070-123456", "P-100-26118-846661"], programOf)).toHaveLength(2);
   });
 
   it("speaks in the house voice", () => {
@@ -216,11 +247,19 @@ describe("what comes next after a case alert", () => {
       words(nextStepsFor({ ...base, status: "DENIED", approved: false })),
       words(nextStepsFor({ ...base, program: "pwd", caseNumber: "P-100-26118-846661", status: "DETERMINATION ISSUED" })),
       words(nextStepsFor({ ...base, program: "lca", caseNumber: "I-200-26118-846661" })),
-      ...confirmOffers("queue").flatMap((o) => [o.label, o.detail]),
+      words(nextStepsFor({ ...base, status: "DENIED", approved: false, deniedOn: "2026-10-15" })),
+      words(receiptNextSteps(RECEIPTS)),
+      words(bulletinNextSteps()),
+      ...(["case", "queue", "bulletin", "uscis", "employer"] as const).flatMap((k) =>
+        confirmOffers(k, ["G-100-26070-123456"], programOf).flatMap((o) => [o.label, o.detail]),
+      ),
       PWD_MATCH_SENTENCE,
     ].join("\n");
     expect(all).not.toMatch(/—|!/);
     expect(all).not.toMatch(/\bwill be approved\b|\bguarantee/i);
+    // The receipt alert is a beta, never priced (the USCIS tracking's standing rule: no price, never paid or free).
+    expect(all).toContain("beta");
+    expect(all).not.toMatch(/\bfree\b|\bpaid\b|\$\d/i);
   });
 });
 
@@ -246,5 +285,117 @@ describe("the review stages in a case alert", () => {
     expect(denied).toContain("https://permtracker.app/perm-rfi-audit/reconsideration-appeals");
     const certified = words(nextStepsFor(base));
     expect(certified).toContain("https://permtracker.app/green-card-timelines#add-h");
+  });
+});
+
+/** One receipt per path the receipt alert's next steps can take. */
+const RECEIPTS = [
+  { form: "I-485", tone: "neutral" as const, isFinal: false },
+  { form: "I-140", tone: "bad" as const, isFinal: false },
+  { form: "I-140", tone: "good" as const, isFinal: true },
+];
+
+describe("what comes next after a USCIS receipt moves", () => {
+  const one = (form: string | null, tone: "good" | "bad" | "neutral", isFinal: boolean) =>
+    receiptNextSteps([{ form, tone, isFinal }]);
+
+  it("a receipt still waiting gets its form's processing time, by the page's own name", () => {
+    const i485 = one("I-485", "neutral", false)!;
+    expect(i485.steps[0]?.link).toEqual({
+      href: "https://permtracker.app/uscis-processing-times/i-485",
+      text: "I-485 processing time: USCIS's own figures",
+    });
+    expect(one("I-140", "neutral", false)!.steps[0]?.link?.href).toBe("https://permtracker.app/tools/i140-calculator");
+    // A form with no page of its own gets the index, and an unreadable one too.
+    expect(one("I-9999", "neutral", false)!.steps[0]?.link?.href).toBe("https://permtracker.app/uscis-processing-times");
+    expect(one(null, "neutral", false)!.steps[0]?.link?.href).toBe("https://permtracker.app/uscis-processing-times");
+    // USCIS's own spelling of the form reads the same.
+    expect(one("I-765 Application for Employment Authorization", "neutral", false)!.steps[0]?.link?.href).toBe(
+      "https://permtracker.app/uscis-processing-times/i-765",
+    );
+  });
+
+  it("a request for evidence gets the response deadline", () => {
+    expect(one("I-140", "bad", false)!.steps[0]?.link?.href).toBe("https://permtracker.app/tools/rfe-response-deadline");
+  });
+
+  it("an approved I-140 goes on to the bulletin alert and the planner", () => {
+    const next = one("I-140", "good", true)!;
+    expect(next.steps.find((s) => s.button)?.link?.href).toBe("https://permtracker.app/visa-bulletin#bulletin-alert");
+    expect(allLinks(next).map((l) => l.href)).toContain("https://permtracker.app/tools/green-card-timeline");
+  });
+
+  it("adds nothing after a denial, a withdrawal or another form's approval", () => {
+    expect(one("I-140", "bad", true)).toBeNull();
+    expect(one("I-485", "neutral", true)).toBeNull();
+    expect(one("I-485", "good", true)).toBeNull();
+  });
+
+  it("names a step once when several receipts share it", () => {
+    const next = receiptNextSteps([
+      { form: "I-485", tone: "neutral", isFinal: false },
+      { form: "I-485", tone: "neutral", isFinal: false },
+      { form: "I-765", tone: "neutral", isFinal: false },
+    ])!;
+    expect(next.steps.map((s) => s.title)).toEqual(["How long the I-485 takes", "How long the I-765 takes"]);
+  });
+
+  it("knows every form the site has a processing-time page for, and no other", () => {
+    expect([...USCIS_FORMS_WITH_PAGES].sort()).toEqual(FORM_PAGES.map((p) => p.form).sort());
+    for (const p of FORM_PAGES) expect(p.slug).toBe(p.form.toLowerCase());
+  });
+});
+
+describe("what comes next after the bulletin moves", () => {
+  it("reads your own date first, then the planner", () => {
+    expect(bulletinNextSteps().steps.map((s) => s.link?.href)).toEqual([
+      "https://permtracker.app/tools/priority-date-calculator",
+      "https://permtracker.app/tools/green-card-timeline",
+    ]);
+  });
+});
+
+describe("a saved case's own bulletin alert", () => {
+  it("points the bulletin step at the case's Green card tab and leaves the rest alone", () => {
+    const caseUrl = "https://permtracker.app/cases/abc123";
+    const public_ = nextStepsFor(base)!;
+    const saved = forSavedCase(public_, caseUrl)!;
+    const bulletin = saved.steps.find((s) => s.button)!;
+    expect(bulletin.link?.href).toBe(`${caseUrl}?tab=greenCard`);
+    expect(saved.steps.filter((s) => !s.button)).toEqual(public_.steps.filter((s) => !s.button));
+    expect(saved.links).toEqual(public_.links);
+    expect(forSavedCase(null, caseUrl)).toBeNull();
+  });
+});
+
+describe("a link names its page the way the site does", () => {
+  /** The site map's one name for a path, or null for a page it doesn't list. */
+  const nameOf = (href: string): string | null => {
+    const path = new URL(href).pathname;
+    return SECTIONS.find((sec) => sec.href === path)?.name ?? null;
+  };
+  const blocks: Array<NextSteps | null> = [
+    nextStepsFor(base),
+    nextStepsFor({ ...base, status: "DENIED", approved: false }),
+    nextStepsFor({ ...base, program: "pwd", caseNumber: "P-100-26118-846661", status: "DETERMINATION ISSUED" }),
+    nextStepsFor({ ...base, program: "lca", caseNumber: "I-200-26118-846661" }),
+    nextStepsFor({ ...base, program: "lca", caseNumber: "I-203-26118-846661" }),
+    receiptNextSteps(RECEIPTS),
+    bulletinNextSteps(),
+  ];
+  const links: NextLink[] = [...Object.values(NEXT_LINKS), ...blocks.flatMap(allLinks)];
+
+  it("starts every link to a site-map page with that page's name", () => {
+    const named = links.filter((l) => nameOf(l.href) && !l.href.includes("#"));
+    expect(named.length).toBeGreaterThan(5);
+    for (const l of named) expect(l.text.startsWith(`${nameOf(l.href)}:`), `${l.text} names ${nameOf(l.href)}`).toBe(true);
+  });
+
+  it("goes only to pages that exist", () => {
+    for (const l of links) {
+      const url = new URL(l.href);
+      expect(url.origin, l.href).toBe("https://permtracker.app");
+      expect(pageFor(url.pathname), l.href).not.toBeNull();
+    }
   });
 });

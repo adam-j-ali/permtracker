@@ -5,8 +5,10 @@
  * Features:
  * - A plain heading (no banner: owner, Oct 15 2026, lime or dark, never the
  *   pale highlighter green)
- * - The three things it does, on one black panel with lime markers
- * - Guide links, and a line for anyone waiting on a case of their own
+ * - The four things it does, on one black panel with lime markers, the
+ *   green card's steps after the PERM among them
+ * - Guide links, and a line for anyone waiting on a case of their own: the DOL
+ *   lookup, then the USCIS one for the receipt that follows
  * - CTA button to create first case
  * - A review ask (the form on /reviews)
  * - A team sign-off
@@ -57,6 +59,15 @@ export function WelcomeEmail({
                 <td style={styles.featureContent}>
                   <Text style={styles.featureTitle}>Every deadline, worked out</Text>
                   <Text style={styles.featureDesc}>Wage expiration, the recruitment clocks, the ETA 9089 filing window and the I-140 cutoff, with reminders before each one</Text>
+                </td>
+              </tr>
+              <tr>
+                <td style={styles.featureMarkerCell}>
+                  <div style={styles.featureMarker}>&nbsp;</div>
+                </td>
+                <td style={styles.featureContent}>
+                  <Text style={styles.featureTitle}>Past the PERM, to the green card</Text>
+                  <Text style={styles.featureDesc}>The I-485 or the consulate, the work permit and the card, with an email when the case&apos;s visa bulletin line moves</Text>
                 </td>
               </tr>
               <tr>
@@ -122,7 +133,15 @@ export function WelcomeEmail({
           >
             look up its case number
           </Link>{" "}
-          for DOL&apos;s status and an estimate, and get an email when it changes.
+          for DOL&apos;s status and an estimate, and get an email when it changes. Once the I-140 is filed, the{" "}
+          <Link
+            href={`${baseUrl}/uscis-case-status`}
+            className="em-link-blue"
+            style={styles.inlineLink}
+          >
+            USCIS case status page
+          </Link>{" "}
+          reads its receipt number, and a beta there emails you when USCIS changes its status.
         </Text>
       </Section>
 

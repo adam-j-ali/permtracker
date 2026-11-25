@@ -25,7 +25,15 @@
 import { Link, Section, Text } from "react-email";
 
 import type { DigestData } from "../../convex/lib/newsletterCompose";
-import { CHECK_CASE_URL, dateLabel, monthLabel, monthsLabel, SIGNUP_URL, uscisIsNews } from "../../convex/lib/newsletterCompose";
+import {
+  CHECK_CASE_URL,
+  dateLabel,
+  monthLabel,
+  monthsLabel,
+  SIGNUP_URL,
+  uscisIsNews,
+  watchedCaseNext,
+} from "../../convex/lib/newsletterCompose";
 import { EmailButton, EmailLayout, FigureTable, MONO_STACK, QueueStamp, SANS_STACK } from "./components";
 import { formatInt } from "../../convex/lib/format";
 import { SITE_URL } from "../../convex/lib/links";
@@ -56,6 +64,11 @@ export function BulletinWeekly(d: DigestData) {
               ? `Status when we last checked it for you: ${d.watchedCase.status}.`
               : "We haven't recorded a status for it yet."}
           </Text>
+          {watchedCaseNext(d.watchedCase) ? (
+            <Text className="em-text-body" style={styles.p}>
+              {watchedCaseNext(d.watchedCase)}
+            </Text>
+          ) : null}
           <EmailButton href={d.watchedCase.url} variant="outline">
             Check it live
           </EmailButton>

@@ -68,6 +68,7 @@ import {
   shouldSendEmail,
 } from "./lib/notificationHelpers";
 import { emailStamp } from "./lib/time";
+import { dayDolActed } from "./lib/alertNextSteps";
 import { recordError } from "./lib/errorRecording";
 import { createLogger } from "./lib/logging";
 
@@ -480,6 +481,8 @@ export const recordLiveChange = internalMutation({
           changedAt: emailStamp(),
           caseId: args.caseId.toString(),
           caseNumber: caseDoc.caseNumber,
+          // A decision says what comes next, counted from the day DOL's record moved.
+          ...(args.isFinal ? { dolDecision: { decidedOn: dayDolActed(now) } } : {}),
         });
         emailed = true;
       }

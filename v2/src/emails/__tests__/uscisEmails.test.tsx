@@ -11,6 +11,7 @@ import { join } from "node:path";
 import { render } from "react-email";
 import { describe, expect, it } from "vitest";
 
+import { receiptNextSteps } from "@convex/lib/alertNextSteps";
 import { UscisAlertConfirm, type UscisConfirmReceipt } from "../UscisAlertConfirm";
 import { UscisStatusChanged, type UscisChangedItem } from "../UscisStatusChanged";
 
@@ -52,7 +53,10 @@ const alsoMoved: UscisChangedItem = {
 /** The text a reader sees, without markup. */
 function words(html: string): string {
   // A <wbr> lets the receipt break on a phone and adds no character, so it reads as nothing.
-  return html.replace(/<wbr\s*\/?>/g, "").replace(/<[^>]+>/g, " ").replace(/&#x27;|&rsquo;|&#8217;/g, "’").replace(/\s+/g, " ");
+  // A form name kept on one line (EmailKeepWhole) is a no-wrap span around the same words.
+  return html
+    .replace(/<span style="white-space:nowrap">([^<]*)<\/span>/g, "$1")
+    .replace(/<wbr\s*\/?>/g, "").replace(/<[^>]+>/g, " ").replace(/&#x27;|&rsquo;|&#8217;/g, "’").replace(/\s+/g, " ");
 }
 
 function keep(name: string, html: string) {
@@ -120,5 +124,46 @@ describe("the change email", () => {
     expect(html).toContain(alsoMoved.statusUrl);
     // The PERM case link only for the receipt that has one.
     expect(text.match(/Your PERM case/g)).toHaveLength(1);
+  });
+});
+
+describe("what comes next, in the change email", () => {
+  const changed = async (items: UscisChangedItem[]) =>
+    render(UscisStatusChanged({ items, unsubscribeUrl: STOP_URL, prefsUrl: PREFS_URL, next: receiptNextSteps(items) }));
+
+  it("an approved I-140 goes on to the bulletin alert and the planner", async () => {
+    const html = await changed([{ ...moved, form: "I-140" }]);
+    keep("changed-i140-approved", html);
+    const text = words(html);
+    expect(text).toContain("What comes next");
+    expect(text).toContain("The visa bulletin decides when the I-140’s priority date can be used.");
+    expect(html).toContain('href="https://permtracker.app/visa-bulletin#bulletin-alert"');
+    expect(html).toContain('href="https://permtracker.app/tools/green-card-timeline"');
+  });
+
+  it("a request for evidence gets the response deadline", async () => {
+    const html = await changed([{ ...alsoMoved, form: "I-140" }]);
+    expect(words(html)).toContain("USCIS RFE response deadline: the day USCIS must receive your answer");
+    expect(html).toContain('href="https://permtracker.app/tools/rfe-response-deadline"');
+  });
+
+  it("a receipt still waiting gets its form's processing time", async () => {
+    const html = await changed([{ ...moved, toStatus: "Fingerprint Fee Was Received", tone: "neutral", isFinal: false }]);
+    keep("changed-i485-waiting", html);
+    expect(words(html)).toContain("I-485 processing time: USCIS’s own figures");
+    expect(html).toContain('href="https://permtracker.app/uscis-processing-times/i-485"');
+  });
+
+  it("adds nothing after an I-485 approval, and still says USCIS is the authority", async () => {
+    const html = await changed([moved]);
+    const text = words(html);
+    expect(text).not.toContain("What comes next");
+    expect(text).toContain("USCIS is the authority on every case");
+  });
+
+  it("never prices the beta", async () => {
+    for (const items of [[{ ...moved, form: "I-140" }], [alsoMoved], [moved, alsoMoved]]) {
+      expect(words(await changed(items))).not.toMatch(/\bfree\b|\bpaid\b/i);
+    }
   });
 });
