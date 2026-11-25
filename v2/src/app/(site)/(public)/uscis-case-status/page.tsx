@@ -9,6 +9,7 @@ import { FaqList } from "@/components/tools/FaqList";
 import { ToolPageFooter } from "@/components/tools/ToolPageFooter";
 import { SavedReceipts } from "@/components/tools/SavedReceipts";
 import { UscisReceiptForm } from "@/components/tools/UscisReceiptForm";
+import { ReceiptSampleNote } from "@/components/uscis/ReceiptSampleNote";
 import { UscisStatusResult } from "@/components/tools/UscisStatusResult";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { normaliseCaseNumber } from "@/lib/caseNumberShape";
@@ -247,6 +248,8 @@ export default async function UscisCaseStatusPage({
           </p>
         </section>
       ) : null}
+
+      {receipt ? <ReceiptSampleNote receipt={receipt} /> : null}
 
       {enabled ? (
         receipt ? (

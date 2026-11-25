@@ -491,6 +491,43 @@ export default async function MethodologyPage() {
         </ul>
       </section>
 
+      <section className="mt-12 scroll-mt-24" id="uscis-sample" aria-labelledby="uscis-sample-title">
+        <h2 id="uscis-sample-title" className="font-heading text-2xl font-bold">
+          Our sample of USCIS cases
+        </h2>{" "}
+        <div className="mt-3 max-w-3xl space-y-3 text-base leading-relaxed">
+          <p>
+            USCIS publishes how many cases it decides, but not how far it has got through the cases filed in a given
+            month or a given run of receipt numbers. To show that, we check a spread of receipt numbers on USCIS&apos;s
+            public Case Status page every day and record the status each one shows.
+          </p>{" "}
+          <p>
+            Each month&apos;s range of online (IOE) receipt numbers is found from the receipt dates USCIS prints.
+            Numbers in it are drawn at random, with extra draws in the blocks people ask us about. The newest stretch is
+            also checked number by number. Every number is checked again later, and a case counts once, at its newest
+            status.
+          </p>{" "}
+          <p>
+            Each share is weighted to the size of the part it stands for. The counted stretch counts as it is, and the
+            rest is scaled up from the draw. Every share comes with a 95% margin worked out from the cases behind it, so
+            a small group shows a wide one. Paper filings at the service centers aren&apos;t in these shares yet.
+            They&apos;re online filings only.
+          </p>{" "}
+          <p>
+            At the start of each month, the sample&apos;s figures for the month just ended are sealed. When USCIS
+            publishes its own figures for that month, we score the sealed ones against them. That holds the sample to
+            the agency&apos;s own count.
+          </p>{" "}
+          <p>
+            We publish totals only. A receipt number is never listed, shared or sold. The figures are on{" "}
+            <Link href="/uscis-receipt-blocks" className="link">
+              the USCIS receipt blocks page
+            </Link>
+            .
+          </p>
+        </div>
+      </section>
+
       <section className="dark mt-12 border-2 shadow-hard border-black bg-[#141414] text-foreground p-6 sm:p-8">
         <h2 className="font-heading text-2xl font-bold">What we refuse to publish</h2>{" "}
         <ul className="mt-4 grid gap-3 text-base leading-relaxed text-soft">

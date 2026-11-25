@@ -53,25 +53,25 @@ export function MonthTable({ series }: { series: { form: string; rows: MonthLine
         <table className="w-full min-w-[620px] border-2 border-border text-left text-base">
           <thead className="bg-tint">
             <tr>
-              <th scope="col" className="px-4 py-2">Filed in</th>
-              <th scope="col" className="px-4 py-2 text-right">Sampled</th>
-              <th scope="col" className="px-4 py-2 text-right">Approved</th>
-              <th scope="col" className="px-4 py-2">Margin</th>
-              <th scope="col" className="px-4 py-2 text-right">Evidence request</th>
-              <th scope="col" className="px-4 py-2 text-right">Still waiting</th>
+              <th scope="col" className="px-4 py-2">Filed in{" "}</th>
+              <th scope="col" className="px-4 py-2 text-right">Sampled{" "}</th>
+              <th scope="col" className="px-4 py-2 text-right">Approved{" "}</th>
+              <th scope="col" className="px-4 py-2">Margin{" "}</th>
+              <th scope="col" className="px-4 py-2 text-right">Evidence request{" "}</th>
+              <th scope="col" className="px-4 py-2 text-right">Still waiting{" "}</th>
             </tr>
           </thead>
           <tbody>
             {shown.map((r) => (
               <tr key={r.month} className="border-t-2 border-border">
-                <th scope="row" className="px-4 py-2 font-bold">{label(r.month)}</th>
-                <td className="px-4 py-2 text-right tabular-nums">{int(r.counted)}</td>
-                <td className="px-4 py-2 text-right tabular-nums">{pct(r.approved)}</td>
+                <th scope="row" className="px-4 py-2 font-bold">{label(r.month)}{" "}</th>
+                <td className="px-4 py-2 text-right tabular-nums">{int(r.counted)}{" "}</td>
+                <td className="px-4 py-2 text-right tabular-nums">{pct(r.approved)}{" "}</td>
                 <td className="px-4 py-2 tabular-nums text-muted-foreground">
                   {pct(r.low)} to {pct(r.high)}
-                </td>
-                <td className="px-4 py-2 text-right tabular-nums">{pct(r.rfe)}</td>
-                <td className="px-4 py-2 text-right tabular-nums">{pct(r.waiting)}</td>
+                {" "}</td>
+                <td className="px-4 py-2 text-right tabular-nums">{pct(r.rfe)}{" "}</td>
+                <td className="px-4 py-2 text-right tabular-nums">{pct(r.waiting)}{" "}</td>
               </tr>
             ))}
           </tbody>

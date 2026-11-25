@@ -141,25 +141,25 @@ export default async function UscisReceiptBlockPage({ params }: { params: Promis
               <table className="w-full min-w-[560px] border-2 border-border text-left text-base">
                 <thead className="bg-tint">
                   <tr>
-                    <th scope="col" className="px-4 py-2">Form</th>
-                    <th scope="col" className="px-4 py-2 text-right">Sampled</th>
-                    <th scope="col" className="px-4 py-2 text-right">Approved</th>
-                    <th scope="col" className="px-4 py-2">Margin</th>
-                    <th scope="col" className="px-4 py-2 text-right">Evidence request</th>
-                    <th scope="col" className="px-4 py-2 text-right">Still waiting</th>
+                    <th scope="col" className="px-4 py-2">Form{" "}</th>
+                    <th scope="col" className="px-4 py-2 text-right">Sampled{" "}</th>
+                    <th scope="col" className="px-4 py-2 text-right">Approved{" "}</th>
+                    <th scope="col" className="px-4 py-2">Margin{" "}</th>
+                    <th scope="col" className="px-4 py-2 text-right">Evidence request{" "}</th>
+                    <th scope="col" className="px-4 py-2 text-right">Still waiting{" "}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {forms.map((f) => (
                     <tr key={f.form} className="border-t-2 border-border">
-                      <th scope="row" className="px-4 py-2 font-mono font-bold">{keepWhole(f.form)}</th>
-                      <td className="px-4 py-2 text-right tabular-nums">{int(f.counted)}</td>
-                      <td className="px-4 py-2 text-right tabular-nums">{pct(f.approved.share)}</td>
+                      <th scope="row" className="px-4 py-2 font-mono font-bold">{keepWhole(f.form)}{" "}</th>
+                      <td className="px-4 py-2 text-right tabular-nums">{int(f.counted)}{" "}</td>
+                      <td className="px-4 py-2 text-right tabular-nums">{pct(f.approved.share)}{" "}</td>
                       <td className="px-4 py-2 tabular-nums text-muted-foreground">
                         {pct(f.approved.low)} to {pct(f.approved.high)}
-                      </td>
-                      <td className="px-4 py-2 text-right tabular-nums">{pct(f.figure.groups.rfe.share)}</td>
-                      <td className="px-4 py-2 text-right tabular-nums">{pct(f.figure.groups.waiting.share)}</td>
+                      {" "}</td>
+                      <td className="px-4 py-2 text-right tabular-nums">{pct(f.figure.groups.rfe.share)}{" "}</td>
+                      <td className="px-4 py-2 text-right tabular-nums">{pct(f.figure.groups.waiting.share)}{" "}</td>
                     </tr>
                   ))}
                 </tbody>

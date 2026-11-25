@@ -159,3 +159,10 @@ export function monthRows(doc: SampleMonthsDoc, form: string): MonthRow[] {
       return [{ month, counted: f.counted, approved: f.groups.approved, rfe: f.groups.rfe, waiting: f.groups.waiting, walked }];
     });
 }
+
+/**
+ * Whether a typed receipt shows the last status the sample saw for that exact number (the owner's call, Nov 25 2026:
+ * "Show its last status"). Off until the Privacy Policy line that describes it is approved: today the policy says a
+ * receipt number is never published or shared and doesn't describe the sample.
+ */
+export const RECEIPT_LAST_STATUS_SHOWN = false;
