@@ -1,5 +1,6 @@
 import { BESIDE_THE_ROAD, ROAD } from "@/lib/road";
 import type { StepGroup } from "@/lib/reportedSummary";
+import type { SourceKind } from "@/lib/sourceKind";
 
 /**
  * Every public page about a green card step, and which steps it shows from both sources: the agency's own figure
@@ -9,10 +10,32 @@ import type { StepGroup } from "@/lib/reportedSummary";
  * ship showing one source.
  */
 
-/** Each step's name, as a link's words: "the wage request: the agency's figures". From the road (src/lib/road.ts). */
+/** Each step's name, the start of a link's words ("The wage request: our daily count"). From the road (src/lib/road.ts). */
 export const STEP_GROUP_NAMES = Object.fromEntries(
   [BESIDE_THE_ROAD, ...ROAD].flatMap((s) => (s.reported ? [[s.reported.group, s.reported.name]] : [])),
 ) as Record<StepGroup, string>;
+
+/**
+ * A step figure's link words, saying whose figure it is: an agency's own ("the agency's figures") or our daily count of
+ * its records (kind "measured": PERM, wage requests, LCAs). Until Nov 25 2026 every one said "the agency's".
+ */
+export function figuresLinkText(group: StepGroup, kind: SourceKind): string {
+  return `${STEP_GROUP_NAMES[group]}: ${kind === "official" ? "the agency's figures" : "our daily count"}`;
+}
+
+/** The two-sources section's opening line, naming the kinds of figure it holds. */
+export function sourcesLede(kinds: readonly SourceKind[], withReported: boolean): string {
+  const official = kinds.includes("official");
+  const ours = kinds.includes("measured");
+  const whose = official && ours
+    ? "The agency's figures and our own daily count of its records"
+    : ours
+      ? "Our own daily count of the agency's records"
+      : "The agency's own count";
+  return withReported
+    ? `${whose}, beside how long the cases people reported to us took. Each names where it comes from and when it was true.`
+    : `${whose} for each step, dated, beside the reported steps on this page.`;
+}
 
 export type StepPage = { groups: readonly StepGroup[]; reported: boolean } | { exempt: string };
 
