@@ -47,7 +47,7 @@ import {
 
 const CASE = {
   case_status: {
-    receiptNumber: "EAC9999103403",
+    receiptNumber: "EAC3599103403",
     formType: "I-140",
     submittedDate: "09-05-2023 14:28:46",
     modifiedDate: "09-06-2023 08:00:00",
@@ -103,7 +103,7 @@ afterEach(() => {
 /** A request to the route, carrying the sandbox caller's header when given. */
 function routeReq(header?: string): Request {
   const headers = header === undefined ? undefined : { [SANDBOX_CALLER_HEADER]: header };
-  return new Request("https://permtracker.app/api/uscis-case-status?receipt=EAC9999103403", { headers });
+  return new Request("https://permtracker.app/api/uscis-case-status?receipt=EAC3599103403", { headers });
 }
 
 describe("the flag", () => {
@@ -173,7 +173,7 @@ describe("who the keys answer", () => {
 describe("off", () => {
   it("returns disabled and touches neither the network nor the database when off", async () => {
     const { f } = fakeFetch(() => jsonRes(200, CASE));
-    const r = await fetchCaseStatus("EAC9999103403", { fetchImpl: f, now: () => T0 });
+    const r = await fetchCaseStatus("EAC3599103403", { fetchImpl: f, now: () => T0 });
     expect(r).toEqual({ kind: "disabled" });
     expect(f).not.toHaveBeenCalled();
     expect(execMock).not.toHaveBeenCalled();
@@ -207,7 +207,7 @@ describe("the daily budget", () => {
     setEnv("sandbox");
     oneMock.mockResolvedValue({ n: 901 }); // over the sandbox cap of 900
     const { f } = fakeFetch(() => jsonRes(200, CASE));
-    const r = await fetchCaseStatus("EAC9999103403", { fetchImpl: f, now: () => T0 });
+    const r = await fetchCaseStatus("EAC3599103403", { fetchImpl: f, now: () => T0 });
     expect(r).toEqual({ kind: "budget" });
     expect(execMock).toHaveBeenCalledTimes(1);
     expect(f).not.toHaveBeenCalled();
@@ -228,7 +228,7 @@ describe("the daily budget", () => {
       order.push("fetch");
       return (f as typeof fetch)(...a);
     }) as unknown as typeof fetch;
-    await fetchCaseStatus("EAC9999103403", { fetchImpl: fWrapped, now: () => T0 });
+    await fetchCaseStatus("EAC3599103403", { fetchImpl: fWrapped, now: () => T0 });
     expect(order[0]).toBe("exec");
     expect(order.indexOf("fetch")).toBeGreaterThan(order.indexOf("exec"));
   });
@@ -238,17 +238,17 @@ describe("hosts", () => {
   it("sandbox talks to api-int.uscis.gov", async () => {
     setEnv("sandbox");
     const { f, calls } = fakeFetch(() => jsonRes(200, CASE));
-    await fetchCaseStatus("EAC9999103403", { fetchImpl: f, now: () => T0 });
+    await fetchCaseStatus("EAC3599103403", { fetchImpl: f, now: () => T0 });
     expect(calls[0]?.url).toBe("https://api-int.uscis.gov/oauth/accesstoken");
-    expect(calls[1]?.url).toBe("https://api-int.uscis.gov/case-status/EAC9999103403");
+    expect(calls[1]?.url).toBe("https://api-int.uscis.gov/case-status/EAC3599103403");
   });
 
   it("production talks to api.uscis.gov", async () => {
     setEnv("production");
     const { f, calls } = fakeFetch(() => jsonRes(200, CASE));
-    await fetchCaseStatus("EAC9999103403", { fetchImpl: f, now: () => T0 });
+    await fetchCaseStatus("EAC3599103403", { fetchImpl: f, now: () => T0 });
     expect(calls[0]?.url).toBe("https://api.uscis.gov/oauth/accesstoken");
-    expect(calls[1]?.url).toBe("https://api.uscis.gov/case-status/EAC9999103403");
+    expect(calls[1]?.url).toBe("https://api.uscis.gov/case-status/EAC3599103403");
   });
 
   it("enforces the documented caps: 5 TPS / 900 a day sandbox, 10 TPS / 350k production", () => {
@@ -261,8 +261,8 @@ describe("the token", () => {
   it("is fetched once and reused across calls", async () => {
     setEnv("sandbox");
     const { f, calls } = fakeFetch(() => jsonRes(200, CASE));
-    await fetchCaseStatus("EAC9999103403", { fetchImpl: f, now: () => T0 });
-    await fetchCaseStatus("EAC9999103404", { fetchImpl: f, now: () => new Date(T0.getTime() + 1000) });
+    await fetchCaseStatus("EAC3599103403", { fetchImpl: f, now: () => T0 });
+    await fetchCaseStatus("EAC3599103404", { fetchImpl: f, now: () => new Date(T0.getTime() + 1000) });
     const tokenCalls = calls.filter((c) => c.url.endsWith("/oauth/accesstoken"));
     expect(tokenCalls).toHaveLength(1);
     // And the case call carries it.
@@ -273,7 +273,7 @@ describe("the token", () => {
   it("is sent as form-urlencoded client credentials, never in a query string", async () => {
     setEnv("sandbox");
     const { f, calls } = fakeFetch(() => jsonRes(200, CASE));
-    await fetchCaseStatus("EAC9999103403", { fetchImpl: f, now: () => T0 });
+    await fetchCaseStatus("EAC3599103403", { fetchImpl: f, now: () => T0 });
     const tok = calls[0]!;
     expect(tok.url).not.toContain("client_secret");
     expect(tok.init?.method).toBe("POST");
@@ -285,9 +285,9 @@ describe("the token", () => {
   it("is refetched once it is within sixty seconds of expiry", async () => {
     setEnv("sandbox");
     const { f, calls } = fakeFetch(() => jsonRes(200, CASE));
-    await fetchCaseStatus("EAC9999103403", { fetchImpl: f, now: () => T0 });
+    await fetchCaseStatus("EAC3599103403", { fetchImpl: f, now: () => T0 });
     // 3600 s ttl, refreshed at ttl - 60: 3541 s later is past that line.
-    await fetchCaseStatus("EAC9999103403", { fetchImpl: f, now: () => new Date(T0.getTime() + 3541_000) });
+    await fetchCaseStatus("EAC3599103403", { fetchImpl: f, now: () => new Date(T0.getTime() + 3541_000) });
     expect(calls.filter((c) => c.url.endsWith("/oauth/accesstoken"))).toHaveLength(2);
   });
 
@@ -295,9 +295,9 @@ describe("the token", () => {
     setEnv("sandbox");
     let n = 0;
     const { f, calls } = fakeFetch(() => (n++ === 0 ? jsonRes(401, { message: "Invalid Access Token" }) : jsonRes(200, CASE)));
-    const first = await fetchCaseStatus("EAC9999103403", { fetchImpl: f, now: () => T0 });
+    const first = await fetchCaseStatus("EAC3599103403", { fetchImpl: f, now: () => T0 });
     expect(first).toEqual({ kind: "unauthorized" });
-    const second = await fetchCaseStatus("EAC9999103403", { fetchImpl: f, now: () => new Date(T0.getTime() + 1000) });
+    const second = await fetchCaseStatus("EAC3599103403", { fetchImpl: f, now: () => new Date(T0.getTime() + 1000) });
     expect(second.kind).toBe("ok");
     expect(calls.filter((c) => c.url.endsWith("/oauth/accesstoken"))).toHaveLength(2);
   });
@@ -305,7 +305,7 @@ describe("the token", () => {
   it("reports unauthorized when the token endpoint itself refuses", async () => {
     setEnv("sandbox");
     const f = vi.fn(async () => jsonRes(401, { error: "invalid_client" })) as unknown as typeof fetch;
-    const r = await fetchCaseStatus("EAC9999103403", { fetchImpl: f, now: () => T0 });
+    const r = await fetchCaseStatus("EAC3599103403", { fetchImpl: f, now: () => T0 });
     expect(r).toEqual({ kind: "unauthorized" });
   });
 });
@@ -314,11 +314,11 @@ describe("USCIS's answers", () => {
   it("maps 200 to ok with a normalised record and keeps the raw JSON", async () => {
     setEnv("sandbox");
     const { f } = fakeFetch(() => jsonRes(200, CASE));
-    const r = await fetchCaseStatus("EAC9999103403", { fetchImpl: f, now: () => T0 });
+    const r = await fetchCaseStatus("EAC3599103403", { fetchImpl: f, now: () => T0 });
     expect(r.kind).toBe("ok");
     if (r.kind !== "ok") return;
     expect(r.status).toEqual({
-      receipt: "EAC9999103403",
+      receipt: "EAC3599103403",
       formType: "I-140",
       statusText: "Case Was Received",
       statusDesc: "On September 5, 2023, we received your Form I-140.",
@@ -338,14 +338,14 @@ describe("USCIS's answers", () => {
   ])("maps %s to %s", async (status, kind) => {
     setEnv("sandbox");
     const { f } = fakeFetch(() => jsonRes(status, { message: "x" }));
-    const r = await fetchCaseStatus("EAC9999103403", { fetchImpl: f, now: () => T0 });
+    const r = await fetchCaseStatus("EAC3599103403", { fetchImpl: f, now: () => T0 });
     expect(r.kind).toBe(kind);
   });
 
   it("maps 429 (Spike Arrest) to rate_limited at USCIS, and does not retry", async () => {
     setEnv("sandbox");
     const { f, calls } = fakeFetch(() => jsonRes(429, { message: "Spike Arrest Violation" }));
-    const r = await fetchCaseStatus("EAC9999103403", { fetchImpl: f, now: () => T0 });
+    const r = await fetchCaseStatus("EAC3599103403", { fetchImpl: f, now: () => T0 });
     expect(r).toEqual({ kind: "rate_limited", where: "uscis" });
     expect(calls.filter((c) => c.url.includes("/case-status/"))).toHaveLength(1);
   });
@@ -357,14 +357,14 @@ describe("USCIS's answers", () => {
       if (n++ === 0) return jsonRes(200, { access_token: "tok", expires_in: 3600 });
       throw new TypeError("fetch failed");
     }) as unknown as typeof fetch;
-    const r = await fetchCaseStatus("EAC9999103403", { fetchImpl: f, now: () => T0 });
+    const r = await fetchCaseStatus("EAC3599103403", { fetchImpl: f, now: () => T0 });
     expect(r).toEqual({ kind: "unavailable", httpStatus: null });
   });
 
   it("treats a 200 with no status text as unavailable rather than rendering an empty record", async () => {
     setEnv("sandbox");
-    const { f } = fakeFetch(() => jsonRes(200, { case_status: { receiptNumber: "EAC9999103403" } }));
-    const r = await fetchCaseStatus("EAC9999103403", { fetchImpl: f, now: () => T0 });
+    const { f } = fakeFetch(() => jsonRes(200, { case_status: { receiptNumber: "EAC3599103403" } }));
+    const r = await fetchCaseStatus("EAC3599103403", { fetchImpl: f, now: () => T0 });
     expect(r).toEqual({ kind: "unavailable", httpStatus: 200 });
   });
 
@@ -372,27 +372,27 @@ describe("USCIS's answers", () => {
   it("tells the operator once when USCIS refuses the credentials, however the refusal comes", async () => {
     setEnv("sandbox");
     const tokenRefused = vi.fn(async () => jsonRes(401, { error: "invalid_client" })) as unknown as typeof fetch;
-    await fetchCaseStatus("EAC9999103403", { fetchImpl: tokenRefused, now: () => T0 });
-    await fetchCaseStatus("EAC9999103403", { fetchImpl: tokenRefused, now: () => new Date(T0.getTime() + 1000) });
+    await fetchCaseStatus("EAC3599103403", { fetchImpl: tokenRefused, now: () => T0 });
+    await fetchCaseStatus("EAC3599103403", { fetchImpl: tokenRefused, now: () => new Date(T0.getTime() + 1000) });
     const { f } = fakeFetch(() => jsonRes(403, { message: "Forbidden" }));
-    await fetchCaseStatus("EAC9999103403", { fetchImpl: f, now: () => new Date(T0.getTime() + 2000) });
+    await fetchCaseStatus("EAC3599103403", { fetchImpl: f, now: () => new Date(T0.getTime() + 2000) });
     expect(captureError).toHaveBeenCalledTimes(1);
     expect(captureError.mock.calls[0]![1]).toMatchObject({ operation: "uscis.unauthorized" });
   });
 
   it("tells the operator once when a 200 has a shape it can't read", async () => {
     setEnv("sandbox");
-    const { f } = fakeFetch(() => jsonRes(200, { case_status: { receiptNumber: "EAC9999103403" } }));
-    await fetchCaseStatus("EAC9999103403", { fetchImpl: f, now: () => T0 });
-    await fetchCaseStatus("EAC9999103403", { fetchImpl: f, now: () => new Date(T0.getTime() + 1000) });
+    const { f } = fakeFetch(() => jsonRes(200, { case_status: { receiptNumber: "EAC3599103403" } }));
+    await fetchCaseStatus("EAC3599103403", { fetchImpl: f, now: () => T0 });
+    await fetchCaseStatus("EAC3599103403", { fetchImpl: f, now: () => new Date(T0.getTime() + 1000) });
     expect(captureError).toHaveBeenCalledTimes(1);
     expect(captureError.mock.calls[0]![1]).toMatchObject({ operation: "uscis.unreadableAnswer" });
   });
 
   it("tells nobody about an ordinary answer or USCIS being down", async () => {
     setEnv("sandbox");
-    await fetchCaseStatus("EAC9999103403", { fetchImpl: fakeFetch(() => jsonRes(200, CASE)).f, now: () => T0 });
-    await fetchCaseStatus("EAC9999103403", { fetchImpl: fakeFetch(() => jsonRes(503, {})).f, now: () => new Date(T0.getTime() + 1000) });
+    await fetchCaseStatus("EAC3599103403", { fetchImpl: fakeFetch(() => jsonRes(200, CASE)).f, now: () => T0 });
+    await fetchCaseStatus("EAC3599103403", { fetchImpl: fakeFetch(() => jsonRes(503, {})).f, now: () => new Date(T0.getTime() + 1000) });
     expect(captureError).not.toHaveBeenCalled();
   });
 });
@@ -422,8 +422,8 @@ describe("spacing calls the way USCIS counts them", () => {
     const sleep = async (ms: number) => {
       waits.push(ms);
     };
-    const a = await fetchCaseStatus("EAC9999103403", { fetchImpl: f, now: () => T0, sleep });
-    const b = await fetchCaseStatus("EAC9999103403", { fetchImpl: f, now: () => T0, sleep });
+    const a = await fetchCaseStatus("EAC3599103403", { fetchImpl: f, now: () => T0, sleep });
+    const b = await fetchCaseStatus("EAC3599103403", { fetchImpl: f, now: () => T0, sleep });
     expect([a.kind, b.kind]).toEqual(["ok", "ok"]);
     expect(waits).toEqual([200]);
     expect(calls.filter((c) => c.url.includes("/case-status/"))).toHaveLength(2);
@@ -434,7 +434,7 @@ describe("spacing calls the way USCIS counts them", () => {
     const { f, calls } = fakeFetch(() => jsonRes(200, CASE));
     const sleep = async () => {};
     const results = [];
-    for (let i = 0; i < 7; i++) results.push(await fetchCaseStatus("EAC9999103403", { fetchImpl: f, now: () => T0, sleep }));
+    for (let i = 0; i < 7; i++) results.push(await fetchCaseStatus("EAC3599103403", { fetchImpl: f, now: () => T0, sleep }));
     expect(results.slice(0, 6).every((r) => r.kind === "ok")).toBe(true);
     expect(results[6]).toEqual({ kind: "rate_limited", where: "local" });
     expect(calls.filter((c) => c.url.includes("/case-status/"))).toHaveLength(6);
@@ -472,7 +472,7 @@ describe("normalisation", () => {
         current_case_status_text_en: "x",
         hist_case_status: [{ date: "bad", completed_text_en: "a" }, { date: "2024-01-02", completed_text_en: "b" }],
       },
-      "EAC9999103403",
+      "EAC3599103403",
     );
     expect(s?.history).toEqual([{ date: "2024-01-02", text: "b" }]);
   });

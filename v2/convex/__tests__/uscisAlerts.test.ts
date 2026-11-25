@@ -20,9 +20,9 @@ type T = ReturnType<typeof createTestContext>;
 
 const UNSUB = "test-unsubscribe-secret";
 const CHECKER = "checker-secret-0123456789abcdef";
-const A = "IOE0900000101";
-const B = "IOE0900000202";
-const C = "EAC2600000303";
+const A = "IOE0000000001";
+const B = "IOE0000000002";
+const C = "EAC3500000303";
 const PERSON = "person@example.com";
 const OTHER = "other@example.com";
 const HOUR = 60 * 60 * 1000;
@@ -247,7 +247,7 @@ describe("signing up", () => {
 
   it("sends one confirmation naming the receipt, its office and the DOL case, and watches nothing yet", async () => {
     const t = createTestContext();
-    const res = await signUp(t, " Person@Example.com ", "ioe-0900000101", { dolCaseNumber: "g-100-26125-868956" });
+    const res = await signUp(t, " Person@Example.com ", "ioe-0000000001", { dolCaseNumber: "g-100-26125-868956" });
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true, message: "Check your inbox to confirm." });
     await drain(t);
@@ -495,7 +495,7 @@ describe("the alerts", () => {
     expect(text).toContain("when we checked, at 4:12 AM ET");
     expect(text).not.toMatch(/no change/i);
     expect(text).toContain(`/uscis-case-status?receipt=${A}`);
-    expect(text).toContain("/uscis-receipt-blocks/IOE09000");
+    expect(text).toContain("/uscis-receipt-blocks/IOE00000");
     expect(String(mail!.html)).toContain("Stop these alerts");
     const headers = mail!.headers as Record<string, string>;
     expect(headers["List-Unsubscribe"]).toMatch(/\/uscis-alert\/unsubscribe\?token=/);

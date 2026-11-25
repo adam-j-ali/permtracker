@@ -44,7 +44,7 @@ describe("ombudsmanFrom", () => {
 describe("congressNote", () => {
   const base = {
     name: "Worker A",
-    receiptNumber: "MSC2290000000",
+    receiptNumber: "MSC3590000000",
     form: "I-485, Application to Register Permanent Residence or Adjust Status (Employment-based)",
     filedOn: "June 1, 2022",
     office: "Service Center Operations",
@@ -59,7 +59,7 @@ describe("congressNote", () => {
     // Act
     const note = congressNote(base);
     // Assert
-    expect(note).toContain("Receipt number: MSC2290000000");
+    expect(note).toContain("Receipt number: MSC3590000000");
     expect(note).toContain("takes inquiries for cases received before October 28, 2022");
     expect(note).toContain("I asked USCIS about it on September 1, 2026 (reference SRMT0000000000)");
     expect(note).toContain("I'll sign your privacy release form");

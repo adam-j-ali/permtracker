@@ -11,11 +11,11 @@ import { easternDay, formIdOf, readAccount, timelineFrom } from "@/lib/uscis/acc
 const ACCOUNT = JSON.stringify({
   data: [
     {
-      receiptNumber: "MSC2690012345",
+      receiptNumber: "MSC3590012345",
       formType: "I485",
       submissionDate: "2026-03-02T15:00:00.000Z",
       events: [
-        { eventId: "a1", eventCode: "IAF", eventDateTime: "2026-03-04T13:00:00.000Z", receiptNumber: "MSC2690012345" },
+        { eventId: "a1", eventCode: "IAF", eventDateTime: "2026-03-04T13:00:00.000Z", receiptNumber: "MSC3590012345" },
         { eventId: "a2", eventCode: "FTA0", eventDateTime: "2026-06-02T02:10:00.000Z" },
         { eventId: "a3", eventCode: "FTA0", eventDateTime: "2026-06-02T02:10:00.000Z" },
         { eventId: "a4", eventCode: "xq7", eventDateTime: "2026-08-01T16:00:00.000Z" },
@@ -47,7 +47,7 @@ describe("reading a pasted account", () => {
 
   it("never returns a receipt number whole", () => {
     const r = readAccount(ACCOUNT);
-    expect(JSON.stringify(r)).not.toContain("MSC2690012345");
+    expect(JSON.stringify(r)).not.toContain("MSC3590012345");
     expect(JSON.stringify(r)).not.toContain("IOE0000000000");
     expect(r.cases[0]!.receipt).toBe("MSC••••••2345");
   });

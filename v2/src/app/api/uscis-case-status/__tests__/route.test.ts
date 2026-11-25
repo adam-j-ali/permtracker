@@ -30,7 +30,7 @@ function get(receipt: string | null, ip = "203.0.113.5"): Request {
 }
 
 const STORED = {
-  receipt: "EAC9999103403",
+  receipt: "EAC3599103403",
   formType: "I-140",
   statusText: "Case Was Received",
   statusDesc: "d",
@@ -71,7 +71,7 @@ describe("GET /api/uscis-case-status", () => {
 
   it("answers 503 'pending' with no lookup while the keys are absent", async () => {
     enabled = false;
-    const res = await handler(get("EAC9999103403"));
+    const res = await handler(get("EAC3599103403"));
     expect(res.status).toBe(503);
     await expect(res.json()).resolves.toMatchObject({ reason: "disabled" });
     expect(lookup).not.toHaveBeenCalled();
@@ -87,11 +87,11 @@ describe("GET /api/uscis-case-status", () => {
       },
       now: () => NOW,
     });
-    const visitor = await gated(get("EAC9999103403"));
+    const visitor = await gated(get("EAC3599103403"));
     expect(visitor.status).toBe(503);
     expect(lookup).not.toHaveBeenCalled();
     lookup.mockResolvedValue({ kind: "not_found" });
-    const caller = get("EAC9999103403", "203.0.113.9");
+    const caller = get("EAC3599103403", "203.0.113.9");
     caller.headers.set("x-test-caller", "yes");
     expect((await gated(caller)).status).toBe(404);
     expect(lookup).toHaveBeenCalledTimes(1);
@@ -100,16 +100,16 @@ describe("GET /api/uscis-case-status", () => {
 
   it("normalises the receipt before the lookup and answers no-store", async () => {
     lookup.mockResolvedValue({ kind: "ok", status: STORED, source: "stored" });
-    const res = await handler(get(" eac-9999-103403 "));
+    const res = await handler(get(" eac-3599-103403 "));
     expect(res.status).toBe(200);
     expect(res.headers.get("cache-control")).toBe("no-store");
-    expect(lookup).toHaveBeenCalledWith("EAC9999103403", NOW);
-    await expect(res.json()).resolves.toMatchObject({ receipt: "EAC9999103403", source: "stored", stale: false });
+    expect(lookup).toHaveBeenCalledWith("EAC3599103403", NOW);
+    await expect(res.json()).resolves.toMatchObject({ receipt: "EAC3599103403", source: "stored", stale: false });
   });
 
   it("distinguishes a budget refusal (429, reason budget) from a shape refusal (400)", async () => {
     lookup.mockResolvedValue({ kind: "budget" });
-    const res = await handler(get("EAC9999103403"));
+    const res = await handler(get("EAC3599103403"));
     expect(res.status).toBe(429);
     await expect(res.json()).resolves.toMatchObject({ reason: "budget" });
   });
@@ -124,27 +124,27 @@ describe("GET /api/uscis-case-status", () => {
     [{ kind: "disabled" }, 503, "disabled"],
   ])("maps %o to %s", async (result, status, reason) => {
     lookup.mockResolvedValue(result);
-    const res = await handler(get("EAC9999103403"));
+    const res = await handler(get("EAC3599103403"));
     expect(res.status).toBe(status);
     await expect(res.json()).resolves.toMatchObject({ reason });
   });
 
   it("returns a stale stored row as 200 with stale:true and the failure named", async () => {
     lookup.mockResolvedValue({ kind: "stale", status: STORED, failure: "unavailable" });
-    const res = await handler(get("EAC9999103403"));
+    const res = await handler(get("EAC3599103403"));
     expect(res.status).toBe(200);
     await expect(res.json()).resolves.toMatchObject({ stale: true, failure: "unavailable", source: "stored" });
   });
 
   it("limits one address to PER_IP_PER_MINUTE lookups, charged before the lookup", async () => {
     lookup.mockResolvedValue({ kind: "ok", status: STORED, source: "stored" });
-    for (let i = 0; i < PER_IP_PER_MINUTE; i++) expect((await handler(get("EAC9999103403"))).status).toBe(200);
-    const res = await handler(get("EAC9999103403"));
+    for (let i = 0; i < PER_IP_PER_MINUTE; i++) expect((await handler(get("EAC3599103403"))).status).toBe(200);
+    const res = await handler(get("EAC3599103403"));
     expect(res.status).toBe(429);
     await expect(res.json()).resolves.toMatchObject({ reason: "ip" });
     expect(lookup).toHaveBeenCalledTimes(PER_IP_PER_MINUTE);
     // A different address is unaffected.
-    expect((await handler(get("EAC9999103403", "198.51.100.9"))).status).toBe(200);
+    expect((await handler(get("EAC3599103403", "198.51.100.9"))).status).toBe(200);
   });
 });
 

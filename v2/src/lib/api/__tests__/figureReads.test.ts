@@ -238,7 +238,7 @@ describe("the receipt-number sample", () => {
     const r = await readReceiptBlocks("I-485", "ioe09366");
     fits("getReceiptBlocks", r);
     expect(r.ok && r.data.near).toBe("IOE09366");
-    expect(await readReceiptBlocks("I-485", "IOE0936612345")).toMatchObject({ ok: false, status: 400 });
+    expect(await readReceiptBlocks("I-485", "IOE0000000004")).toMatchObject({ ok: false, status: 400 });
   });
 
   it("reads a form however it's typed, and refuses what isn't one", async () => {
@@ -266,7 +266,7 @@ describe("the receipt-number sample", () => {
   });
 
   it("refuses a whole receipt number without repeating it", async () => {
-    const r = await readReceiptBlock("IOE0936612345");
+    const r = await readReceiptBlock("IOE0000000004");
     expect(r).toMatchObject({ ok: false, status: 400 });
     expect(JSON.stringify(r)).not.toMatch(RECEIPT_SHAPE);
     expect(getSampleBlocks).not.toHaveBeenCalled();
@@ -442,9 +442,9 @@ describe("no answer holds a receipt number", () => {
 
   it("refuses an answer that would carry one: a stored figure holding a receipt fails the call", async () => {
     // Control: the pattern finds the shapes people type, and the guard throws on them.
-    for (const s of ["IOE0912345678", "EAC2412345678", "ioe0912345678"]) expect(s).toMatch(RECEIPT_SHAPE);
-    expect(() => noReceipts({ ok: true, data: { note: "IOE0912345678" }, meta: { source: "x", asOf: null, url: "x" } })).toThrow();
-    getSampleBlocks.mockResolvedValue({ ...BLOCKS, by_block: { ...BLOCKS.by_block, IOE09364: { ...BLOCKS.by_block.IOE09364, "IOE0912345678": form(3, 1) } } });
+    for (const s of ["IOE0000000003", "EAC3612345678", "ioe0000000003"]) expect(s).toMatch(RECEIPT_SHAPE);
+    expect(() => noReceipts({ ok: true, data: { note: "IOE0000000003" }, meta: { source: "x", asOf: null, url: "x" } })).toThrow();
+    getSampleBlocks.mockResolvedValue({ ...BLOCKS, by_block: { ...BLOCKS.by_block, IOE09364: { ...BLOCKS.by_block.IOE09364, "IOE0000000003": form(3, 1) } } });
     await expect(readReceiptBlock("IOE09364")).rejects.toThrow(/receipt/);
   });
 });

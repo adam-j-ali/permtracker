@@ -62,7 +62,7 @@ describe("redactAddresses", () => {
     expect(run({ $current_url: "https://permtracker.app/uscis-case-status?receipt=IOE0000000000" }).$current_url).toBe(
       "https://permtracker.app/uscis-case-status?receipt=redacted",
     );
-    expect(run({ $referrer: "/uscis-case-status?form=I-140&receipt=WAC2190012345#result" }).$referrer).toBe(
+    expect(run({ $referrer: "/uscis-case-status?form=I-140&receipt=WAC3590012345#result" }).$referrer).toBe(
       "/uscis-case-status?form=I-140&receipt=redacted#result",
     );
   });

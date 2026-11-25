@@ -19,7 +19,7 @@ const STOP_URL = "https://permtracker.app/uscis-alert/unsubscribe?token=abc";
 const PREFS_URL = "https://permtracker.app/prefs?token=abc&focus=uscis";
 
 const one: UscisConfirmReceipt = { receipt: "IOE0000000000", office: "USCIS online filing (ELIS)", dolCaseNumber: "G-100-00000-000000" };
-const two: UscisConfirmReceipt = { receipt: "EAC0000000000", office: "Vermont Service Center", dolCaseNumber: null };
+const two: UscisConfirmReceipt = { receipt: "EAC3500000000", office: "Vermont Service Center", dolCaseNumber: null };
 
 const moved: UscisChangedItem = {
   receipt: "IOE0000000000",
@@ -36,14 +36,14 @@ const moved: UscisChangedItem = {
 };
 const alsoMoved: UscisChangedItem = {
   ...moved,
-  receipt: "EAC0000000000",
+  receipt: "EAC3500000000",
   form: null,
   fromStatus: "Case Was Received",
   toStatus: "Request for Evidence Was Sent",
   tone: "bad",
   isFinal: false,
   checkedAt: "4:14 AM ET, Nov 24",
-  statusUrl: "https://permtracker.app/uscis-case-status?receipt=EAC0000000000",
+  statusUrl: "https://permtracker.app/uscis-case-status?receipt=EAC3500000000",
   blockUrl: "https://permtracker.app/uscis-receipt-blocks",
   dolCaseNumber: null,
   dolCaseUrl: null,
@@ -116,7 +116,7 @@ describe("the change email", () => {
     expect(text).toContain("USCIS changed the status of 2 of your receipts.");
     expect(text).toContain("at 4:12 AM ET, Nov 24");
     expect(text).toContain("at 4:14 AM ET, Nov 24");
-    expect(text).toContain("See EAC0000000000 on PERM Tracker");
+    expect(text).toContain("See EAC3500000000 on PERM Tracker");
     expect(html).toContain(alsoMoved.statusUrl);
     // The PERM case link only for the receipt that has one.
     expect(text.match(/Your PERM case/g)).toHaveLength(1);

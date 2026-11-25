@@ -8,7 +8,7 @@ import { UscisAccountReader } from "../UscisAccountReader";
  * to mean, receipts masked, and no request of any kind while it reads.
  */
 const PASTE = JSON.stringify({
-  receiptNumber: "MSC2690012345",
+  receiptNumber: "MSC3590012345",
   formType: "I-485",
   submissionDate: "2026-03-02",
   events: [

@@ -18,7 +18,7 @@ import {
 } from "../uscisWatch";
 
 const NOW = Date.UTC(2026, 10, 25, 15, 0);
-const ok = { receipt: "IOE0900000101", status: "Case Was Received", group: "waiting", form: "I-485", checkedAt: "2026-11-25T09:58:00-05:00" };
+const ok = { receipt: "IOE0000000001", status: "Case Was Received", group: "waiting", form: "I-485", checkedAt: "2026-11-25T09:58:00-05:00" };
 
 function parsed(results: unknown[]) {
   return parseResults({ results }, NOW);
@@ -26,26 +26,26 @@ function parsed(results: unknown[]) {
 
 describe("watchableReceipt", () => {
   it("reads a receipt the way people type it", () => {
-    expect(watchableReceipt("ioe-0900-000101")).toBe("IOE0900000101");
-    expect(watchableReceipt(" EAC 26 000 00303 ")).toBe("EAC2600000303");
+    expect(watchableReceipt("ioe-0000-000001")).toBe("IOE0000000001");
+    expect(watchableReceipt(" EAC 35 000 00303 ")).toBe("EAC3500000303");
     // A number pasted from a PDF carries an en dash or an em dash.
-    expect(watchableReceipt("EAC–26—00000303")).toBe("EAC2600000303");
+    expect(watchableReceipt("EAC–35—00000303")).toBe("EAC3500000303");
   });
 
   it("refuses a masked receipt, a short one and a long paste", () => {
     expect(watchableReceipt("IOE*090000010")).toBeNull();
-    expect(watchableReceipt("IOE09000001")).toBeNull();
+    expect(watchableReceipt("IOE00000001")).toBeNull();
     expect(watchableReceipt("G-100-26125-868956")).toBeNull();
-    expect(watchableReceipt(`IOE0900000101${" ".repeat(40)}`)).toBeNull();
+    expect(watchableReceipt(`IOE0000000001${" ".repeat(40)}`)).toBeNull();
   });
 });
 
 describe("parseResults", () => {
   it("reads a good post, upper-casing the receipt and the form", () => {
-    const r = parsed([{ ...ok, receipt: "ioe0900000101", form: "i-485" }]);
+    const r = parsed([{ ...ok, receipt: "ioe0000000001", form: "i-485" }]);
     expect(r).toEqual({
       ok: true,
-      results: [{ receipt: "IOE0900000101", status: "Case Was Received", group: "waiting", form: "I-485", checkedAt: Date.parse(ok.checkedAt) }],
+      results: [{ receipt: "IOE0000000001", status: "Case Was Received", group: "waiting", form: "I-485", checkedAt: Date.parse(ok.checkedAt) }],
     });
   });
 
@@ -59,7 +59,7 @@ describe("parseResults", () => {
   it("refuses each bad field by name", () => {
     const cases: [Record<string, unknown>, RegExp][] = [
       [{ ...ok, receipt: 13 }, /results\[0\]\.receipt/],
-      [{ ...ok, receipt: "IOE0900000101XXXXXXXX" }, /results\[0\]\.receipt/],
+      [{ ...ok, receipt: "IOE0000000001XXXXXXXX" }, /results\[0\]\.receipt/],
       [{ ...ok, group: "Approved" }, /results\[0\]\.group/],
       [{ ...ok, status: "x".repeat(201) }, /results\[0\]\.status/],
       [{ ...ok, status: "Case\u0000Was" }, /control character/],
@@ -100,9 +100,9 @@ describe("the rest", () => {
   });
 
   it("links a receipt's page, and an online receipt's own block", () => {
-    expect(receiptPageUrl("IOE0900000101")).toBe("https://permtracker.app/uscis-case-status?receipt=IOE0900000101");
-    expect(receiptBlockUrl("IOE0900000101")).toBe("https://permtracker.app/uscis-receipt-blocks/IOE09000");
-    expect(receiptBlockUrl("EAC2600000303")).toBe("https://permtracker.app/uscis-receipt-blocks");
+    expect(receiptPageUrl("IOE0000000001")).toBe("https://permtracker.app/uscis-case-status?receipt=IOE0000000001");
+    expect(receiptBlockUrl("IOE0000000001")).toBe("https://permtracker.app/uscis-receipt-blocks/IOE00000");
+    expect(receiptBlockUrl("EAC3500000303")).toBe("https://permtracker.app/uscis-receipt-blocks");
   });
 
   it("calls the decided groups final, and the rest not", () => {

@@ -37,7 +37,7 @@ import {
 const NOW = new Date("2026-09-22T18:00:00Z");
 
 const LIVE = {
-  receipt: "EAC9999103403",
+  receipt: "EAC3599103403",
   formType: "I-140",
   statusText: "Case Was Received",
   statusDesc: "desc",
@@ -48,7 +48,7 @@ const LIVE = {
 
 function storedRow(seenAt: number) {
   return {
-    receipt: "EAC9999103403",
+    receipt: "EAC3599103403",
     form_type: "I-140",
     status_text: "Case Was Received",
     status_desc: "desc",
@@ -77,7 +77,7 @@ afterEach(() => {
 describe("lookupUscisCase", () => {
   it("answers from a fresh stored row without asking USCIS", async () => {
     oneMock.mockResolvedValue(storedRow(NOW.getTime() - 60_000));
-    const r = await lookupUscisCase("EAC9999103403", NOW);
+    const r = await lookupUscisCase("EAC3599103403", NOW);
     expect(r.kind).toBe("ok");
     if (r.kind !== "ok") return;
     expect(r.source).toBe("stored");
@@ -93,7 +93,7 @@ describe("lookupUscisCase", () => {
     // First read: the stale row. After the write, the read-back: the new row.
     oneMock.mockResolvedValueOnce(old).mockResolvedValueOnce({ ...old, seen_at: String(NOW.getTime()) });
     fetchCaseStatusMock.mockResolvedValue({ kind: "ok", status: LIVE, raw: { case_status: {} } });
-    const r = await lookupUscisCase("EAC9999103403", NOW);
+    const r = await lookupUscisCase("EAC3599103403", NOW);
     expect(fetchCaseStatusMock).toHaveBeenCalledTimes(1);
     expect(r.kind).toBe("ok");
     if (r.kind !== "ok") return;
@@ -106,7 +106,7 @@ describe("lookupUscisCase", () => {
   it("returns the stale row, marked stale with the failure named, when USCIS cannot answer", async () => {
     oneMock.mockResolvedValue(storedRow(NOW.getTime() - FRESH_MS - 1));
     fetchCaseStatusMock.mockResolvedValue({ kind: "rate_limited", where: "uscis" });
-    const r = await lookupUscisCase("EAC9999103403", NOW);
+    const r = await lookupUscisCase("EAC3599103403", NOW);
     expect(r.kind).toBe("stale");
     if (r.kind !== "stale") return;
     expect(r.failure).toBe("rate_limited");
@@ -115,16 +115,16 @@ describe("lookupUscisCase", () => {
 
   it("passes the USCIS failure through when there is nothing stored", async () => {
     fetchCaseStatusMock.mockResolvedValue({ kind: "not_found" });
-    expect(await lookupUscisCase("EAC9999103403", NOW)).toEqual({ kind: "not_found" });
+    expect(await lookupUscisCase("EAC3599103403", NOW)).toEqual({ kind: "not_found" });
     fetchCaseStatusMock.mockResolvedValue({ kind: "disabled" });
-    expect(await lookupUscisCase("EAC9999103403", NOW)).toEqual({ kind: "disabled" });
+    expect(await lookupUscisCase("EAC3599103403", NOW)).toEqual({ kind: "disabled" });
     expect(execMock.mock.calls.some(([sql]) => /INSERT/.test(String(sql)))).toBe(false);
   });
 
   it("stores a live answer even when the read-back fails, answering from what it wrote", async () => {
     oneMock.mockResolvedValue(null);
     fetchCaseStatusMock.mockResolvedValue({ kind: "ok", status: LIVE, raw: null });
-    const r = await lookupUscisCase("EAC9999103403", NOW);
+    const r = await lookupUscisCase("EAC3599103403", NOW);
     expect(r.kind).toBe("ok");
     if (r.kind !== "ok") return;
     expect(r.status.seenAt).toBe(NOW.getTime());
@@ -137,7 +137,7 @@ describe("lookupUscisCase on sandbox keys", () => {
     keysEnv = "sandbox";
     oneMock.mockResolvedValue(storedRow(NOW.getTime() - 60_000));
     fetchCaseStatusMock.mockResolvedValue({ kind: "ok", status: LIVE, raw: null });
-    const r = await lookupUscisCase("EAC9999103403", NOW);
+    const r = await lookupUscisCase("EAC3599103403", NOW);
     expect(r.kind).toBe("ok");
     if (r.kind !== "ok") return;
     expect(r.source).toBe("live");
@@ -150,7 +150,7 @@ describe("lookupUscisCase on sandbox keys", () => {
   it("passes a sandbox refusal through untouched", async () => {
     keysEnv = "sandbox";
     fetchCaseStatusMock.mockResolvedValue({ kind: "not_found" });
-    expect(await lookupUscisCase("EAC9999100000", NOW)).toEqual({ kind: "not_found" });
+    expect(await lookupUscisCase("EAC3599100000", NOW)).toEqual({ kind: "not_found" });
     expect(execMock).not.toHaveBeenCalled();
   });
 });
@@ -168,7 +168,7 @@ describe("recordStatus", () => {
     expect(sql).toMatch(/last_change_at = CASE/);
     expect(sql).toMatch(/status_text IS NOT excluded\.status_text/);
     expect(sql).toMatch(/modified_at IS NOT excluded\.modified_at/);
-    expect(args[0]).toBe("EAC9999103403");
+    expect(args[0]).toBe("EAC3599103403");
     expect(args[6]).toBe(JSON.stringify(LIVE.history));
     expect(args).toHaveLength(11);
   });

@@ -96,8 +96,8 @@ describe("the site palette's recent searches", () => {
     const user = userEvent.setup();
     render(<SearchPalette open onOpenChange={noop} />);
 
-    await user.type(screen.getByRole("combobox"), "lin 2604214850");
-    const row = screen.getByRole("option", { name: /Look up USCIS receipt LIN2604214850/ });
+    await user.type(screen.getByRole("combobox"), "lin 3504214850");
+    const row = screen.getByRole("option", { name: /Look up USCIS receipt LIN3504214850/ });
     await user.click(row);
 
     expect(readRecentSearches()).toEqual([]);

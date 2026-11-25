@@ -66,7 +66,7 @@ describe("what a recent search keeps of what was typed", () => {
     expect(recentSearchLabel("EAC*590123456")).toBeNull();
     expect(recentSearchLabel("EAC21901234567890")).toBeNull();
     // Short groups: no run of digits, nothing shaped like a phone number, still a receipt.
-    expect(recentSearchLabel("EAC-21-90-12-34-56")).toBeNull();
+    expect(recentSearchLabel("EAC-36-90-12-34-56")).toBeNull();
   });
 
   it("never keeps an email address, a phone number or an SSN typed into a box", () => {

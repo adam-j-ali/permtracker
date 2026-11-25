@@ -78,7 +78,7 @@ describe("robots.txt", () => {
 
   it("keeps crawlers off a receipt number in the address, and the receipt page open (Nov 25 2026)", () => {
     expect(allowed("/uscis-case-status", list(rules.allow), list(rules.disallow))).toBe(true);
-    expect(allowed("/uscis-case-status?receipt=EAC2112312345", list(rules.allow), list(rules.disallow))).toBe(false);
+    expect(allowed("/uscis-case-status?receipt=EAC3512312345", list(rules.allow), list(rules.disallow))).toBe(false);
     expect(allowed("/uscis-account-reader", list(rules.allow), list(rules.disallow))).toBe(true);
   });
 });
