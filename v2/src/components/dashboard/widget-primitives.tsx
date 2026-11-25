@@ -42,10 +42,10 @@ export function WidgetHeader({
   );
 }
 
-/** The heading row's link. */
+/** The heading row's link, its tap area a full 44px tall. */
 export function WidgetLink({ href, children }: { href: string; children: ReactNode }): ReactNode {
   return (
-    <Link href={href} className="link text-sm">
+    <Link href={href} className="link inline-flex min-h-11 items-center text-sm">
       {children}
     </Link>
   );

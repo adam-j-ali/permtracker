@@ -22,6 +22,13 @@ function row(overrides?: Partial<CaseCardData>): CaseCardData {
   } as CaseCardData;
 }
 
+describe("CaseListRow - a case without an employer", () => {
+  it("is named 'Your case' rather than left blank", () => {
+    renderWithProviders(<CaseListRow caseData={row({ employerName: "", beneficiaryIdentifier: "", positionTitle: "" })} />);
+    expect(screen.getByRole("link", { name: "Your case" })).toBeInTheDocument();
+  });
+});
+
 describe("CaseListRow", () => {
   it("shows an open case's progress chip", () => {
     renderWithProviders(<CaseListRow caseData={row()} />);

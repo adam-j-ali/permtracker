@@ -26,27 +26,17 @@ import { WIDGET_CONTAINER_CLASSES, WidgetHeader, WidgetLink } from "./widget-pri
 
 const rowKey = (row: SubscriptionRow) => `${row.kind}:${row.id ?? ""}`;
 
-export default function MyWatchesWidget(): ReactNode {
-  const state = useQuery(api.emailPrefs.mine);
-  const turnOff = useMutation(api.emailPrefs.turnOffMine);
-  const [busy, setBusy] = useState<string | null>(null);
-
-  if (!state) return null;
-  const rows = subscriptionRows(state).alerts;
-  if (rows.length === 0) return null;
-
-  const stop = async (row: SubscriptionRow) => {
-    setBusy(rowKey(row));
-    try {
-      await turnOff({ kind: row.kind, id: row.id });
-      toast(`${MAIL_KINDS[row.kind].one} stopped`, { description: row.detail });
-    } catch {
-      toast.error("That didn't save. Try again in a moment.");
-    } finally {
-      setBusy(null);
-    }
-  };
-
+/** The list itself, given its rows: what the dashboard draws, and what a preview draws from sample rows. */
+export function MyWatchesView({
+  rows,
+  busy,
+  onStop,
+}: {
+  rows: readonly SubscriptionRow[];
+  /** The row whose stop is saving, by rowKey. */
+  busy: string | null;
+  onStop: (row: SubscriptionRow) => void;
+}): ReactNode {
   return (
     <section id="my-alerts" aria-labelledby="my-alerts-title" className={WIDGET_CONTAINER_CLASSES}>
       <WidgetHeader
@@ -75,7 +65,7 @@ export default function MyWatchesWidget(): ReactNode {
                 loading={busy === key}
                 disabled={busy !== null}
                 aria-label={`Stop the ${one.toLowerCase()} for ${row.detail}`}
-                onClick={() => stop(row)}
+                onClick={() => onStop(row)}
               >
                 Stop
               </Button>
@@ -85,4 +75,28 @@ export default function MyWatchesWidget(): ReactNode {
       </ul>
     </section>
   );
+}
+
+export default function MyWatchesWidget(): ReactNode {
+  const state = useQuery(api.emailPrefs.mine);
+  const turnOff = useMutation(api.emailPrefs.turnOffMine);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  if (!state) return null;
+  const rows = subscriptionRows(state).alerts;
+  if (rows.length === 0) return null;
+
+  const stop = async (row: SubscriptionRow) => {
+    setBusy(rowKey(row));
+    try {
+      await turnOff({ kind: row.kind, id: row.id });
+      toast(`${MAIL_KINDS[row.kind].one} stopped`, { description: row.detail });
+    } catch {
+      toast.error("That didn't save. Try again in a moment.");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return <MyWatchesView rows={rows} busy={busy} onStop={stop} />;
 }

@@ -38,6 +38,19 @@ function createMockCaseCardData(overrides?: Partial<CaseCardData>): CaseCardData
   } as CaseCardData;
 }
 
+describe("CaseCard - a case without an employer", () => {
+  it("is named by the person, then 'Your case', with the job beneath", () => {
+    const { unmount } = renderWithProviders(
+      <CaseCard case={createMockCaseCardData({ employerName: "", beneficiaryIdentifier: "J.D.", positionTitle: "Engineer" })} />,
+    );
+    expect(screen.getByRole("link", { name: "J.D." })).toBeInTheDocument();
+    expect(screen.getByText("Engineer")).toBeInTheDocument();
+    unmount();
+    renderWithProviders(<CaseCard case={createMockCaseCardData({ employerName: "", beneficiaryIdentifier: "", positionTitle: "" })} />);
+    expect(screen.getByRole("link", { name: "Your case" })).toBeInTheDocument();
+  });
+});
+
 describe("CaseCard - Rendering", () => {
   it("renders employer name and beneficiary", () => {
     renderWithProviders(<CaseCard case={createMockCaseCardData({ employerName: "Tech LLC", beneficiaryIdentifier: "Jane Smith" })} />);
