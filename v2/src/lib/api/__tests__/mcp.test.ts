@@ -33,6 +33,20 @@ vi.mock("../reads", () => ({
 vi.mock("../employerLookup", () => ({ lookupEmployer: (...a: unknown[]) => lookupEmployer(...a) }));
 const lookupSoc = vi.fn();
 vi.mock("../socLookup", () => ({ lookupSoc: (...a: unknown[]) => lookupSoc(...a) }));
+const figures = vi.hoisted(() => ({
+  readReceiptBlocks: vi.fn(),
+  readReceiptBlock: vi.fn(),
+  readReceiptMonths: vi.fn(),
+  readUscisI140: vi.fn(),
+  readUscisI485: vi.fn(),
+  readConsulates: vi.fn(),
+  readConsulate: vi.fn(),
+  readTimelines: vi.fn(),
+  readAccuracy: vi.fn(),
+}));
+vi.mock("../figureReads", () =>
+  Object.fromEntries(Object.entries(figures).map(([name, f]) => [name, (...a: unknown[]) => f(...a)])),
+);
 const logMcpError = vi.fn();
 const logShapeMiss = vi.fn();
 vi.mock("../mcpLog", () => ({
@@ -76,7 +90,7 @@ beforeEach(() => {
   logShapeMiss.mockReset();
   // Every read starts each test clean and answering: a call count left by another test made one of these
   // order-dependent, which the gate's shuffled run found.
-  for (const f of [readEntity, searchEntities, readEstimate, readBulletin, lookupEmployer, lookupSoc, findCases]) {
+  for (const f of [readEntity, searchEntities, readEstimate, readBulletin, lookupEmployer, lookupSoc, findCases, ...Object.values(figures)]) {
     f.mockReset().mockResolvedValue({ ok: true, data: {}, meta });
   }
 });
@@ -118,6 +132,29 @@ describe("the MCP server at /mcp", () => {
     // No employer at all: a job title and a law firm over a range of days is an ask of its own.
     await rpc("tools/call", { name: "find_cases", arguments: { job: "controls engineer", firm: "Smith Immigration", from: "2026-01-05", to: "2026-02-28" } });
     expect(findCases).toHaveBeenLastCalledWith({ employer: null, job: "controls engineer", firm: "Smith Immigration", filed: null, from: "2026-01-05", to: "2026-02-28", program: null });
+  });
+
+  it("answers the figure tools through the same reads as their /v1 endpoints", async () => {
+    await rpc("tools/call", { name: "get_receipt_block", arguments: { block: "IOE09366" } });
+    expect(figures.readReceiptBlock).toHaveBeenCalledExactlyOnceWith("IOE09366");
+    await rpc("tools/call", { name: "get_receipt_blocks", arguments: {} });
+    expect(figures.readReceiptBlocks).toHaveBeenCalledExactlyOnceWith(null);
+    await rpc("tools/call", { name: "get_receipt_months", arguments: { form: "I-765" } });
+    expect(figures.readReceiptMonths).toHaveBeenCalledExactlyOnceWith("I-765");
+    await rpc("tools/call", { name: "get_timelines", arguments: { office: "SFV" } });
+    expect(figures.readTimelines).toHaveBeenCalledExactlyOnceWith({ office: "SFV", consulate: null });
+    await rpc("tools/call", { name: "get_consulate", arguments: { slug: "mumbai" } });
+    expect(figures.readConsulate).toHaveBeenCalledExactlyOnceWith("mumbai");
+    for (const [tool, read] of [
+      ["get_uscis_petitions", figures.readUscisI140],
+      ["get_uscis_adjustments", figures.readUscisI485],
+      ["list_consulates", figures.readConsulates],
+      ["get_accuracy", figures.readAccuracy],
+    ] as const) {
+      const { body } = await rpc("tools/call", { name: tool, arguments: {} });
+      expect(read, tool).toHaveBeenCalledTimes(1);
+      expect(JSON.parse(body.result.content[0].text), tool).toMatchObject({ page: meta.url });
+    }
   });
 
   it("tells the assistant when the shared pool is full, and reads nothing", async () => {

@@ -225,6 +225,8 @@ const SAMPLE_SLUG: Record<string, string> = {
   getEmployer: "example-robotics-llc",
   getLawFirm: "sample-partners-llp",
   getOccupation: "software-developers",
+  getReceiptBlock: "IOE00001",
+  getConsulate: "sample-city",
 };
 
 describe("the assistant tools come from the same registry", () => {

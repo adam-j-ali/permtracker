@@ -11,6 +11,18 @@ export interface ApiChange {
 
 export const API_CHANGES: readonly ApiChange[] = [
   {
+    version: "1.2.0",
+    date: "2026-11-25",
+    changes: [
+      "USCIS's own figures: /uscis/i140 (the newest quarter by subtype, eight quarters by category, processing times, and approved petitions waiting for a visa number) and /uscis/i485 (the newest quarter by office, the pending employment-based inventory, and processing times).",
+      "The sample of USCIS receipt numbers: /uscis/receipt-blocks, /uscis/receipt-blocks/{block} and /uscis/receipt-months give the share in each status group with its 95% margin, by block and by month. Counts and shares only: no receipt number is ever sent.",
+      "Consulates: /consulates lists each one's immigrant visa interview line and its issuances in the newest 12 months, and /consulates/{slug} gives one's history and monthly issuances.",
+      "The timelines people reported: /timelines, for everyone or for one USCIS office or consulate. Self-reported, counts and medians only.",
+      "The estimates' own record: /accuracy.",
+      "Each comes to assistants as a tool of the same name: get_receipt_blocks, get_receipt_block, get_receipt_months, get_uscis_petitions, get_uscis_adjustments, list_consulates, get_consulate, get_timelines and get_accuracy.",
+    ],
+  },
+  {
     version: "1.1.0",
     date: "2026-11-14",
     changes: [

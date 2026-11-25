@@ -28,7 +28,7 @@ import { keepWhole } from "@/components/ui/keep-whole";
 
 const TITLE = "PERM Tracker API and MCP Server";
 const DESCRIPTION =
-  "PERM, prevailing wage, H-1B and visa bulletin records as JSON. The same reads work as tools for Claude, Cursor and other AI assistants. Free keys.";
+  "PERM, wage, H-1B, USCIS, consulate and visa bulletin records as JSON. The same reads work as tools for Claude, Cursor and other AI assistants. Free keys.";
 
 export const metadata: Metadata = withSocialCard(
   {
@@ -136,7 +136,8 @@ export default function DevelopersPage() {
       <header className="pt-10 sm:pt-12">
         <h1 className="font-heading text-4xl font-bold leading-tight sm:text-5xl">API and AI assistants</h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-soft">
-          The federal records behind this site, as JSON for your code and as tools for Claude, Cursor and other assistants.
+          The federal records behind this site, and the figures we build from them, as JSON for your code and as tools for
+          Claude, Cursor and other assistants.
         </p>
       </header>
     </div>{" "}

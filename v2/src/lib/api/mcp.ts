@@ -21,6 +21,17 @@ import { z } from "zod";
 
 import type { ApiCaller } from "./auth";
 import { lookupEmployer } from "./employerLookup";
+import {
+  readAccuracy,
+  readConsulate,
+  readConsulates,
+  readReceiptBlock,
+  readReceiptBlocks,
+  readReceiptMonths,
+  readTimelines,
+  readUscisI140,
+  readUscisI485,
+} from "./figureReads";
 import { logShapeMiss } from "./mcpLog";
 import { API_VERSION, TOOL_ENDPOINTS, toolName, type EndpointDoc } from "./openapi";
 import { findCases, readBulletin, readCase, readEntity, readEstimate, readQueue, searchEntities, type ReadResult } from "./reads";
@@ -122,6 +133,15 @@ const RUNNERS: Record<string, (a: ToolArgs) => Promise<ReadResult<unknown>>> = {
   getOccupation: (a) => readEntity("occupation", String(a.slug ?? "")),
   lookupEmployer: (a) => lookupEmployer(String(a.name ?? "")),
   lookupSoc: (a) => lookupSoc(String(a.q ?? "")),
+  getReceiptBlocks: (a) => readReceiptBlocks(str(a.form)),
+  getReceiptBlock: (a) => readReceiptBlock(String(a.block ?? "")),
+  getReceiptMonths: (a) => readReceiptMonths(str(a.form)),
+  getUscisPetitions: () => readUscisI140(),
+  getUscisAdjustments: () => readUscisI485(),
+  listConsulates: () => readConsulates(),
+  getConsulate: (a) => readConsulate(String(a.slug ?? "")),
+  getTimelines: (a) => readTimelines({ office: str(a.office), consulate: str(a.consulate) }),
+  getAccuracy: () => readAccuracy(),
 };
 
 /** Results a search tool returns when the assistant names no limit: enough to choose from, small enough to read. */
@@ -200,8 +220,11 @@ export function buildMcpServer(caller: ApiCaller): McpServer {
     {
       instructions:
         "Federal records on U.S. employment-based immigration: PERM labor certification, prevailing wage requests, " +
-        "H-1B LCAs, DOL processing times and the State Department visa bulletin. Every answer names its source and " +
-        "the page it came from. Cite that page. Estimates are labelled as estimates and make no promise. " +
+        "H-1B LCAs, DOL processing times, the State Department visa bulletin and consulates' interview lines, and " +
+        "USCIS's I-140 and I-485 figures. Also PERM Tracker's own figures: the approval shares in its sample of USCIS " +
+        "receipt numbers (estimates with a margin), the timelines people reported (self-reported), and how close its " +
+        "estimates land. Every answer names its source and the page it came from. Cite that page. Estimates are " +
+        "labelled as estimates and make no promise. " +
         "To read one employer, law firm or occupation, search for it by name first: the search returns the slug the get tool takes.",
       // Every tool takes a few short strings, so a call's arguments never hold
       // more than a handful of keys. Without a cap a 256 KB body of one big

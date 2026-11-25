@@ -306,7 +306,7 @@ const DATA_PAGES: { path: string; label: string; blurb: string }[] = [
   {
     path: "/developers",
     label: "API and MCP server",
-    blurb: `A free JSON API at ${API_BASE} with keys from Settings, described in full as OpenAPI 3.1 at ${API_BASE}/openapi.json, and an MCP server at ${MCP_URL} with no key needed. ${MCP_TOOLS.length} read-only tools, one for each read endpoint: look up a PERM, prevailing wage, H-1B LCA or H-2A/H-2B case by number, find a case without its number, estimate a PERM decision date, DOL's queues, the visa bulletin, employer, law firm and occupation records, and the SOC codes for a job title.`,
+    blurb: `A free JSON API at ${API_BASE}, with keys from Settings. OpenAPI 3.1 describes it in full at ${API_BASE}/openapi.json. An MCP server at ${MCP_URL} needs no key, and its ${MCP_TOOLS.length} read-only tools match the read endpoints one for one. They look up a PERM, prevailing wage, H-1B LCA or H-2A/H-2B case by number, or find one without its number. A PERM decision date can be estimated, and DOL's queues and the visa bulletin read. Employer, law firm and occupation records come with the SOC codes for a job title. USCIS's I-140 and I-485 figures sit beside the approval shares by receipt block and month from our USCIS sample. Last come each consulate's interview line, the timelines people reported, and how close our estimates land.`,
   },
   {
     path: "/extension",

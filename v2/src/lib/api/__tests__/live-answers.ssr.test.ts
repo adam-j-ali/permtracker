@@ -11,7 +11,7 @@
  *
  *   API_ANSWERS_BASE=http://localhost:3000 pnpm exec vitest run src/lib/api/__tests__/live-answers.ssr.test.ts
  *
- * About 28 tool calls, all through the keyless pool. Never point it at the live site in a loop.
+ * About 40 tool calls, all through the keyless pool. Never point it at the live site in a loop.
  */
 import { describe, expect, it } from "vitest";
 
@@ -92,6 +92,20 @@ describe.skipIf(!BASE)("real answers fit the published schemas", () => {
         if (decided && decided !== pending) await check("get_case", { caseNumber: decided.caseNumber });
         if (program === "perm") await check("estimate_decision", { case: pending.caseNumber });
       }
+      const blocks = (await check("get_receipt_blocks", {})) as { blocks?: { block: string }[] } | null;
+      await check("get_receipt_blocks", { form: "I-765" });
+      const block = blocks?.blocks?.[blocks.blocks.length - 1]?.block;
+      expect(block, "get_receipt_blocks listed no block").toBeTruthy();
+      await check("get_receipt_block", { block });
+      await check("get_receipt_months", {});
+      await check("get_uscis_petitions", {});
+      await check("get_uscis_adjustments", {});
+      const posts = (await check("list_consulates", {})) as { posts?: { slug: string }[] } | null;
+      const slug = posts?.posts?.find((p) => p.slug === "mumbai")?.slug ?? posts?.posts?.[0]?.slug;
+      expect(slug, "list_consulates listed no consulate").toBeTruthy();
+      await check("get_consulate", { slug });
+      await check("get_timelines", {});
+      await check("get_accuracy", {});
       await check("find_cases", { job: "software engineer", filed: "2026-09-15" });
       await check("find_cases", { firm: "fragomen", from: "2026-01-01", to: "2026-03-31" });
 

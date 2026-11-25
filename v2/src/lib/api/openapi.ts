@@ -22,6 +22,17 @@ import { WEBHOOK_EVENTS } from "@convex/lib/webhookSign";
 
 import { API_BASE, DEVELOPERS_URL, MCP_URL } from "./addresses";
 import { API_ERRORS, errorAnchor, errorsWithStatus } from "./errors";
+import {
+  AccuracySchema,
+  ConsulateSchema,
+  ConsulatesSchema,
+  ReceiptBlockSchema,
+  ReceiptBlocksSchema,
+  ReceiptMonthsSchema,
+  TimelinesSchema,
+  UscisI140Schema,
+  UscisI485Schema,
+} from "./figureSchemas";
 import { sandboxAnswer } from "./sandbox";
 import {
   CaseSchema,
@@ -45,7 +56,7 @@ import {
 } from "./schemas";
 
 /** The description's own version. Additions raise the middle number; nothing is removed inside version 1. */
-export const API_VERSION = "1.1.0";
+export const API_VERSION = "1.2.0";
 
 export { API_BASE, DEVELOPERS_URL, MCP_URL };
 
@@ -55,6 +66,10 @@ export const TAGS = [
   { name: "Timing", description: "DOL's processing times, the pending PERM queue by filing month, and an estimate of when a pending PERM case is likely to be decided." },
   { name: "Visa bulletin", description: "The State Department's monthly visa bulletin charts, as printed, back to June 2005." },
   { name: "Employers, law firms and occupations", description: "Each one's PERM record from DOL's published files, and its cases pending at DOL now. Search by name, then get one by its slug." },
+  { name: "USCIS", description: "USCIS's own I-140 and I-485 figures, and PERM Tracker's sample of receipt numbers checked on USCIS's Case Status page: the share approved by receipt block and by month, each with its margin. Counts and shares only: no receipt number is ever sent." },
+  { name: "Consulates", description: "Each consulate's immigrant visa interview line, from the State Department's IV Scheduling Status Tool, and the immigrant visas it issued each month." },
+  { name: "Reported timelines", description: "How long each step took for people who reported their own cases, merged across sources and counted once each. Also who's still waiting. Self-reported, and counts only." },
+  { name: "Accuracy", description: "How close PERM Tracker's own estimates land, graded against what DOL and the State Department actually did." },
   { name: "Lookups", description: "Two lookups that need no key, under shared limits: a printed employer name to its page, and a job title to its SOC codes." },
   { name: "Exports", description: "A search's whole answer, past one page, as CSV or JSON. Needs the export scope." },
   { name: "Webhooks", description: "Signed deliveries when a watched case changes status, DOL moves an employer's cases, a visa bulletin is published or the queue moves. Needs the webhooks scope." },
@@ -130,6 +145,8 @@ function sample(pathAndQuery: string, params: Record<string, string> = {}): { ex
 const NAME_Q: ParamDoc = { name: "q", in: "query", required: true, description: "2 to 120 characters of the name.", example: "acme", minLength: 2, maxLength: 120 };
 const LIMIT: ParamDoc = { name: "limit", in: "query", required: false, description: "Results to return, 1 to 100.", example: 25, type: "integer", minimum: 1, maximum: 100, default: 25 };
 const SLUG = (example: string): ParamDoc => ({ name: "slug", in: "path", required: true, description: "The name in its page's address, as search returns it.", example, maxLength: 120 });
+
+const FORM: ParamDoc = { name: "form", in: "query", required: false, description: "A USCIS form, like I-485, I-765 or I-130. I-485 when left out.", example: "I-485", minLength: 4, maxLength: 12 };
 
 const SAMPLE_ENTITY_SEARCH = (segment: string, q: string) => sample(`/${segment}?q=${q}`);
 const SAMPLE_ENTITY = (segment: string, slug: string) => sample(`/${segment}/${slug}`, { slug });
@@ -301,6 +318,122 @@ export const ENDPOINTS: EndpointDoc[] = [
     counted: true,
     response: { schema: EntitySchema, schemaName: "Entity", ...SAMPLE_ENTITY("occupations", "software-developers") },
     tool: { title: "Get an occupation's PERM record" },
+  },
+  {
+    id: "getReceiptBlocks",
+    tag: "USCIS",
+    path: "/uscis/receipt-blocks",
+    summary: "Get the sample's approval shares by receipt block",
+    description:
+      "For one USCIS form (I-485 unless asked), the share of the sample's cases in each status group in every online receipt block (IOE and five digits, 100,000 numbers each), with a 95% margin, and the newest block where the sample saw an approval. From receipt numbers PERM Tracker checks on USCIS's Case Status page: an estimate, never a receipt number.",
+    example: "/uscis/receipt-blocks?form=I-485",
+    params: [FORM],
+    counted: true,
+    response: { schema: ReceiptBlocksSchema, schemaName: "ReceiptBlocks", ...sample("/uscis/receipt-blocks") },
+    tool: { title: "Get approval shares by USCIS receipt block" },
+  },
+  {
+    id: "getReceiptBlock",
+    tag: "USCIS",
+    path: "/uscis/receipt-blocks/{block}",
+    summary: "Get one receipt block's figures",
+    description:
+      "One online receipt block. For each form the sample counted there, the share in each status group with its 95% margin. Also the nearest blocks either side that hold cases, and the newest status changes the sample saw, as counts. Send the block, never a whole receipt number.",
+    example: "/uscis/receipt-blocks/IOE09366",
+    params: [{ name: "block", in: "path", required: true, description: "IOE and five digits: the first eight characters of an online receipt number.", example: "IOE09366", minLength: 8, maxLength: 8 }],
+    counted: true,
+    response: { schema: ReceiptBlockSchema, schemaName: "ReceiptBlock", ...sample("/uscis/receipt-blocks/IOE00001", { block: "IOE00001" }) },
+    tool: { title: "Get one USCIS receipt block" },
+  },
+  {
+    id: "getReceiptMonths",
+    tag: "USCIS",
+    path: "/uscis/receipt-months",
+    summary: "Get the sample's approval shares by receipt month",
+    description:
+      "For one USCIS form (I-485 unless asked), the share of the sample's online filings in each status group by the month USCIS received them, newest first, with a 95% margin. A month's newest cases are the least decided, so its share approved climbs as the month ages.",
+    example: "/uscis/receipt-months?form=I-485",
+    params: [FORM],
+    counted: true,
+    response: { schema: ReceiptMonthsSchema, schemaName: "ReceiptMonths", ...sample("/uscis/receipt-months") },
+    tool: { title: "Get approval shares by receipt month" },
+  },
+  {
+    id: "getUscisPetitions",
+    tag: "USCIS",
+    path: "/uscis/i140",
+    summary: "Get USCIS's I-140 figures",
+    description:
+      "USCIS's own I-140 figures. The newest quarter's receipts, approvals, denials and pending by subtype, and the last eight quarters by category. The median and posted processing times. Approved employment-based petitions waiting for a visa number, by country and category. Each part carries its own date.",
+    example: "/uscis/i140",
+    counted: true,
+    response: { schema: UscisI140Schema, schemaName: "UscisI140", ...sample("/uscis/i140") },
+    tool: { title: "Get USCIS's I-140 figures" },
+  },
+  {
+    id: "getUscisAdjustments",
+    tag: "USCIS",
+    path: "/uscis/i485",
+    summary: "Get USCIS's I-485 figures",
+    description:
+      "USCIS's own I-485 figures: the newest quarter's receipts, approvals, denials and pending at every field office and service center, employment-based beside the other categories. It adds the pending employment-based inventory with its history, and the median and posted processing times. Each part carries its own date.",
+    example: "/uscis/i485",
+    counted: true,
+    response: { schema: UscisI485Schema, schemaName: "UscisI485", ...sample("/uscis/i485") },
+    tool: { title: "Get USCIS's I-485 figures" },
+  },
+  {
+    id: "listConsulates",
+    tag: "Consulates",
+    path: "/consulates",
+    summary: "List the consulates' interview lines",
+    description:
+      "Every consulate that schedules or issues immigrant visas. For each category (employment, family preference and immediate relative), the month of documentarily complete cases it's scheduling and how many months behind that is. Also the visas it issued in the newest 12 published months. Each carries the slug the consulate endpoint takes.",
+    example: "/consulates",
+    counted: true,
+    response: { schema: ConsulatesSchema, schemaName: "Consulates", ...sample("/consulates") },
+    tool: { title: "List the consulates' interview lines" },
+  },
+  {
+    id: "getConsulate",
+    tag: "Consulates",
+    path: "/consulates/{slug}",
+    summary: "Get one consulate's line and issuances",
+    description:
+      "One consulate: its immigrant visa interview line now and in every update State made that PERM Tracker holds, and the immigrant visas it issued each month by category over the newest 36 months. Find the slug in the list first.",
+    example: "/consulates/mumbai",
+    params: [SLUG("mumbai")],
+    counted: true,
+    response: { schema: ConsulateSchema, schemaName: "Consulate", ...sample("/consulates/sample-city", { slug: "sample-city" }) },
+    tool: { title: "Get one consulate's line and issuances" },
+  },
+  {
+    id: "getTimelines",
+    tag: "Reported timelines",
+    path: "/timelines",
+    summary: "Get the timelines people reported",
+    description:
+      "How long each step took for people who reported their own cases, merged across sources and counted once each: the median, quarter and three-quarter days, month by month. Also who's still waiting, as counts, and reported I-140s by category and premium processing. Send office or consulate for one USCIS office or one consulate. Self-reported: say so when quoting it.",
+    example: "/timelines?office=SFV",
+    params: [
+      { name: "office", in: "query", required: false, description: "A USCIS office's three-letter code, for that office's figures alone.", example: "SFV", minLength: 3, maxLength: 3 },
+      { name: "consulate", in: "query", required: false, description: "A consulate's slug, from the consulates list, for that consulate's figures alone.", example: "mumbai", maxLength: 120 },
+    ],
+    counted: true,
+    response: { schema: TimelinesSchema, schemaName: "Timelines", ...sample("/timelines") },
+    tool: { title: "Get the timelines people reported" },
+  },
+  {
+    id: "getAccuracy",
+    tag: "Accuracy",
+    path: "/accuracy",
+    summary: "Get how close PERM Tracker's estimates land",
+    description:
+      "PERM Tracker's own record: every estimate it gives with how its check came out, the nightly PERM backtest on real decisions, and the daily sample of recorded dates graded as DOL decides them. Quote a figure with its basis.",
+    example: "/accuracy",
+    counted: true,
+    response: { schema: AccuracySchema, schemaName: "Accuracy", ...sample("/accuracy") },
+    tool: { title: "Get the estimates' own record" },
   },
   {
     id: "lookupEmployer",
@@ -709,10 +842,10 @@ export function openApiDocument(): Record<string, unknown> {
     openapi: "3.1.0",
     info: {
       title: "PERM Tracker API",
-      summary: "Federal PERM, prevailing wage, H-1B and visa bulletin records, as JSON.",
+      summary: "Federal PERM, prevailing wage, H-1B, USCIS, consulate and visa bulletin records, as JSON.",
       version: API_VERSION,
       description:
-        `U.S. employment-based immigration records from the Department of Labor and the State Department, as JSON: a case by its number, cases found without one, DOL's processing times and the pending queue, an estimate of a PERM decision date, the visa bulletin, and each employer's, law firm's and occupation's PERM record.\n\n` +
+        `U.S. employment-based immigration records from the Department of Labor, USCIS and the State Department, as JSON: a case by its number, cases found without one, DOL's processing times and the pending queue, an estimate of a PERM decision date, the visa bulletin, each employer's, law firm's and occupation's PERM record, USCIS's I-140 and I-485 figures, the approval shares in PERM Tracker's sample of USCIS receipt numbers, each consulate's interview line, the timelines people reported, and how close the estimates land.\n\n` +
         `Every answer names its source, the date it's true for and the page that shows it. The same reads are offered to AI assistants as tools at ${MCP_URL}.\n\n` +
         `Free plan: ${free.perMinute} calls a minute, ${free.perDay} a day, ${free.perMonth.toLocaleString("en-US")} a month. A sandbox key (pt_test_) answers fixed sample data and is never counted.\n\n` +
         `Errors are RFC 9457 problem documents that also carry the \`error\` object version 1 has always sent. The codes: ${API_ERRORS.map((x) => x.code).join(", ")}.`,

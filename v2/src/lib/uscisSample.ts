@@ -102,12 +102,23 @@ export function neighbours(doc: SampleBlocksDoc, block: string): { before: strin
   return { before: held[at - 1] ?? null, after: held[at + 1] ?? null };
 }
 
+/** One form's figures in a block or a month, or null when the sample counted none of it there. */
+export function formFigure(figures: BlockFigures, form: string): FormFigure | null {
+  const f = figures[form];
+  return isForm(form, f) && f.counted > 0 ? f : null;
+}
+
+/** The forms with the most sampled cases across every block (or month), most first. */
+export function topFormsIn(byPlace: Record<string, BlockFigures>, n = 5): string[] {
+  const total = new Map<string, number>();
+  for (const figures of Object.values(byPlace))
+    for (const f of blockForms(figures)) total.set(f.form, (total.get(f.form) ?? 0) + f.counted);
+  return [...total.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, n).map(([f]) => f);
+}
+
 /** The forms with the most sampled cases across every block, most first. */
 export function topForms(doc: SampleBlocksDoc, n = 5): string[] {
-  const total = new Map<string, number>();
-  for (const block of Object.values(doc.by_block))
-    for (const f of blockForms(block)) total.set(f.form, (total.get(f.form) ?? 0) + f.counted);
-  return [...total.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, n).map(([f]) => f);
+  return topFormsIn(doc.by_block, n);
 }
 
 /** What the approval chart draws for each form: one point per block and where approvals stop. I-485 leads when held. */
@@ -146,18 +157,29 @@ export interface MonthRow {
   walked: boolean;
 }
 
-/** One row per receipt month holding `form`, newest first: what the month table shows. */
-export function monthRows(doc: SampleMonthsDoc, form: string): MonthRow[] {
+/** Each receipt month holding `form`, newest first, with the form's figures and whether part of the month was walked. */
+export function monthFigures(doc: SampleMonthsDoc, form: string): { month: string; figure: FormFigure; walked: boolean }[] {
   return Object.keys(doc.by_month)
     .sort()
     .reverse()
     .flatMap((month) => {
       const m = doc.by_month[month] ?? {};
-      const f = m[form];
-      if (!isForm(form, f) || f.counted <= 0) return [];
-      const walked = typeof m._walked_share === "number" && m._walked_share > 0;
-      return [{ month, counted: f.counted, approved: f.groups.approved, rfe: f.groups.rfe, waiting: f.groups.waiting, walked }];
+      const figure = formFigure(m, form);
+      if (!figure) return [];
+      return [{ month, figure, walked: typeof m._walked_share === "number" && m._walked_share > 0 }];
     });
+}
+
+/** One row per receipt month holding `form`, newest first: what the month table shows. */
+export function monthRows(doc: SampleMonthsDoc, form: string): MonthRow[] {
+  return monthFigures(doc, form).map(({ month, figure: f, walked }) => ({
+    month,
+    counted: f.counted,
+    approved: f.groups.approved,
+    rfe: f.groups.rfe,
+    waiting: f.groups.waiting,
+    walked,
+  }));
 }
 
 /**
