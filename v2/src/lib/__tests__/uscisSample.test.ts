@@ -78,3 +78,22 @@ describe("topForms and chartSeries", () => {
     expect(series[0]!.points[0]).toEqual({ block: "IOE09364", counted: 10, count: 5, share: 0.5, low: 0.3, high: 0.7 });
   });
 });
+
+describe("monthRows", () => {
+  it("lists the months holding a form, newest first, with the walked flag", async () => {
+    const { monthRows } = await import("../uscisSample");
+    const doc = {
+      as_of: "2026-11-25",
+      groups: [],
+      by_month: {
+        "2026-09": { _skipped: 0, _walked_share: 0, _draws: 10, "I-485": form(10, 4) },
+        "2026-10": { _skipped: 0, _walked_share: 0.05, _draws: 10, "I-485": form(20, 2), "I-765": form(5, 5) },
+        "2026-11": { _skipped: 0, _walked_share: 0, _draws: 10, "I-765": form(3, 0) },
+      },
+    };
+    const rows = monthRows(doc, "I-485");
+    expect(rows.map((r) => r.month)).toEqual(["2026-10", "2026-09"]);
+    expect(rows[0]).toMatchObject({ counted: 20, walked: true, approved: { count: 2 } });
+    expect(rows[1]!.walked).toBe(false);
+  });
+});

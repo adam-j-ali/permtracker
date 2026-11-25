@@ -129,3 +129,33 @@ export function chartSeries(doc: SampleBlocksDoc, forms: readonly string[]) {
     };
   });
 }
+
+export interface SampleMonthsDoc {
+  as_of: string;
+  groups: readonly string[];
+  by_month: Record<string, BlockFigures>;
+}
+
+export interface MonthRow {
+  month: string;
+  counted: number;
+  approved: GroupFigure;
+  rfe: GroupFigure;
+  waiting: GroupFigure;
+  /** True when part of the month was walked number by number (counted whole), the rest estimated from the draw. */
+  walked: boolean;
+}
+
+/** One row per receipt month holding `form`, newest first: what the month table shows. */
+export function monthRows(doc: SampleMonthsDoc, form: string): MonthRow[] {
+  return Object.keys(doc.by_month)
+    .sort()
+    .reverse()
+    .flatMap((month) => {
+      const m = doc.by_month[month] ?? {};
+      const f = m[form];
+      if (!isForm(form, f) || f.counted <= 0) return [];
+      const walked = typeof m._walked_share === "number" && m._walked_share > 0;
+      return [{ month, counted: f.counted, approved: f.groups.approved, rfe: f.groups.rfe, waiting: f.groups.waiting, walked }];
+    });
+}

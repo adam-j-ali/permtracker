@@ -12,14 +12,15 @@ import { DataProvenance } from "@/components/data/DataProvenance";
 import { FigurePlate } from "@/components/tools/FigurePlate";
 import { BlockApprovalChart } from "@/components/uscis/BlockApprovalChart";
 import { BlockSearch } from "@/components/uscis/BlockSearch";
+import { MonthTable } from "@/components/uscis/MonthTable";
 import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 import { ListPages } from "@/components/ui/list-pages";
 import { CaveatBox } from "@/components/ui/note";
-import { getSampleBlocks, getSampleMeta } from "@/lib/db/uscisSample";
+import { getSampleBlocks, getSampleMeta, getSampleMonths } from "@/lib/db/uscisSample";
 import { formatAsOf } from "@/lib/dolFormat";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
-import { blockForms, chartSeries, topForms } from "@/lib/uscisSample";
+import { blockForms, chartSeries, monthRows, topForms } from "@/lib/uscisSample";
 
 const TITLE = "USCIS Receipt Blocks: Where Approvals Are Now";
 const DESCRIPTION =
@@ -43,7 +44,7 @@ const int = (n: number) => n.toLocaleString("en-US");
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 
 export default async function UscisReceiptBlocksPage() {
-  const [meta, doc] = await Promise.all([getSampleMeta(), getSampleBlocks()]);
+  const [meta, doc, months] = await Promise.all([getSampleMeta(), getSampleBlocks(), getSampleMonths()]);
   const forms = doc ? topForms(doc, 5) : [];
   const series = doc ? chartSeries(doc, forms) : [];
   const held = doc
@@ -53,6 +54,24 @@ export default async function UscisReceiptBlocksPage() {
         .filter((b) => b.forms.length > 0)
     : [];
   const i485 = series.find((s) => s.form === "I-485");
+  const monthSeries = months
+    ? chartSeries(doc ?? { as_of: "", groups: [], by_block: {} }, forms).map((s) => s.form)
+        .map((form) => ({
+          form,
+          rows: monthRows(months, form).map((r) => ({
+            month: r.month,
+            counted: r.counted,
+            approvedCount: r.approved.count,
+            approved: r.approved.share,
+            low: r.approved.low,
+            high: r.approved.high,
+            rfe: r.rfe.share,
+            waiting: r.waiting.share,
+            walked: r.walked,
+          })),
+        }))
+        .filter((s) => s.rows.length > 0)
+    : [];
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 pb-12 sm:px-6 sm:pb-16">
@@ -116,6 +135,21 @@ export default async function UscisReceiptBlocksPage() {
               <BlockApprovalChart series={series} />
             </FigurePlate>
           </section>
+
+          {monthSeries.length ? (
+            <section className="mt-12" aria-labelledby="months-title">
+              <h2 id="months-title" className="font-heading text-2xl font-bold">
+                By the month a case was filed
+              </h2>{" "}
+              <p className="mt-2 max-w-2xl text-base leading-relaxed text-muted-foreground">
+                The same shares for online filings, by receipt month. A month&apos;s newest cases are the least decided,
+                so its share approved climbs as the month ages.
+              </p>{" "}
+              <div className="mt-4">
+                <MonthTable series={monthSeries} />
+              </div>
+            </section>
+          ) : null}
 
           <section className="mt-12" aria-labelledby="all-title">
             <h2 id="all-title" className="font-heading text-2xl font-bold">

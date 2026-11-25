@@ -2,7 +2,7 @@ import "server-only";
 
 import { cache } from "react";
 
-import type { SampleBlocksDoc } from "@/lib/uscisSample";
+import type { SampleBlocksDoc, SampleMonthsDoc } from "@/lib/uscisSample";
 
 import { one, rows } from "./client";
 
@@ -30,6 +30,8 @@ export const getSampleMeta = cache(async (): Promise<SampleMeta | null> => {
 });
 
 export const getSampleBlocks = cache(async (): Promise<SampleBlocksDoc | null> => doc<SampleBlocksDoc>("uscis_sample_blocks"));
+
+export const getSampleMonths = cache(async (): Promise<SampleMonthsDoc | null> => doc<SampleMonthsDoc>("uscis_sample_months"));
 
 export interface BlockMove {
   on_day: string;
