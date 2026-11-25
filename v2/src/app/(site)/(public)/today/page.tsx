@@ -42,7 +42,9 @@ import { easternDay } from "@convex/lib/time";
 import { getPermBoard, getPwdBoard } from "@/lib/db/board";
 import { getBulletinBoard } from "@/lib/db/bulletin";
 import { getLiveCensus } from "@/lib/db/liveCensus";
-import { getVisaBulletins } from "@/lib/db/publicData";
+import { doc, getVisaBulletins } from "@/lib/db/publicData";
+import type { NvcReading } from "@/lib/db/planFigures";
+import { CONSULAR_PAUSE, pauseActive } from "@/lib/consular/facts";
 import { getCheckTimes } from "@/lib/db/sweepCoverage";
 import { getUscisFormHistory, getUscisFormMedian } from "@/lib/db/uscisQuarterly";
 import { parseCutoff, type BulletinMonth, type CountryKey } from "@/lib/perm";
@@ -110,6 +112,9 @@ export default async function TodayPage() {
     getUscisFormHistory("I-485").catch(softFail("today/page.getUscisFormHistory.i485", [])),
     getBulletinBoard().catch(softFail("today/page.getBulletinBoard", null)),
   ]);
+  // The consulate route's newest NVC reading (State's NVC Timeframes page, read weekly), for its step card.
+  const nvcDoc = await doc<{ readings?: NvcReading[] }>("nvc_timeframes").catch(softFail("today/page.doc.nvc_timeframes", null));
+  const nvcNewest = nvcDoc?.readings?.[0] ?? null;
 
   const views = decisionViews(
     series.find((s) => s.source === "dol-disclosure")?.days ?? [],
@@ -282,6 +287,22 @@ export default async function TodayPage() {
       moving: i485Line ? <FlowPair flow={i485Line.flow} period={i485Line.period} labels={["Received", "Completed"]} say /> : undefined,
       href: "/i485-by-field-office",
       linkLabel: "The I-485 by office",
+    },
+    {
+      key: "consulate",
+      name: "Consulate",
+      who: "The worker and their family, abroad",
+      form: "DS-260, through the National Visa Center, then an interview at a US consulate",
+      howLong: nvcNewest ? `Reviewing ${shortDate(nvcNewest.reviewedThrough)}` : "Not read yet",
+      howLongNote: nvcNewest
+        ? `The documents the National Visa Center is reviewing, by the day they were sent, as of ${shortDate(nvcNewest.asOf)}`
+        : undefined,
+      what: "The other way to the same green card: the case goes to the State Department and ends with an immigrant visa.",
+      watch: pauseActive()
+        ? `Immigrant visa interviews have been paused since ${CONSULAR_PAUSE.sinceLabel}.`
+        : "The visa bulletin decides when the National Visa Center schedules the interview.",
+      href: "/consular-posts",
+      linkLabel: "Consulates",
     },
     {
       key: "green-card",
