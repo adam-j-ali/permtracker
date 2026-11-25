@@ -1113,6 +1113,15 @@ def ai_assistant_visits_are_counted() -> None:
           f"yesterday's assistant visits by assistant, and the week ({summary})")
     check(any(ln.startswith("Landing pages yesterday: /perm-queue 4, / 2") for ln in lines), f"the pages they land on ({lines})")
     check(dm.ai_referral_lines([], "2026-10-27")[0] == "No visits from AI assistants in 8 days", "none says so")
+    fetched = {"day": "2026-11-24", "total": 1459, "byAgent": {"ChatGPT": 1192, "Claude": 230, "DuckDuckGo": 35, "Perplexity": 2},
+               "topPages": [["/perm-case-status", 251], ["/mcp", 152], ["/case-search", 84], ["/robots.txt", 23], ["/x", 1]]}
+    got = dm.assistant_fetch_line(fetched, "2026-11-24")
+    check(got == "1,459 pages fetched by people's AI assistants yesterday (ChatGPT 1,192, Claude 230, DuckDuckGo 35, "
+          "Perplexity 2); most: /perm-case-status 251, /mcp 152, /case-search 84, /robots.txt 23",
+          f"yesterday's assistant fetches, by assistant and page ({got})")
+    check("newest count is for 2026-11-23" in dm.assistant_fetch_line(dict(fetched, day="2026-11-23"), "2026-11-24"),
+          "an old count says which day it's for")
+    check("not counted yet" in dm.assistant_fetch_line(None, "2026-11-24"), "no count yet says so")
 
     # The query names its row cap (PostHog's default is 100 rows, which cut 1,501 rows to a sample, Nov 18 2026), and
     # an answer that fills the cap says so in a line.

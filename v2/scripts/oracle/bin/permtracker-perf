@@ -14,7 +14,11 @@ regresses:
      the difference from the last run's snapshot);
   4. a 30-second CPU profile of the live first copy through its inspector
      (SIGUSR1), named from the build's own source maps: the hottest code, and
-     for library code, the file of ours that called it.
+     for library code, the file of ours that called it;
+  5. once a day, the pages people's AI assistants fetched the Eastern day
+     before (ChatGPT, Claude, Perplexity and the rest, as nginx names them),
+     into perm_docs['assistant_fetches'] for the morning report: how often an
+     assistant reads the site to answer someone.
 
 It writes perm_docs['server_perf'] (the morning report's "Page speed"
 section), keeps 30 days of hourly summaries in health/perf.jsonl, and prints a
@@ -115,6 +119,11 @@ LOG_LINE = re.compile(
 SITE_AUDIT_UA = "permtracker-site-audit/"
 SITE_AUDIT_UNIT = "permtracker-site-audit.service"
 MONTHS = {m: i for i, m in enumerate("Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split(), 1)}
+# People's AI assistants fetching a page for someone, the same list as nginx's $pt_assist_ua map
+# (nginx/permtracker.conf; test_perf.py holds the two equal).
+ASSISTANT_UA = re.compile(r"(ChatGPT-User|Claude-User|Perplexity-User|Meta-ExternalFetcher|DuckAssistBot)", re.I)
+ASSISTANT_NAMES = {"chatgpt-user": "ChatGPT", "claude-user": "Claude", "perplexity-user": "Perplexity",
+                   "meta-externalfetcher": "Meta AI", "duckassistbot": "DuckDuckGo"}
 
 
 # ── 1 and 2: the logs ─────────────────────────────────────────────────────
@@ -639,12 +648,69 @@ def load_history() -> list[dict]:
     return out
 
 
-def write_doc(doc: dict, now: float) -> None:
+def assistant_fetches(lines, start: float, end: float, top: int = 10) -> dict:
+    """Pure: the main log's lines -> fetches by people's AI assistants between `start` and `end` (epoch seconds), by
+    assistant and by page (the address without its query)."""
+    by_agent: dict[str, int] = {}
+    by_page: dict[str, int] = {}
+    for line in lines:
+        m = LOG_LINE.search(line)
+        if not m:
+            continue
+        who = ASSISTANT_UA.search(m.group("ua"))
+        if not who:
+            continue
+        t = log_time(m.group("t"))
+        if t is None or not start <= t < end:
+            continue
+        name = ASSISTANT_NAMES.get(who.group(1).lower(), who.group(1))
+        by_agent[name] = by_agent.get(name, 0) + 1
+        path = m.group("p").split("?", 1)[0]
+        by_page[path] = by_page.get(path, 0) + 1
+    return {"total": sum(by_agent.values()),
+            "byAgent": dict(sorted(by_agent.items(), key=lambda kv: (-kv[1], kv[0]))),
+            "topPages": sorted(by_page.items(), key=lambda kv: (-kv[1], kv[0]))[:top]}
+
+
+def eastern_day_bounds(now: float) -> tuple[str, float, float]:
+    """The Eastern day before `now`: its date and its start and end in epoch seconds."""
+    from zoneinfo import ZoneInfo  # noqa: PLC0415
+    import datetime as dt  # noqa: PLC0415
+
+    et = ZoneInfo("America/New_York")
+    today = dt.datetime.fromtimestamp(now, et).date()
+    day = today - dt.timedelta(days=1)
+    start = dt.datetime.combine(day, dt.time(), et).timestamp()
+    end = dt.datetime.combine(today, dt.time(), et).timestamp()
+    return day.isoformat(), start, end
+
+
+# The Eastern day last counted, so the count runs once a day.
+def assistants_done() -> pathlib.Path:
+    return HEALTH / "assistants-day"
+
+
+def yesterdays_assistants(now: float) -> dict | None:
+    """Once a day: yesterday's fetches by assistants, from the main log and the one rotated at UTC midnight (the two
+    hold every line of the Eastern day by the time this runs). None when yesterday is already counted."""
+    day, start, end = eastern_day_bounds(now)
+    done = assistants_done()
+    if done.exists() and done.read_text().strip() == day:
+        return None
+    lines: list[str] = []
+    for f in (ACCESS.with_name(ACCESS.name + ".1"), ACCESS):
+        if f.exists():
+            with f.open(errors="replace") as fh:
+                lines.extend(x for x in fh if ASSISTANT_UA.search(x))
+    return {"day": day, **assistant_fetches(lines, start, end)}
+
+
+def write_doc(doc: dict, now: float, key: str = "server_perf") -> None:
     token = (APP / "secrets" / "db_rw.jwt").read_text().strip()
     body = json.dumps({"requests": [
         {"type": "execute", "stmt": {
             "sql": "INSERT OR REPLACE INTO perm_docs (key, json, computed_at) VALUES (?, ?, ?)",
-            "args": [{"type": "text", "value": "server_perf"},
+            "args": [{"type": "text", "value": key},
                      {"type": "text", "value": json.dumps(doc)},
                      {"type": "integer", "value": str(int(now * 1000))}]}},
         {"type": "close"}]}).encode()
@@ -653,7 +719,7 @@ def write_doc(doc: dict, now: float) -> None:
     with urllib.request.urlopen(req, timeout=30) as r:
         res = json.load(r)["results"][0]
     if res.get("type") != "ok":
-        raise SystemExit(f"server_perf not written: {res.get('error', {}).get('message')}")
+        raise SystemExit(f"{key} not written: {res.get('error', {}).get('message')}")
 
 
 def main() -> int:
@@ -717,9 +783,19 @@ def main() -> int:
     }
     if a.dry_run:
         print(json.dumps(doc, indent=1))
+        print(json.dumps({"assistant_fetches": yesterdays_assistants(now)}, indent=1))
         return 0
 
     write_doc(doc, now)
+    # 5: once a day, yesterday's fetches by people's AI assistants. A failure is printed and left to the next hour's
+    # run; it never stops the hourly report above.
+    try:
+        fetched = yesterdays_assistants(now)
+        if fetched is not None:
+            write_doc(fetched, now, "assistant_fetches")
+            assistants_done().write_text(fetched["day"])
+    except Exception as e:  # noqa: BLE001
+        print(f"assistant fetches not counted: {type(e).__name__}: {e}")
     if snap is not None:
         DB_PREV.write_text(json.dumps(snap))
     row = {"t": int(now), "entityBuildP50": (pages or {}).get("entityBuilds", {}).get("p50"),

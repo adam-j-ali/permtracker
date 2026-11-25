@@ -271,9 +271,41 @@ def test_rollup() -> None:
     check("runs with a failed reading are counted", r["failedRuns"] == 1)
 
 
+def ua_line(stamp: str, path: str, ua: str) -> str:
+    return (f'1.2.3.4 - - [{stamp}] "GET {path} HTTP/1.1" 200 1234 "-" "{ua}" rt=0.1 urt=0.1 nc=HIT')
+
+
+def test_assistants() -> None:
+    day, start, end = perf.eastern_day_bounds(perf.log_time("25/Nov/2026:03:00:00 +0000"))
+    check("yesterday is the Eastern day before (10 PM Nov 24 Eastern -> Nov 23)", day == "2026-11-23", day)
+    check("an Eastern day starts at 5 AM UTC in November", start == perf.log_time("23/Nov/2026:05:00:00 +0000"))
+    _, s2, e2 = perf.eastern_day_bounds(perf.log_time("02/Nov/2026:12:00:00 +0000"))
+    check("the day the clocks go back is 25 hours long", e2 - s2 == 25 * 3600, str(e2 - s2))
+    lines = [
+        ua_line("23/Nov/2026:05:00:00 +0000", "/perm-case-status?case=G-100", "Mozilla/5.0 ChatGPT-User/1.0"),
+        ua_line("23/Nov/2026:12:00:00 +0000", "/perm-case-status", "Mozilla/5.0 (compatible; Claude-User/1.0)"),
+        ua_line("23/Nov/2026:13:00:00 +0000", "/visa-bulletin", "Perplexity-User/1.0"),
+        ua_line("23/Nov/2026:04:59:59 +0000", "/visa-bulletin", "ChatGPT-User/1.0"),   # the day before, Eastern
+        ua_line("24/Nov/2026:05:00:00 +0000", "/visa-bulletin", "ChatGPT-User/1.0"),   # the day after
+        ua_line("23/Nov/2026:14:00:00 +0000", "/visa-bulletin", "GPTBot/1.1"),          # a crawler, not an assistant
+        "a line nginx never writes",
+    ]
+    got = perf.assistant_fetches(lines, start, end)
+    check("only the day's fetches by people's assistants", got["total"] == 3, str(got))
+    check("named by assistant, most first", got["byAgent"] == {"ChatGPT": 1, "Claude": 1, "Perplexity": 1}, str(got))
+    check("pages without their query, most first", got["topPages"][0] == ("/perm-case-status", 2), str(got["topPages"]))
+    conf = (HERE / "nginx" / "permtracker.conf").read_text()
+    import re as _re
+    m = _re.search(r'"~\*\(([^)]*ChatGPT-User[^)]*)\)"', conf)
+    nginx = set(m.group(1).split("|")) if m else set()
+    ours = set(perf.ASSISTANT_UA.pattern.strip("()").split("|"))
+    check("the same assistants as nginx's map", nginx == ours, f"nginx {sorted(nginx)} vs {sorted(ours)}")
+    check("every assistant has a name", set(perf.ASSISTANT_NAMES) == {x.lower() for x in ours})
+
+
 if __name__ == "__main__":
     for t in (test_logs, test_site_audit_is_left_out, test_tail, test_db, test_source_maps, test_profile, test_judge,
-              test_rollup):
+              test_rollup, test_assistants):
         t()
     print(f"{len(failures)} failure(s)")
     sys.exit(1 if failures else 0)

@@ -1129,6 +1129,22 @@ def ai_referral_lines(rows, yday: str) -> tuple[str, list[str]]:
 AI_ROWS_CAP = 10_000
 
 
+def assistant_fetch_line(doc: dict | None, yday: str) -> str:
+    """Pure: perm_docs['assistant_fetches'] (the server's daily count from nginx's log, permtracker-perf) -> one line:
+    how many pages people's AI assistants fetched yesterday to answer someone, by assistant, and the pages they read
+    most. Fetches are reads, not visits: an assistant reads the page and answers with it."""
+    if not doc:
+        return "Pages fetched by people's AI assistants: not counted yet (the server's speed job counts each day)"
+    if doc.get("day") != yday:
+        return f"Pages fetched by people's AI assistants: the newest count is for {doc.get('day')}, not yesterday"
+    total = int(doc.get("total") or 0)
+    if not total:
+        return "No pages fetched by people's AI assistants yesterday"
+    parts = ", ".join(f"{k} {int(v):,}" for k, v in (doc.get("byAgent") or {}).items())
+    top = ", ".join(f"{p} {int(n):,}" for p, n in (doc.get("topPages") or [])[:4])
+    return f"{total:,} pages fetched by people's AI assistants yesterday ({parts}); most: {top}"
+
+
 def ai_referrals(key: str) -> tuple[str, list[str]]:
     """Visitors whose first pageview came from an assistant, by day, assistant and landing page (PostHog)."""
     q = ("SELECT toDate(toTimeZone(timestamp, 'America/New_York')) AS d, properties.$referring_domain AS rd, "
@@ -1256,6 +1272,14 @@ def traffic_section() -> dict:
         lines.extend(ai_lines)
     except Exception as e:  # noqa: BLE001
         lines.append(f"Visits from AI assistants could not be read ({type(e).__name__})")
+    try:
+        from lib_db import Database, read_doc  # noqa: PLC0415 - only needed here
+
+        yday = (dt.datetime.now(ET).date() - dt.timedelta(days=1)).isoformat()
+        lines.append(assistant_fetch_line(read_doc(Database(), "assistant_fetches"), yday))
+    # lib_db exits when no database is configured (SystemExit): the report names the failed read and goes on.
+    except (Exception, SystemExit) as e:  # noqa: BLE001
+        lines.append(f"Pages fetched by AI assistants could not be read ({type(e).__name__})")
     return section("traffic", "Traffic", status,
                    f"{views:,} pageviews, about {people:,} people ({visitors:,} visitors) yesterday", lines)
 
