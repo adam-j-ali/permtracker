@@ -588,18 +588,28 @@
     "alt": "Every visa bulletin line on permtracker.app, each employment category and country with its cutoff"
   },
   "blog/companies-sponsoring-most-green-cards": {
-    "capture": {
-      "url": "/perm-employers"
+    "photo": {
+      "file": "companies-sponsoring-most-green-cards.jpg",
+      "focus": [
+        0.5,
+        0.55
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 15, 2026",
-    "alt": "Who sponsors the most: the ten busiest PERM employers as bars"
+    "credit": "Photo: Coolcaesar / Wikimedia Commons, CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Building92microsoft.jpg",
+    "alt": "Building 92 on Microsoft's campus in Redmond, Washington, with the company's name and logo on a low wall in front"
   },
   "blog/perm-salary-data-by-occupation": {
-    "capture": {
-      "url": "/perm-wages#explore"
+    "photo": {
+      "file": "perm-salary-data-by-occupation.jpg",
+      "focus": [
+        0.5,
+        0.5
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 15, 2026",
-    "alt": "The salary explorer: certified PERM wages filtered by job, state and year"
+    "credit": "Photo: Edward Betts / Wikimedia Commons, CC BY-SA 3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:1000_United_States_two-dollar_bills_in_shrink_wrap.jpg",
+    "alt": "A shrink-wrapped brick of United States two-dollar bills, held in paper bands, on a wooden table"
   },
   "blog/perm-processing-times-2026": {
     "photo": {
@@ -614,11 +624,16 @@
     "alt": "Golden sand running through the neck of a brass-framed hourglass and piling up in the lower bulb"
   },
   "blog/what-law-firm-volume-tells-you": {
-    "capture": {
-      "url": "/perm-attorneys"
+    "photo": {
+      "file": "what-law-firm-volume-tells-you.jpg",
+      "focus": [
+        0.45,
+        0.5
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 15, 2026",
-    "alt": "Who files the most PERM cases: the ten busiest law firms as bars"
+    "credit": "Photo: Tony Webster / Wikimedia Commons, CC BY 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Litigation_and_Civil_Trial_Practice_Law_Books_in_Law_School_Library_(29955442088).jpg",
+    "alt": "A row of red-brown law books on a library shelf, among them Successful Civil Pretrial Practice and Tax Planning"
   },
   "blog/why-perm-cases-are-denied": {
     "photo": {
@@ -717,15 +732,16 @@
     "alt": "Applicants lined up at an NYC Transit job fair in Brooklyn; a job fair is one of the recruitment steps a PERM case can use"
   },
   "blog/best-immigration-case-management-tools": {
-    "tour": {
-      "file": "cases-dark.webp",
+    "photo": {
+      "file": "best-immigration-case-management-tools.jpg",
       "focus": [
-        0.0,
-        0.0
+        0.62,
+        0.5
       ]
     },
-    "credit": "The PERM Tracker app, drawn from a sample firm's cases",
-    "alt": "The PERM Tracker case list in dark mode"
+    "credit": "Photo: rrafson / Wikimedia Commons, CC BY-SA 3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:File_Cabinet.jpg",
+    "alt": "A beige two-drawer filing cabinet with both drawers pulled open, full of hanging file folders"
   },
   "changelog/a-clearer-site-and-did-you-mean": {
     "capture": {
@@ -1186,28 +1202,40 @@
     "alt": "The case-status box a firm can put on its own site, from permtracker.app"
   },
   "blog/docketwise-alternatives-for-perm": {
-    "capture": {
-      "url": "/for-attorneys",
-      "clip": "h:Type the dates. The rest is worked out."
+    "photo": {
+      "file": "docketwise-alternatives-for-perm.jpg",
+      "focus": [
+        0.5,
+        0.5
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 17, 2026",
-    "alt": "A PERM case form that works out the deadlines from the dates entered"
+    "credit": "Photo: Liilia Moroz / Wikimedia Commons, CC0",
+    "source": "https://commons.wikimedia.org/wiki/File:Statistikaamet.jpg",
+    "alt": "A small office with a desk, a computer, an office chair and a shelf of coloured binders"
   },
   "blog/docketwise-vs-inszoom-lollylaw-eimmigration": {
-    "capture": {
-      "url": "/for-attorneys",
-      "clip": "h:One page for the whole case"
+    "photo": {
+      "file": "docketwise-vs-inszoom-lollylaw-eimmigration.jpg",
+      "focus": [
+        0.5,
+        0.5
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 17, 2026",
-    "alt": "One page for a whole PERM case, its dates, deadlines and history"
+    "credit": "Photo: Ianstade / Wikimedia Commons, CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:HCLL_after_renovation_1.jpg",
+    "alt": "Computers on a long desk by the windows of a law library, between rows of shelves of law books"
   },
   "blog/free-immigration-case-management-software": {
-    "capture": {
-      "url": "/calculators",
-      "clip": "h:Which one answers your question?"
+    "photo": {
+      "file": "free-immigration-case-management-software.jpg",
+      "focus": [
+        0.6,
+        0.5
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 17, 2026",
-    "alt": "The free PERM calculators on permtracker.app, matched to the question each answers"
+    "credit": "Photo: Pixel.la / Wikimedia Commons, CC0",
+    "source": "https://commons.wikimedia.org/wiki/File:Coffee-desk-laptop-notebook_(24244320481).jpg",
+    "alt": "A white laptop on a white desk beside a paper coffee cup and a jar of yellow flowers"
   },
   "blog/h1b-sponsors-layoff-notices-october-2026": {
     "photo": {
@@ -1276,30 +1304,40 @@
     "alt": "The first page of the 2004 rule that created PERM, the rule a new proposal would change"
   },
   "blog/rule-changes-since-august-2026": {
-    "capture": {
-      "url": "/policy-changes",
-      "clip": "h:The last twelve months",
-      "width": 960,
-      "fit": "contain"
+    "photo": {
+      "file": "rule-changes-since-august-2026.jpg",
+      "focus": [
+        0.55,
+        0.55
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 17, 2026",
-    "alt": "Twelve months of Federal Register rules and DOL announcements on a timeline"
+    "credit": "Photo: U.S. Coast Guard / Wikimedia Commons, public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:St._Elizabeths_West_aerial_2015.jpg",
+    "alt": "The St. Elizabeths West Campus in Washington seen from the air, home of the Department of Homeland Security's headquarters"
   },
   "blog/vendor-data-security-questions": {
-    "capture": {
-      "url": "/security"
+    "photo": {
+      "file": "vendor-data-security-questions.jpg",
+      "focus": [
+        0.4,
+        0.5
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 17, 2026",
-    "alt": "How permtracker.app is run and secured, from its security page"
+    "credit": "Photo: Victorgrigas / Wikimedia Commons, CC BY-SA 3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Wikimedia_Foundation_Servers-8055_22.jpg",
+    "alt": "Blue and green network cables hanging in front of a rack of servers with their status lights on, in a data centre"
   },
   "guides/when-does-the-visa-bulletin-come-out": {
-    "capture": {
-      "url": "/visa-bulletin",
-      "clip": "fromm:When it comes out",
-      "width": 1000
+    "photo": {
+      "file": "when-does-the-visa-bulletin-come-out.jpg",
+      "focus": [
+        0.62,
+        0.5
+      ]
     },
-    "credit": "Screenshot of permtracker.app, October 17, 2026",
-    "alt": "The days of the month by which past visa bulletins were already out, on permtracker.app"
+    "credit": "Photo: U.S. Department of State, Linda D. Epstein / Wikimedia Commons, public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:Exterior_of_the_United_States_Department_of_State_Harry_S._Truman_Building,_Washington,_D.C.,_spring_2024_-_16.jpg",
+    "alt": "A Department of State sign among green hedges outside the Harry S Truman Building in Washington"
   },
   "guides/perm-filing-window-worked-example": {
     "capture": {
