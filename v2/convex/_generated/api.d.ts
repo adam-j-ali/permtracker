@@ -84,6 +84,7 @@ import type * as lib_alertRoutes from "../lib/alertRoutes.js";
 import type * as lib_apiKeyFormat from "../lib/apiKeyFormat.js";
 import type * as lib_apiKeyStats from "../lib/apiKeyStats.js";
 import type * as lib_apiPlans from "../lib/apiPlans.js";
+import type * as lib_approval from "../lib/approval.js";
 import type * as lib_audience from "../lib/audience.js";
 import type * as lib_audit from "../lib/audit.js";
 import type * as lib_auth from "../lib/auth.js";
@@ -382,6 +383,7 @@ declare const fullApi: ApiFromModules<{
   "lib/apiKeyFormat": typeof lib_apiKeyFormat;
   "lib/apiKeyStats": typeof lib_apiKeyStats;
   "lib/apiPlans": typeof lib_apiPlans;
+  "lib/approval": typeof lib_approval;
   "lib/audience": typeof lib_audience;
   "lib/audit": typeof lib_audit;
   "lib/auth": typeof lib_auth;
