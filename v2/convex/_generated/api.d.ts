@@ -105,6 +105,7 @@ import type * as lib_callerIp from "../lib/callerIp.js";
 import type * as lib_canonicalAddress from "../lib/canonicalAddress.js";
 import type * as lib_caseDates from "../lib/caseDates.js";
 import type * as lib_caseDocumentBlobs from "../lib/caseDocumentBlobs.js";
+import type * as lib_caseLabel from "../lib/caseLabel.js";
 import type * as lib_caseListHelpers from "../lib/caseListHelpers.js";
 import type * as lib_caseListTypes from "../lib/caseListTypes.js";
 import type * as lib_caseMatch from "../lib/caseMatch.js";
@@ -417,6 +418,7 @@ declare const fullApi: ApiFromModules<{
   "lib/canonicalAddress": typeof lib_canonicalAddress;
   "lib/caseDates": typeof lib_caseDates;
   "lib/caseDocumentBlobs": typeof lib_caseDocumentBlobs;
+  "lib/caseLabel": typeof lib_caseLabel;
   "lib/caseListHelpers": typeof lib_caseListHelpers;
   "lib/caseListTypes": typeof lib_caseListTypes;
   "lib/caseMatch": typeof lib_caseMatch;
