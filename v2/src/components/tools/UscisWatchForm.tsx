@@ -1,5 +1,6 @@
 "use client";
 
+import { EXAMPLE_RECEIPT } from "@/lib/uscis/exampleReceipts";
 import { useId, useState } from "react";
 import { CaretRightIcon } from "@phosphor-icons/react";
 
@@ -122,7 +123,7 @@ export function UscisWatchForm({
             required
             value={typedReceipt}
             onChange={(e) => setTypedReceipt(e.target.value)}
-            placeholder="Three letters and ten digits"
+            placeholder={EXAMPLE_RECEIPT}
             autoComplete="off"
             autoCapitalize="characters"
             spellCheck={false}
