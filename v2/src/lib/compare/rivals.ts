@@ -635,7 +635,7 @@ export const RIVALS: readonly Tracker[] = [
     bestFor: "Reading what a receipt number says, privately, in the browser",
     dataFrom: "What the receipt number encodes, and DOL's published averages",
     beatsUs: [
-      "Reads a receipt number as you type it, a part at a time, and names the first wrong character",
+      "An approximate calendar date for an older paper receipt's day digits, which ours leaves out until it can be measured",
     ],
     strengths: [
       "A receipt decoder that fills in as you type, with an approximate date for older paper receipts",
