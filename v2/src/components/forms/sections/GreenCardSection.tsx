@@ -110,7 +110,7 @@ function PathChoice({
   return (
     <div className="space-y-2">
       <p id={headingId} className="text-sm font-semibold">
-        How the green card is issued
+        The path to the green card
       </p>{" "}
       <div role="radiogroup" aria-labelledby={headingId} className="grid grid-cols-1 gap-3 [&>*]:min-w-0 md:grid-cols-2">
         {(["adjustment", "consular"] as const).map((path) => {

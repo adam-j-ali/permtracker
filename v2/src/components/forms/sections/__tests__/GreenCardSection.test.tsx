@@ -20,7 +20,7 @@ const renderSection = (values: Partial<CaseFormData>) =>
 describe("GreenCardSection: the adjustment-or-consulate choice", () => {
   it("offers the two paths as a picture of their steps, neither picked yet", () => {
     renderSection({ i140ApprovalDate: "2025-01-02" });
-    const group = screen.getByRole("radiogroup", { name: "How the green card is issued" });
+    const group = screen.getByRole("radiogroup", { name: "The path to the green card" });
     const adjustment = within(group).getByRole("radio", { name: /Adjustment of status in the US/ });
     const consular = within(group).getByRole("radio", { name: /Immigrant visa at a consulate abroad/ });
     expect(adjustment).not.toBeChecked();

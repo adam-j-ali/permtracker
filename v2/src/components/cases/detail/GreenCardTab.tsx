@@ -11,7 +11,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { AirplaneTiltIcon, IdentificationCardIcon, CalendarCheckIcon } from "@phosphor-icons/react";
+import { AirplaneTiltIcon, IdentificationCardIcon, CalendarCheckIcon, PencilSimpleIcon } from "@phosphor-icons/react";
 
 import { buildEditSectionUrl } from "@/lib/cases/editDeepLinks";
 import { receiptPageHref } from "@/lib/cases/publicLinks";
@@ -38,6 +38,7 @@ import type { CaseDetailData } from "./case-detail-types";
 import { fmtISODate } from "./case-detail-utils";
 import { PublicNumber } from "./PublicNumber";
 import { BulletinAlertSwitch } from "./BulletinAlertSwitch";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
 
 interface GreenCardTabProps {
   caseData: CaseDetailData;
@@ -97,6 +98,14 @@ function Cells({ rows, caseData }: { rows: readonly Row[]; caseData: CaseDetailD
         );
       })}
     </div>
+  );
+}
+
+/** "November 2026" for "2026-11"; "newest" when the archive gave no month. */
+function bulletinMonthWords(month: string | null): string {
+  if (!month || !/^\d{4}-\d{2}$/.test(month)) return "newest";
+  return new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric", timeZone: "UTC" }).format(
+    new Date(`${month}-01T00:00:00Z`),
   );
 }
 
@@ -177,14 +186,17 @@ function BulletinLineCard({ caseData }: { caseData: CaseDetailData }) {
                 <li>{keepWhole(chartSentence("datesForFiling", datesForFiling))}</li>{" "}
                 <li className="text-soft">
                   {keepWhole(
-                    `From the ${finalAction.asOfBulletin ?? "newest"} bulletin. The Final Action chart says when a green card can be approved; USCIS says each month which chart decides when an I-485 can be filed.`,
+                    `From the ${bulletinMonthWords(finalAction.asOfBulletin)} bulletin. The Final Action chart says when a green card can be approved. Each month USCIS says which chart decides when an I-485 can be filed.`,
                   )}
                 </li>
               </ul>
             ) : priority ? (
               <p className="text-soft">Reading the bulletin&hellip;</p>
             ) : null}
-            <BulletinAlertSwitch caseId={caseData._id} />
+            {/* A failed read of the alert (a server a release behind) leaves the line on show without the switch. */}
+            <ErrorBoundary fallback={<></>}>
+              <BulletinAlertSwitch caseId={caseData._id} />
+            </ErrorBoundary>
           </>
         ) : (
           <p className="text-soft">
@@ -204,14 +216,23 @@ export function GreenCardTab({ caseData }: GreenCardTabProps) {
 
   return (
     <div className="space-y-6">
-      <Link href={buildEditSectionUrl(caseData._id, "greenCard")} className="detail-card-link" title="Edit in case form">
-        <div className="detail-card">
+      {/* A plain card with its own edit link: the receipt numbers inside are links, and a link can't hold a link. */}
+      <div className="detail-card">
           <div className={`detail-card-head ${head}`}>
             <h2 className="flex items-center gap-1.5">
               <Icon className="h-3.5 w-3.5" aria-hidden="true" />
               <KeepWhole>{path ? GREEN_CARD_PATH_LABELS[path] : "The green card"}</KeepWhole>
             </h2>{" "}
-            <span className="head-badge">{caseData.cardReceivedDate ? "Card received" : path ? "In progress" : "Not started"}</span>
+            <span className="flex items-center gap-3">
+              <span className="head-badge">{caseData.cardReceivedDate ? "Card received" : path ? "In progress" : "Not started"}</span>{" "}
+              <Link
+                href={buildEditSectionUrl(caseData._id, "greenCard")}
+                className="inline-flex min-h-11 items-center gap-1 text-sm font-semibold underline underline-offset-4"
+              >
+                <PencilSimpleIcon aria-hidden="true" className="size-4" />
+                Edit
+              </Link>
+            </span>
           </div>
 
           <div className="detail-subhead">The case</div>
@@ -264,8 +285,7 @@ export function GreenCardTab({ caseData }: GreenCardTabProps) {
               </span>
             </div>
           )}
-        </div>
-      </Link>
+      </div>
 
       <BulletinLineCard caseData={caseData} />
     </div>

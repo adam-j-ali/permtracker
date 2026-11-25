@@ -3,6 +3,7 @@
 import * as React from "react";
 import { CaretDownIcon, CheckCircleIcon as CheckCircle2, WarningIcon as AlertTriangle } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
+import { keepWhole } from "@/components/ui/keep-whole";
 import type { SectionState, SectionName } from "@/hooks/useSectionState";
 
 // ============================================================================
@@ -63,7 +64,8 @@ export function CollapsibleSection({
               aria-describedby={statusInfo || (isComplete && summary) ? statusId : undefined}
               className="text-left after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-inset focus-visible:after:ring-ring"
             >
-              {title}
+              {/* A form name in a title (I-140, I-485) never breaks at its hyphen. */}
+              {keepWhole(title)}
             </button>
           </h2>
           {description && <p className="mt-0.5 break-words text-sm text-muted-foreground">{description}</p>}
