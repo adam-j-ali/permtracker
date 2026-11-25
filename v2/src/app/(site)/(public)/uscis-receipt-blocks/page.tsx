@@ -12,7 +12,7 @@ import { DataProvenance } from "@/components/data/DataProvenance";
 import { FigurePlate } from "@/components/tools/FigurePlate";
 import { BlockApprovalChart } from "@/components/uscis/BlockApprovalChart";
 import { BlockSearch } from "@/components/uscis/BlockSearch";
-import { KeepWhole } from "@/components/ui/keep-whole";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 import { ListPages } from "@/components/ui/list-pages";
 import { CaveatBox } from "@/components/ui/note";
 import { getSampleBlocks, getSampleMeta } from "@/lib/db/uscisSample";
@@ -134,7 +134,7 @@ export default async function UscisReceiptBlocksPage() {
                     >
                       <span className="font-mono font-bold">{block}</span>{" "}
                       <span className="text-sm text-muted-foreground">
-                        {int(total)} cases, {top.form} {pct(top.approved.share)} approved
+                        {int(total)} cases, {keepWhole(top.form)} {pct(top.approved.share)} approved
                       </span>
                     </Link>
                   </li>

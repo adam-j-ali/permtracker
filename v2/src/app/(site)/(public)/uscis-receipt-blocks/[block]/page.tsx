@@ -12,6 +12,7 @@ import { DataProvenance } from "@/components/data/DataProvenance";
 import { FigurePlate } from "@/components/tools/FigurePlate";
 import { BlockApprovalChart } from "@/components/uscis/BlockApprovalChart";
 import { BlockSearch } from "@/components/uscis/BlockSearch";
+import { keepWhole } from "@/components/ui/keep-whole";
 import { CaveatBox } from "@/components/ui/note";
 import { ScrollBox } from "@/components/ui/scroll-box";
 import { getBlockMoves, getSampleBlocks, getSampleMeta } from "@/lib/db/uscisSample";
@@ -115,11 +116,11 @@ export default async function UscisReceiptBlockPage({ params }: { params: Promis
             </h2>{" "}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 [&>*]:min-w-0">
               <div className="border-2 border-border bg-card p-5">
-                <p className="text-sm font-bold text-muted-foreground">{lead.form} cases approved</p>{" "}
+                <p className="text-sm font-bold text-muted-foreground">{keepWhole(lead.form)} cases approved</p>{" "}
                 <p className="mt-2 font-heading text-5xl font-bold leading-none tabular-nums">{pct(lead.approved.share)}</p>{" "}
                 <p className="mt-2 text-base">
                   {int(lead.approved.count)} of {int(lead.counted)} sampled, likely between {pct(lead.approved.low)} and{" "}
-                  {pct(lead.approved.high)} of the block&apos;s {lead.form} cases.
+                  {pct(lead.approved.high)} of the block&apos;s {keepWhole(lead.form)} cases.
                 </p>
               </div>{" "}
               <div className="border-2 border-border bg-card p-5">
@@ -151,7 +152,7 @@ export default async function UscisReceiptBlockPage({ params }: { params: Promis
                 <tbody>
                   {forms.map((f) => (
                     <tr key={f.form} className="border-t-2 border-border">
-                      <th scope="row" className="px-4 py-2 font-mono font-bold">{f.form}</th>
+                      <th scope="row" className="px-4 py-2 font-mono font-bold">{keepWhole(f.form)}</th>
                       <td className="px-4 py-2 text-right tabular-nums">{int(f.counted)}</td>
                       <td className="px-4 py-2 text-right tabular-nums">{pct(f.approved.share)}</td>
                       <td className="px-4 py-2 tabular-nums text-muted-foreground">
@@ -175,7 +176,7 @@ export default async function UscisReceiptBlockPage({ params }: { params: Promis
                 {moves.map((m) => (
                   <li key={`${m.on_day}-${m.form}-${m.to_grp}`} className="border-l-4 border-border pl-3">
                     <span className="font-bold">{formatAsOf(m.on_day)}:</span>{" "}
-                    {int(m.n)} {m.form ?? "case"}
+                    {int(m.n)} {keepWhole(m.form ?? "case")}
                     {m.n === 1 ? "" : "s"} {MOVED[m.to_grp] ?? "changed status"}
                   </li>
                 ))}
