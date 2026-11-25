@@ -266,31 +266,49 @@ describe("I140Section - Validation", () => {
 // TESTS: Category Dropdown
 
 describe("I140Section - Category Dropdown", () => {
-  it("should have all EB category options", () => {
+  it("offers every preference category with its subclass, EB-1A to EB-5", () => {
     const values = createMockValues();
 
     renderI140Section(values);
 
-    const categorySelect = screen.getByLabelText(/Category/i) as HTMLSelectElement;
-
-    // Check for all options (including EB-2-NIW added in Phase 6)
+    const categorySelect = screen.getByLabelText(/Preference category/i) as HTMLSelectElement;
     expect(categorySelect).toHaveValue("");
     expect(screen.getByRole("option", { name: /Select category/i })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: /EB-1/i })).toBeInTheDocument();
-    expect(screen.getByRole("option", { name: /^EB-2 \(/i })).toBeInTheDocument(); // EB-2 (Advanced Degree...)
-    expect(screen.getByRole("option", { name: /EB-2 National Interest/i })).toBeInTheDocument(); // EB-2-NIW
-    expect(screen.getByRole("option", { name: /EB-3/i })).toBeInTheDocument();
+    for (const name of [
+      "EB-1A, extraordinary ability",
+      "EB-1B, outstanding researcher or professor",
+      "EB-1C, multinational manager or executive",
+      "EB-2, advanced degree or exceptional ability",
+      "EB-2 with a national interest waiver",
+      "EB-3, professional",
+      "EB-3, skilled worker",
+      "EB-3, other worker",
+      "EB-4, special immigrant",
+      "EB-5, investor",
+    ]) {
+      expect(screen.getByRole("option", { name })).toBeInTheDocument();
+    }
   });
 
-  it("should call onChange when category is selected", () => {
+  it("sets the subclass and the older category it belongs to, so the I-140 estimate still reads it", () => {
     const values = createMockValues();
 
     renderI140Section(values);
 
-    const categorySelect = screen.getByLabelText(/Category/i);
-    fireEvent.change(categorySelect, { target: { value: "EB-2" } });
+    fireEvent.change(screen.getByLabelText(/Preference category/i), { target: { value: "EB-3-other" } });
 
-    expect(mockOnChange).toHaveBeenCalledWith("i140Category", "EB-2");
+    expect(mockOnChange).toHaveBeenCalledWith("ebCategory", "EB-3-other");
+    expect(mockOnChange).toHaveBeenCalledWith("i140Category", "EB-3");
+  });
+
+  it("shows an older case's EB-2 as the same category", () => {
+    renderI140Section(createMockValues({ i140Category: "EB-2" }));
+    expect(screen.getByLabelText(/Preference category/i)).toHaveValue("EB-2");
+  });
+
+  it("keeps an older EB-3 case's category on show until the kind is picked", () => {
+    renderI140Section(createMockValues({ i140Category: "EB-3" }));
+    expect(screen.getByRole("option", { name: "EB-3, kind not picked yet" })).toBeInTheDocument();
   });
 });
 
@@ -329,7 +347,7 @@ describe("I140Section - Premium Processing", () => {
 // TESTS: Completion Badge
 
 describe("I140Section - Completion Badge", () => {
-  it("should show completion badge when approval date is set", () => {
+  it("shows the approval, and says the green card comes next: an approved I-140 isn't complete", () => {
     const values = createMockValues({
       i140FilingDate: "2024-12-01",
       i140ApprovalDate: "2025-01-15",
@@ -337,7 +355,10 @@ describe("I140Section - Completion Badge", () => {
 
     renderI140Section(values);
 
-    expect(screen.getByText(/Complete/i)).toBeInTheDocument();
+    expect(
+      screen.getAllByText((_, el) => el?.textContent === "I-140 approved. The green card section comes next.").length,
+    ).toBeGreaterThan(0);
+    expect(screen.queryByText(/Complete/i)).not.toBeInTheDocument();
   });
 
   it("should not show completion badge when no approval date", () => {

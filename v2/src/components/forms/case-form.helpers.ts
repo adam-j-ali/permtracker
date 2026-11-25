@@ -5,6 +5,7 @@
  */
 
 import { onTimeline } from "@convex/lib/timelineShow";
+import { pickGreenCardFields } from "@/lib/perm";
 import type { CaseFormData } from "@/lib/forms/case-form-schema";
 
 // ============================================================================
@@ -118,6 +119,8 @@ export function initializeFormData(
     i140Category: base.i140Category,
     i140ServiceCenter: base.i140ServiceCenter,
     i140PremiumProcessing: base.i140PremiumProcessing,
+    // Past the I-140: the choice, the category, the countries, the dates and receipts
+    ...pickGreenCardFields(base),
     // Job description
     jobDescription: base.jobDescription,
     jobDescriptionPositionTitle: base.jobDescriptionPositionTitle,

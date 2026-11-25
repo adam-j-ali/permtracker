@@ -51,6 +51,7 @@ export {
   hasGreenCardDates,
   type GreenCardDates,
   pickGreenCardDates,
+  pickGreenCardFields,
   greenCardPathOf,
   EB_CATEGORIES,
   EB_CATEGORY_LABELS,

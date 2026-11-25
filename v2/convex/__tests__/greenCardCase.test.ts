@@ -104,6 +104,13 @@ describe("a case past the I-140", () => {
     expect(c.caseStatus).toBe("i140");
   });
 
+  it("a save that sends an empty category leaves an older case's I-140 category alone", async () => {
+    const { t, owner, caseId, read } = await seed({ i140Category: "EB-3" });
+    await owner.mutation(api.cases.update, { id: caseId, ebCategory: null, greenCardPath: null, cardReceivedDate: null });
+    await finishScheduledFunctions(t);
+    expect((await read()).i140Category).toBe("EB-3");
+  });
+
   it("an EB-5 case carries no I-140 category", async () => {
     const { read } = await seed({ ebCategory: "EB-5", i140Category: undefined });
     expect((await read()).i140Category).toBeUndefined();

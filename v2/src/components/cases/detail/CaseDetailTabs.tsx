@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, type KeyboardEvent } from "react";
-import { FileTextIcon, FolderOpenIcon, NoteIcon as StickyNote, ScalesIcon as Scale, SquaresFourIcon as LayoutDashboard, UsersIcon } from "@phosphor-icons/react";
+import { FileTextIcon, FolderOpenIcon, IdentificationCardIcon, NoteIcon as StickyNote, ScalesIcon as Scale, SquaresFourIcon as LayoutDashboard, UsersIcon } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { keepWhole } from "@/components/ui/keep-whole";
 
@@ -10,6 +10,7 @@ export type TabId =
   | "recruitment"
   | "eta9089"
   | "i140"
+  | "greenCard"
   | "documents"
   | "notes";
 
@@ -24,6 +25,7 @@ const TABS: TabConfig[] = [
   { id: "recruitment", label: "Recruitment", icon: UsersIcon },
   { id: "eta9089", label: "ETA 9089", icon: FileTextIcon },
   { id: "i140", label: "I-140", icon: Scale },
+  { id: "greenCard", label: "Green card", icon: IdentificationCardIcon },
   { id: "documents", label: "Documents", icon: FolderOpenIcon },
   { id: "notes", label: "Notes", icon: StickyNote },
 ];

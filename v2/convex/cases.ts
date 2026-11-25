@@ -1031,8 +1031,9 @@ export const update = mutation({
       updates.liveStatusIsFinal = undefined;
     }
 
-    // The older I-140 category follows a new preference category, so what reads it still agrees.
-    if (args.ebCategory !== undefined && args.i140Category === undefined) {
+    // The older I-140 category follows a new preference category, so what reads it still agrees. A cleared one (null,
+    // which the form sends for every empty field) leaves the older category as it is.
+    if (args.ebCategory && args.i140Category === undefined) {
       updates.i140Category = i140CategoryFollowing(args.ebCategory, undefined, undefined);
     }
 

@@ -21,6 +21,19 @@ import { CharLimit } from "@/components/ui/char-limit";
 import { ChoiceRow } from "@/components/ui/choice-row";
 import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 import { describeTypedReceipt } from "@/lib/uscis/receipt";
+import { EB_CATEGORIES, EB_CATEGORY_LABELS, i140CategoryFor, isEbCategory } from "@/lib/perm";
+
+/**
+ * The preference category the select shows: the subclass when the case has one, otherwise the older I-140 category
+ * where it names one subclass alone (EB-2, the national interest waiver). An older EB-1 or EB-3 doesn't say which
+ * kind, so the select keeps it on show as itself until one is picked.
+ */
+function categoryShown(values: { ebCategory?: string; i140Category?: string }): string {
+  if (values.ebCategory) return values.ebCategory;
+  if (values.i140Category === "EB-2" || values.i140Category === "EB-2-NIW") return values.i140Category;
+  if (values.i140Category === "EB-1" || values.i140Category === "EB-3") return `older-${values.i140Category}`;
+  return "";
+}
 
 type ServiceCenter = "" | "Texas" | "Nebraska" | "California" | "Vermont";
 const SERVICE_CENTERS: readonly { value: ServiceCenter; label: string }[] = [
@@ -263,17 +276,18 @@ export function I140Section(props: I140SectionProps) {
     values.i140FilingDate
   );
 
-  // Check if I-140 is approved (for completion badge)
+  // An approved I-140 isn't the end of the case: the green card section comes next
   const isApproved = !!values.i140ApprovalDate;
+  const shownCategory = categoryShown(values);
 
   return (
     <div className="space-y-4">
       <div className="space-y-4">
-        {/* ========== COMPLETION BADGE ========== */}
+        {/* ========== APPROVAL BADGE ========== */}
         {isApproved && (
           <p className="flex items-center gap-2 font-semibold text-primary-text">
             <CheckCircle2 className="size-5" aria-hidden="true" />
-            <KeepWhole>{"Complete: I-140 approved"}</KeepWhole>
+            <KeepWhole>{"I-140 approved. The green card section comes next."}</KeepWhole>
           </p>
         )}
 
@@ -350,18 +364,27 @@ export function I140Section(props: I140SectionProps) {
             </CharLimit>
           </FormField>
 
-          {/* Category */}
+          {/* Preference category, with its subclass. The older I-140 category follows it (lib/perm/greenCard.ts). */}
           <FormField
-            label="Category"
-            name="i140Category"
-            error={errors?.i140Category}
-            hint="Employment-based preference category"
+            label="Preference category"
+            name="ebCategory"
+            error={errors?.ebCategory || errors?.i140Category}
+            hint="The employment-based category and its kind: it names the visa bulletin line"
           >
             <select
-              id="i140Category"
-              name="i140Category"
-              value={values.i140Category || ""}
-              onChange={handleInputChange}
+              id="ebCategory"
+              name="ebCategory"
+              value={shownCategory}
+              onChange={(event) => {
+                const picked = event.target.value;
+                if (!isEbCategory(picked)) {
+                  onChange("ebCategory", undefined);
+                  onChange("i140Category", undefined);
+                  return;
+                }
+                onChange("ebCategory", picked);
+                onChange("i140Category", i140CategoryFor(picked));
+              }}
               className={cn(
                 // 16px on a phone (iOS zooms into anything smaller) and 44px tall to tap.
                 "flex min-h-11 w-full min-w-0 border-2 border-input bg-background px-3 py-2 text-base md:text-sm",
@@ -369,15 +392,21 @@ export function I140Section(props: I140SectionProps) {
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                 "disabled:cursor-not-allowed disabled:text-muted-foreground",
                 "transition-colors shadow-hard-sm",
-                errors?.i140Category && "border-destructive"
+                (errors?.ebCategory || errors?.i140Category) && "border-destructive"
               )}
-              aria-invalid={!!errors?.i140Category}
+              aria-invalid={!!(errors?.ebCategory || errors?.i140Category)}
             >
               <option value="">Select category (optional)</option>
-              <option value="EB-1">EB-1 (Extraordinary Ability / Outstanding Researcher / Multinational Executive)</option>
-              <option value="EB-2">EB-2 (Advanced Degree / Exceptional Ability)</option>
-              <option value="EB-2-NIW">EB-2 National Interest Waiver</option>
-              <option value="EB-3">EB-3 (Skilled Worker / Professional)</option>
+              {shownCategory.startsWith("older-") ? (
+                <option value={shownCategory} disabled>
+                  {`${values.i140Category}, kind not picked yet`}
+                </option>
+              ) : null}
+              {EB_CATEGORIES.map((c) => (
+                <option key={c} value={c}>
+                  {EB_CATEGORY_LABELS[c]}
+                </option>
+              ))}
             </select>
           </FormField>
 

@@ -9,6 +9,7 @@ import {
   calculateJobOrderEnd,
   calculateETA9089Expiration,
   calculateAutoStatus as calculateAutoStatusFromPerm,
+  pickGreenCardFields,
 } from "@/lib/perm";
 import type { CaseFormData } from "@/lib/forms";
 import type { CaseStatus, ProgressStatus } from "@/lib/perm";
@@ -74,6 +75,8 @@ export function calculateAutoStatus(formData: Partial<CaseFormData>): AutoStatus
     isProfessionalOccupation: formData.isProfessionalOccupation,
     additionalRecruitmentMethods: formData.additionalRecruitmentMethods,
     additionalRecruitmentEndDate: formData.additionalRecruitmentEndDate,
+    // Past the I-140: the choice, the I-485 or consulate dates, the card
+    ...pickGreenCardFields(formData),
   });
 }
 

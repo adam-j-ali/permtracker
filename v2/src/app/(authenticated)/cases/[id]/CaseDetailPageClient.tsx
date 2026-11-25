@@ -7,7 +7,7 @@ import { useQuery, useMutation } from "convex/react";
 import Link from "next/link";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
-import { ArchiveIcon, ArrowCounterClockwiseIcon, ArrowLeftIcon, CalendarBlankIcon, CalendarCheckIcon, CalendarSlashIcon, ChartBarHorizontalIcon, CheckIcon, DotsThreeVerticalIcon, PencilSimpleIcon, StarIcon, TrashIcon } from "@phosphor-icons/react";
+import { ArchiveIcon, ArrowCounterClockwiseIcon, ArrowLeftIcon, CalendarBlankIcon, CalendarCheckIcon, CalendarSlashIcon, ChartBarHorizontalIcon, DotsThreeVerticalIcon, PencilSimpleIcon, StarIcon, TrashIcon } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { AppBreadcrumb } from "../../components/AppBreadcrumb";
@@ -31,12 +31,13 @@ import { CaseStageBadge } from "@/components/status/case-stage-badge";
 import { normaliseCaseNumber } from "@/lib/caseNumberShape";
 import { LiveStatusChip } from "@/components/cases/LiveStatusChip";
 import { ProgressStatusBadge } from "@/components/status/progress-status-badge";
-import { getStageIndex } from "@/components/cases/detail/next-up-section.utils";
 import { CaseDetailTabs, TabPanel, type TabId, isTabId } from "@/components/cases/detail/CaseDetailTabs";
 import { OverviewTab } from "@/components/cases/detail/OverviewTab";
 import { RecruitmentTab } from "@/components/cases/detail/RecruitmentTab";
 import { ETA9089Tab } from "@/components/cases/detail/ETA9089Tab";
 import { I140Tab } from "@/components/cases/detail/I140Tab";
+import { GreenCardTab } from "@/components/cases/detail/GreenCardTab";
+import { StageProgress } from "@/components/cases/detail/StageProgress";
 import { DocumentsTab } from "@/components/cases/detail/DocumentsTab";
 import { CaseEmployerLine, useEmployerPage } from "@/components/cases/detail/CaseEmployerLine";
 import { onTimeline } from "@convex/lib/timelineShow";
@@ -49,9 +50,8 @@ import { validateDocumentFile } from "@/lib/documents/validation";
 import { useDerivedDates } from "@/hooks/useDerivedDates";
 import { usePageContextUpdater } from "@/lib/ai/page-context";
 import { useIsMobile } from "@/hooks/useIsMobile";
-import { isRecruitmentComplete } from "@/lib/perm";
+import { greenCardPathOf, isRecruitmentComplete } from "@/lib/perm";
 import type { CaseDetailData } from "@/components/cases/detail/case-detail-types";
-import { STAGE_VISUALS } from "@/components/status/stage-visuals";
 import { formatCompactDate } from "@/components/cases/case-card.utils";
 import { caseWriteErrorMessage } from "@/lib/caseWriteErrors";
 import { CASE_DELETE_WARNING } from "@/lib/cases/deleteWarning";
@@ -495,7 +495,6 @@ function CaseDetail({ caseId, caseData }: CaseDetailProps) {
   const caseName = `${caseData.employerName} - ${caseData.positionTitle}`;
   const isProfessionalOccupation = caseData.isProfessionalOccupation;
   const isSample = caseData.isSample;
-  const currentStage = getStageIndex(caseData.caseStatus);
 
   return (
     <div className="space-y-8">
@@ -642,7 +641,7 @@ function CaseDetail({ caseId, caseData }: CaseDetailProps) {
           ) : null}
         </div>
 
-        {!isClosed ? <StageProgress index={currentStage} /> : null}
+        {!isClosed ? <StageProgress caseStatus={caseData.caseStatus} path={greenCardPathOf(caseData)} /> : null}
       </header>
 
       <CaseDetailTabs activeTab={activeTab} onTabChange={setActiveTab}>
@@ -669,6 +668,9 @@ function CaseDetail({ caseId, caseData }: CaseDetailProps) {
         <TabPanel id="i140" activeTab={activeTab}>
           <I140Tab caseData={caseData} />
         </TabPanel>
+        <TabPanel id="greenCard" activeTab={activeTab}>
+          <GreenCardTab caseData={caseData} />
+        </TabPanel>
         <TabPanel id="documents" activeTab={activeTab}>
           <DocumentsTab documents={caseData.documents || []} onUpload={handleUploadDocument} onDelete={handleDeleteDocument} />
         </TabPanel>
@@ -685,39 +687,6 @@ function CaseDetail({ caseId, caseData }: CaseDetailProps) {
         </p>
       </footer>
     </div>
-  );
-}
-
-/**
- * Where the case is in the four stages, as the four stages: the done ones
- * ticked, the current one filled in its own colour, the rest still grey.
- */
-function StageProgress({ index }: { index: number }) {
-  const stages = ["pwd", "recruitment", "eta9089", "i140"] as const;
-  const at = Math.min(Math.max(index, 0), stages.length - 1);
-  return (
-    <ol aria-label="PERM case progress" className="grid grid-cols-4 border-2 border-[var(--object-border)]">
-      {stages.map((st, i) => (
-        <li
-          key={st}
-          aria-current={i === at ? "step" : undefined}
-          className={cn(
-            "flex min-h-11 min-w-0 items-center justify-center gap-1 border-l-2 border-[var(--object-border)] px-1 text-center text-sm font-semibold first:border-l-0 sm:gap-1.5 sm:px-2",
-            i === at
-              ? cn(STAGE_VISUALS[st].fill, STAGE_VISUALS[st].onFill)
-              : i < at
-                ? "bg-card text-foreground"
-                : "bg-muted text-muted-foreground",
-          )}
-        >
-          {i < at ? <CheckIcon weight="bold" aria-hidden="true" className="size-4 shrink-0 text-primary-text" /> : null}
-          <span className="sr-only">{i < at ? "Done: " : i === at ? "Now: " : "Next: "}</span>{" "}
-          {/* Four cells share a phone's width, so each takes its short code there. */}
-          <span className="sm:hidden" aria-hidden="true">{STAGE_VISUALS[st].code}</span>{" "}
-          <span className="max-sm:sr-only">{formatCaseStatus(st)}</span>
-        </li>
-      ))}
-    </ol>
   );
 }
 

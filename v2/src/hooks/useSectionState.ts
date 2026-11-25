@@ -24,9 +24,11 @@ import {
   pwdFilingLimitFromCase,
   isProfessionalRecruitmentComplete,
   denialReviewDeadline,
+  greenCardPathOf,
+  hasGreenCardDates,
 } from "@/lib/perm";
 
-export type SectionName = 'pwd' | 'recruitment' | 'professional' | 'eta9089' | 'i140' | 'notes';
+export type SectionName = 'pwd' | 'recruitment' | 'professional' | 'eta9089' | 'i140' | 'greenCard' | 'notes';
 
 export interface SectionState {
   isOpen: boolean;
@@ -227,6 +229,22 @@ function getI140Summary(values: Partial<CaseFormData>): string | undefined {
   return parts.length > 0 ? parts.join(" · ") : undefined;
 }
 
+/** "I-485 · Filed Jan 2 · Card received Aug 1": the path, its first dated step, and the card. */
+function getGreenCardSummary(values: Partial<CaseFormData>): string | undefined {
+  const parts: string[] = [];
+  const path = greenCardPathOf(values);
+  if (path) parts.push(path === "consular" ? "Consulate" : "I-485");
+
+  const filed = fmtDate(path === "consular" ? values.ds260SubmittedDate : values.i485FilingDate);
+  if (filed) parts.push(`Filed ${filed}`);
+  const received = fmtDate(values.cardReceivedDate);
+  const approved = fmtDate(values.i485ApprovalDate);
+  if (received) parts.push(`Card received ${received}`);
+  else if (approved) parts.push(`Approved ${approved}`);
+
+  return parts.length > 0 ? parts.join(" · ") : undefined;
+}
+
 /**
  * Hook to manage section states
  */
@@ -237,6 +255,7 @@ export function useSectionState(values: Partial<CaseFormData>) {
     professional: false,
     eta9089: false,
     i140: false,
+    greenCard: false,
     notes: false,
   });
 
@@ -313,6 +332,17 @@ export function useSectionState(values: Partial<CaseFormData>) {
       summary: getI140Summary(values),
     });
 
+    // Green card Section - past the I-140: open once the I-140 is filed (the I-485 can go in beside it) or once
+    // any of its own fields is there. Complete when the card arrived.
+    const greenCardEnabled = !!values.i140FilingDate || !!values.greenCardPath || hasGreenCardDates(values);
+    const greenCardState = createSectionState({
+      isOpen: expanded.greenCard,
+      isEnabled: greenCardEnabled,
+      disabledReason: !greenCardEnabled ? 'Enter the I-140 filing date first' : undefined,
+      isComplete: !!values.cardReceivedDate,
+      summary: getGreenCardSummary(values),
+    });
+
     // Notes Section - Always enabled, never "completes"
     const notesState = createSectionState({ isOpen: expanded.notes, isEnabled: true });
 
@@ -322,6 +352,7 @@ export function useSectionState(values: Partial<CaseFormData>) {
       professional: professionalState,
       eta9089: eta9089State,
       i140: i140State,
+      greenCard: greenCardState,
       notes: notesState,
     };
   }, [values, expanded]);

@@ -401,7 +401,7 @@ describe("CaseDetailPage - Case Details Rendering", () => {
 describe("CaseDetailPage - Tab Navigation", () => {
   beforeEach(resetMocks);
 
-  it("shows tab bar with 6 tabs", async () => {
+  it("shows tab bar with 7 tabs, the green card after the I-140", async () => {
     mockCaseData.mockReturnValue(createMockCaseData());
 
     await renderPageAndWait("test-id");
@@ -410,7 +410,8 @@ describe("CaseDetailPage - Tab Navigation", () => {
     expect(tablist).toBeInTheDocument();
 
     const tabs = within(tablist).getAllByRole("tab");
-    expect(tabs).toHaveLength(6);
+    expect(tabs).toHaveLength(7);
+    expect(tabs[4]).toHaveTextContent("Green card");
   });
 
   it("overview tab is active by default", async () => {

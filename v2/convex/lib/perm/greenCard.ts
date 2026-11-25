@@ -118,6 +118,24 @@ export function pickGreenCardDates(c: GreenCardDates): Partial<Record<GreenCardD
   return out;
 }
 
+/**
+ * Every field past the I-140 a case holds (the dates, the receipt numbers, the countries, the choice and the
+ * category), and nothing else: how the form, the quick edit and the status calculation carry them from a case.
+ */
+export function pickGreenCardFields(c: GreenCardFields): Partial<Record<GreenCardTextField, string>> & {
+  greenCardPath?: GreenCardPath;
+  ebCategory?: EbCategory;
+} {
+  const out: Partial<Record<GreenCardTextField, string>> & { greenCardPath?: GreenCardPath; ebCategory?: EbCategory } = {};
+  for (const f of GREEN_CARD_TEXT_FIELDS) {
+    const value = c[f];
+    if (value) out[f] = value;
+  }
+  if (c.greenCardPath) out.greenCardPath = c.greenCardPath;
+  if (c.ebCategory) out.ebCategory = c.ebCategory;
+  return out;
+}
+
 /** Whether the case has any date past the I-140. */
 export function hasGreenCardDates(c: GreenCardFields): boolean {
   return GREEN_CARD_DATE_FIELDS.some((f) => !!c[f]);

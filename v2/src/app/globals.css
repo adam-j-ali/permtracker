@@ -869,6 +869,9 @@ html:has(.chapter-ground) {
 .detail-card-head.ch-eta { border-top-color: var(--stage-eta9089); }
 .detail-card-head.ch-i140 { border-top-color: var(--stage-i140); }
 .detail-card-head.ch-muted { border-top-color: var(--stage-closed); }
+.detail-card-head.ch-i485 { border-top-color: var(--stage-i485); }
+.detail-card-head.ch-consular { border-top-color: var(--stage-consular); }
+.detail-card-head.ch-complete { border-top-color: var(--stage-complete); }
 .detail-card-head {
   display: flex;
   align-items: center;

@@ -1,3 +1,5 @@
+import { GREEN_CARD_TEXT_FIELDS } from '@convex/lib/perm/greenCard';
+
 /**
  * Convert undefined optional fields to null for clearable fields only.
  *
@@ -41,6 +43,8 @@ export const NULLABLE_FIELDS = new Set([
   'socCode', 'socTitle', 'jobOrderState',
   // Job description
   'jobDescription', 'jobDescriptionPositionTitle',
+  // Past the I-140 (convex/lib/perm/greenCard.ts)
+  ...GREEN_CARD_TEXT_FIELDS, 'greenCardPath', 'ebCategory',
 ]);
 
 export function prepareUpdatePayload(

@@ -36,6 +36,7 @@
 "use client";
 
 import * as React from "react";
+import { GREEN_CARD_TEXT_FIELDS } from "@/lib/perm";
 import { useCallback, useEffect, useRef, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "convex/react";
@@ -62,6 +63,7 @@ import { PWDSection } from "./sections/PWDSection";
 import { RecruitmentSection } from "./sections/RecruitmentSection";
 import { ETA9089Section } from "./sections/ETA9089Section";
 import { I140Section } from "./sections/I140Section";
+import { GreenCardSection } from "./sections/GreenCardSection";
 import { NotesJournal } from "./NotesJournal";
 import { CollapsibleSection } from "./CollapsibleSection";
 import { FormSectionProvider } from "./useCaseFormSection";
@@ -128,14 +130,20 @@ export interface CaseFormProps {
   initialSection?: SectionName;
 }
 
-const VALID_SECTIONS: ReadonlySet<string> = new Set<SectionName>(["pwd", "recruitment", "professional", "eta9089", "i140", "notes"]);
+const VALID_SECTIONS: ReadonlySet<string> = new Set<SectionName>(["pwd", "recruitment", "professional", "eta9089", "i140", "greenCard", "notes"]);
 
 // ============================================================================
 // COMPONENT
 // ============================================================================
 
-/** The four stages a case moves through, in order: the form's progress counts these. */
-const FORM_STAGES = ["pwd", "recruitment", "eta9089", "i140"] as const;
+/**
+ * The stages a case moves through, in order: the form's progress counts these. The green card counts once its
+ * section opens, so a case tracked to its I-140 isn't shown one section short forever.
+ */
+const PERM_FORM_STAGES = ["pwd", "recruitment", "eta9089", "i140"] as const;
+
+/** The green card section's fields, so an error on one opens it. */
+const GREEN_CARD_FORM_FIELDS: ReadonlySet<string> = new Set([...GREEN_CARD_TEXT_FIELDS, "greenCardPath"]);
 
 export function CaseForm({ mode, caseId, initialData, onSuccess, onCancel, initialField, initialSection }: CaseFormProps) {
   const router = useRouter();
@@ -286,6 +294,9 @@ export function CaseForm({ mode, caseId, initialData, onSuccess, onCancel, initi
   // ============================================================================
 
   const { sectionStates, toggleSection, openSection } = useSectionState(formData);
+  const formStages: readonly SectionName[] = sectionStates.greenCard.isEnabled
+    ? [...PERM_FORM_STAGES, "greenCard"]
+    : PERM_FORM_STAGES;
 
   // ============================================================================
   // AUTO STATUS
@@ -478,7 +489,8 @@ export function CaseForm({ mode, caseId, initialData, onSuccess, onCancel, initi
     if (fieldName.startsWith("pwd")) return "pwd";
     if (fieldName.startsWith("sundayAd") || fieldName.startsWith("jobOrder") || fieldName.startsWith("noticeOfFiling") || fieldName.startsWith("additional") || fieldName.startsWith("recruitment")) return "recruitment";
     if (fieldName.startsWith("eta9089") || fieldName.startsWith("rfi")) return "eta9089";
-    if (fieldName.startsWith("i140") || fieldName.startsWith("rfe")) return "i140";
+    if (fieldName.startsWith("i140") || fieldName.startsWith("rfe") || fieldName === "ebCategory") return "i140";
+    if (GREEN_CARD_FORM_FIELDS.has(fieldName)) return "greenCard";
     if (fieldName.startsWith("notes")) return "notes";
     return null;
   }, []);
@@ -568,10 +580,10 @@ export function CaseForm({ mode, caseId, initialData, onSuccess, onCancel, initi
         <div className="space-y-2">
           <div className="flex items-center gap-3">
             <span className="text-sm font-semibold text-foreground">
-              {FORM_STAGES.filter((s) => sectionStates[s].isComplete).length} of {FORM_STAGES.length} sections complete
+              {formStages.filter((s) => sectionStates[s].isComplete).length} of {formStages.length} sections complete
             </span>
             <div className="flex gap-1" aria-hidden="true">
-              {FORM_STAGES.map((s) => (
+              {formStages.map((s) => (
                 <div
                   key={s}
                   className={cn("h-1.5 w-8", sectionStates[s].isComplete ? "bg-primary-text" : "bg-muted")}
@@ -608,6 +620,11 @@ export function CaseForm({ mode, caseId, initialData, onSuccess, onCancel, initi
         {/* I-140 Section */}
         <CollapsibleSection name="i140" title="I-140 (Immigrant Petition)" state={sectionStates.i140} onToggle={() => toggleSection("i140")} description="I-140 petition filing, receipt, and approval">
           <I140Section />
+        </CollapsibleSection>
+
+        {/* Green card Section: the I-485 or the consulate, and the card */}
+        <CollapsibleSection name="greenCard" title="Green card (I-485 or consulate)" state={sectionStates.greenCard} onToggle={() => toggleSection("greenCard")} description="The path to the card, its dates and receipts, and the visa bulletin line">
+          <GreenCardSection />
         </CollapsibleSection>
 
         {/* Job Description Section */}

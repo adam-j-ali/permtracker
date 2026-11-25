@@ -15,6 +15,7 @@
  */
 
 import { useState, useCallback, useMemo } from "react";
+import { pickGreenCardFields } from "@/lib/perm";
 import { useMutation } from "convex/react";
 import { ArrowSquareOutIcon, CheckIcon, CircleNotchIcon, ClockIcon, InfoIcon, WarningCircleIcon as AlertCircle } from "@phosphor-icons/react";
 import { api } from "@convex/_generated/api";
@@ -129,6 +130,8 @@ function convertToCaseFormData(caseData: NextUpCaseData): CaseFormData {
     i140FilingDate: caseData.i140FilingDate || undefined,
     i140ApprovalDate: caseData.i140ApprovalDate || undefined,
     i140DenialDate: caseData.i140DenialDate || undefined,
+    // Past the I-140, so the quick edit's stage follows these dates too
+    ...pickGreenCardFields(caseData),
     rfiEntries,
     rfeEntries,
     isProfessionalOccupation: !!caseData.isProfessionalOccupation,
