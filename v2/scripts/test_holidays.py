@@ -13,7 +13,8 @@ from datetime import date, datetime, timezone
 
 HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from lib_holidays import (add_workdays, decided_on, federal_holidays, is_dol_workday,  # noqa: E402
+from lib_holidays import (DOL_DAY_STARTS_HOUR, RULE_FROM_MS, SEEN_NEXT_MORNING_BEFORE_HOUR, add_workdays,  # noqa: E402
+                          decided_on, federal_holidays, is_dol_workday,
                           next_workday, workdays_between)
 
 fails: list[str] = []
@@ -52,6 +53,18 @@ check(decided_on(ms(2026, 10, 9, 21, 5)) == date(2026, 10, 9), "seen 5:05 PM EDT
 check(decided_on(ms(2026, 10, 14, 15, 59)) == date(2026, 10, 13), "11:59 AM is still the morning's reading")
 check(decided_on(ms(2026, 10, 14, 16, 0)) == date(2026, 10, 14), "noon is not")
 check(decided_on(ms(2027, 1, 2, 6, 0)) == date(2027, 1, 1), "1 AM EST on Jan 2, the day before, across a year")
+
+# Nov 25 2026 (D5): from RULE_FROM the day is the site's DOL day, from 7 AM Eastern (src/lib/dolDay.ts): the wage requests
+# are read every hour since Nov 23, so a status seen at 10 AM was decided that morning. Before RULE_FROM the noon rule
+# stands, so days and grades already recorded keep their dates (every sighting then came from the 5 AM pass, where the
+# two rules agree). Nov 30 2026 is a Monday; EST is UTC-5.
+check(decided_on(ms(2026, 11, 30, 11, 59)) == date(2026, 11, 29), "after the switch, 6:59 AM EST is still the day before")
+check(decided_on(ms(2026, 11, 30, 12, 1)) == date(2026, 11, 30), "after the switch, 7:01 AM EST is that day")
+check(decided_on(ms(2026, 11, 30, 16, 59)) == date(2026, 11, 30), "after the switch, 11:59 AM EST is that day (noon said the day before)")
+check(decided_on(ms(2026, 11, 30, 17, 1)) == date(2026, 11, 30), "after the switch, 12:01 PM EST is that day")
+check(decided_on(ms(2026, 11, 24, 15, 0)) == date(2026, 11, 23), "before the switch, 10 AM keeps the noon rule's day before")
+check(decided_on(RULE_FROM_MS) == date(2026, 11, 24), "the switch instant itself, midnight Eastern, is the day before")
+check(DOL_DAY_STARTS_HOUR == 7 and SEEN_NEXT_MORNING_BEFORE_HOUR == 12, "the two hours as written")
 
 # Inauguration Day on a Saturday isn't observed on another day (OPM, 2029); on a Sunday it's Monday (5 U.S.C. 6103(c)).
 check(is_dol_workday(date(2029, 1, 19)), "Friday Jan 19 2029 is a working day: Jan 20 is a Saturday, not observed")

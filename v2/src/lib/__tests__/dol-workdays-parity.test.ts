@@ -6,7 +6,8 @@ import { describe, expect, it } from "vitest";
 import { getFederalHolidays, measureWorkdayPace, PWD_MIN_WORKDAYS } from "@/lib/perm";
 import { COLLAPSE_FRACTION } from "@convex/lib/perm/calculators/decisionPace";
 import { PWD_EDGE_WORKDAYS } from "@convex/lib/perm/calculators/pwdQueue";
-import { decidedOnFromSeen, SEEN_NEXT_MORNING_BEFORE_HOUR } from "@/lib/scorecard/score";
+import { DOL_DAY_STARTS_HOUR } from "@/lib/dolDay";
+import { DECIDED_RULE_FROM_MS, decidedOnFromSeen, SEEN_NEXT_MORNING_BEFORE_HOUR } from "@/lib/scorecard/score";
 
 /**
  * The wage-request day is built twice: by the site (estimatePwdDay) and by
@@ -44,6 +45,8 @@ describe("DOL's working days, site and backtest alike", () => {
     expect(pyConst(bt, "DAY_EDGE_WORKDAYS")).toBe(PWD_EDGE_WORKDAYS);
     expect(pyConst(bt, "DAY_COLLAPSE")).toBe(COLLAPSE_FRACTION);
     expect(pyConst(py("lib_holidays.py"), "SEEN_NEXT_MORNING_BEFORE_HOUR")).toBe(SEEN_NEXT_MORNING_BEFORE_HOUR);
+    expect(pyConst(py("lib_holidays.py"), "DOL_DAY_STARTS_HOUR")).toBe(DOL_DAY_STARTS_HOUR);
+    expect(pyConst(py("lib_holidays.py"), "RULE_FROM_MS")).toBe(DECIDED_RULE_FROM_MS);
   });
 
   it("a decision seen in the morning was made the day before; one seen in the afternoon, that day", () => {
@@ -56,6 +59,17 @@ describe("DOL's working days, site and backtest alike", () => {
     expect(decidedOnFromSeen(Date.UTC(2026, 9, 14, 16, 0))).toBe("2026-10-14");
     // 1 AM EST on Jan 2 (06:00 UTC): the day before, across a year.
     expect(decidedOnFromSeen(Date.UTC(2027, 0, 2, 6, 0))).toBe("2027-01-01");
+  });
+
+  it("from the switch (Nov 25 2026) the day is the site's DOL day, from 7 AM Eastern: the same instants as test_holidays.py", () => {
+    // The wage requests are read hourly since Nov 23, so a status seen at 10 AM was decided that morning. Mon Nov 30, EST.
+    expect(decidedOnFromSeen(Date.UTC(2026, 10, 30, 11, 59))).toBe("2026-11-29"); // 6:59 AM: the day before
+    expect(decidedOnFromSeen(Date.UTC(2026, 10, 30, 12, 1))).toBe("2026-11-30"); // 7:01 AM: that day
+    expect(decidedOnFromSeen(Date.UTC(2026, 10, 30, 16, 59))).toBe("2026-11-30"); // 11:59 AM: that day (noon said before)
+    expect(decidedOnFromSeen(Date.UTC(2026, 10, 30, 17, 1))).toBe("2026-11-30"); // 12:01 PM
+    // Before the switch the noon rule stands, so days and grades already recorded keep their dates.
+    expect(decidedOnFromSeen(Date.UTC(2026, 10, 24, 15, 0))).toBe("2026-11-23"); // 10 AM Nov 24
+    expect(decidedOnFromSeen(DECIDED_RULE_FROM_MS)).toBe("2026-11-24"); // midnight Eastern: the day before
   });
 
   it("the pace a working day is the backtest's on the same days (scripts/test_backtest_pwd.py)", () => {

@@ -22,8 +22,15 @@ from datetime import date, datetime, timedelta
 
 from lib_db import ET
 
-# A status first seen before this hour, Eastern, was decided the day before.
+# The day DOL decided a status a pass first saw (D5, Nov 25 2026). From RULE_FROM_MS it's the site's DOL day, which
+# starts at 7 AM Eastern (src/lib/dolDay.ts, DOL_DAY_STARTS_HOUR): the wage requests are read every hour since Nov 23,
+# and on Nov 24 their decisions first appeared from 8 AM to 7 PM (92 of 339 between 8 and noon), so a status seen at
+# 10 AM was decided that morning. Before it, a status seen before noon was decided the day before: every sighting then
+# came from the 5 AM pass, where the two rules agree, and the noon rule keeps the days and grades already recorded.
+# Deadlines counted from a sighting keep the noon rule on purpose (convex/lib/alertNextSteps.ts): never late.
+DOL_DAY_STARTS_HOUR = 7
 SEEN_NEXT_MORNING_BEFORE_HOUR = 12
+RULE_FROM_MS = 1795582800000  # Wed Nov 25 2026, 00:00 Eastern
 
 
 def _nth_weekday(year: int, month: int, weekday: int, n: int) -> date:
@@ -91,7 +98,8 @@ def is_dol_workday(d: date) -> bool:
 def decided_on(seen_ms: int) -> date:
     """The day DOL decided a status our sweep first saw at `seen_ms`."""
     t = datetime.fromtimestamp(seen_ms / 1000, ET)
-    return t.date() - timedelta(days=1) if t.hour < SEEN_NEXT_MORNING_BEFORE_HOUR else t.date()
+    starts = DOL_DAY_STARTS_HOUR if seen_ms >= RULE_FROM_MS else SEEN_NEXT_MORNING_BEFORE_HOUR
+    return t.date() - timedelta(days=1) if t.hour < starts else t.date()
 
 
 def next_workday(d: date) -> date:

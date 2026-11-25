@@ -24,6 +24,7 @@
  * Plain module, pure functions, so the unit project tests every rule.
  */
 
+import { dolDayOf } from "@/lib/dolDay";
 import { EASTERN_TIMEZONE, dayNumber, daysBetween, easternDay } from "@/lib/time";
 
 /**
@@ -93,16 +94,24 @@ export const RIVAL_PWD_MODEL = "rival-pwd-range";
 export const DOL_DAY_MODELS: ReadonlySet<string> = new Set([PWD_DAY_MODEL, RIVAL_PWD_MODEL]);
 
 /**
- * A status first seen before this hour, Eastern, was decided the day before:
- * FLAG shows a new status the day DOL decides it and our morning sweep reads
- * it the next morning. Held equal to scripts/lib_holidays.py by its test.
+ * Before DECIDED_RULE_FROM_MS, a status first seen before this hour, Eastern, was decided the day before: every sighting
+ * then came from the 5 AM pass. Held equal to scripts/lib_holidays.py by its test.
  */
 export const SEEN_NEXT_MORNING_BEFORE_HOUR = 12;
+
+/**
+ * From this instant (Wed Nov 25 2026, 00:00 Eastern) the day DOL decided is the site's DOL day, from 7 AM Eastern
+ * (src/lib/dolDay.ts): the wage requests are read every hour since Nov 23, so a status seen at 10 AM was decided that
+ * morning (on Nov 24, 92 of 339 decisions first appeared between 8 AM and noon). Earlier sightings keep the noon rule,
+ * so grades already recorded keep their days (D5). Held equal to scripts/lib_holidays.py's RULE_FROM_MS by its test.
+ */
+export const DECIDED_RULE_FROM_MS = 1_795_582_800_000;
 
 const easternHour = new Intl.DateTimeFormat("en-US", { timeZone: EASTERN_TIMEZONE, hour: "numeric", hourCycle: "h23" });
 
 /** The day DOL decided a status our sweep first saw at `ms`. */
 export function decidedOnFromSeen(ms: number): string {
+  if (ms >= DECIDED_RULE_FROM_MS) return dolDayOf(ms);
   const day = easternDay(ms);
   if (Number(easternHour.format(ms)) >= SEEN_NEXT_MORNING_BEFORE_HOUR) return day;
   return new Date(Date.parse(`${day}T12:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
