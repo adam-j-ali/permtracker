@@ -1,0 +1,645 @@
+{
+ "_about": "Every table in the two libSQL databases, with how it stays bounded or why it may grow (read from the live sqlite_master on Nov 25 2026). kind: record (kept on purpose: it IS the data), mirror (holds what its source publishes), derived (rebuilt from other tables), pruned (deleted past a horizon), retired (to be dropped). scripts/test_table_retention.py holds it against the code.",
+ "tables": {
+  "lca:lca_cases": {
+   "kind": "record",
+   "rule": "kept: the record, one row per filing or status change DOL published; it grows with the source's own activity",
+   "by": "scripts/build_employer_map.py"
+  },
+  "lca:lca_cases_history": {
+   "kind": "record",
+   "rule": "kept: the record, one row per filing or status change DOL published; it grows with the source's own activity",
+   "by": "scripts/build_h1b_ranks.py"
+  },
+  "lca:lca_cases_years": {
+   "kind": "derived",
+   "rule": "rebuilt from the LCA files by year",
+   "by": "scripts/build_lca_years.py"
+  },
+  "main:api_usage": {
+   "kind": "pruned",
+   "rule": "API call counts older than 400 days are deleted nightly",
+   "by": "scripts/lib_housekeeping.py"
+  },
+  "main:bea_rpp": {
+   "kind": "mirror",
+   "rule": "holds exactly what its source publishes, synced each load",
+   "by": "scripts/ingest_bea_rpp.py"
+  },
+  "main:bls_oews": {
+   "kind": "mirror",
+   "rule": "holds exactly what its source publishes, synced each load",
+   "by": "scripts/ingest_bls.py"
+  },
+  "main:bls_projections": {
+   "kind": "mirror",
+   "rule": "holds exactly what its source publishes, synced each load",
+   "by": "scripts/ingest_bls.py"
+  },
+  "main:bulletin_first_seen": {
+   "kind": "record",
+   "rule": "kept: the record, one row per bulletin line; it grows with the source's own activity",
+   "by": "scripts/ingest_visa_bulletin.py"
+  },
+  "main:cap_exempt_employers": {
+   "kind": "derived",
+   "rule": "rebuilt from other tables on each run",
+   "by": "scripts/build_cap_exempt.py"
+  },
+  "main:census_counties": {
+   "kind": "mirror",
+   "rule": "holds exactly what its source publishes, synced each load",
+   "by": "scripts/ingest_census_geo.py"
+  },
+  "main:city_geo": {
+   "kind": "mirror",
+   "rule": "holds exactly what its source publishes, synced each load",
+   "by": "scripts/ingest_census_geo.py"
+  },
+  "main:community_case_reports": {
+   "kind": "mirror",
+   "rule": "replaced per source each load; a load that loses more than half is refused",
+   "by": "scripts/ingest_community_sheets.py"
+  },
+  "main:community_i140_reports": {
+   "kind": "mirror",
+   "rule": "replaced per source each load",
+   "by": "scripts/ingest_visastats.py"
+  },
+  "main:community_post_reports": {
+   "kind": "mirror",
+   "rule": "replaced per source each load",
+   "by": "scripts/ingest_community_posts.py"
+  },
+  "main:community_rfe_officers": {
+   "kind": "mirror",
+   "rule": "replaced per source each load",
+   "by": "scripts/ingest_visastats.py"
+  },
+  "main:daily_decisions": {
+   "kind": "derived",
+   "rule": "one row per source and day, each day rewritten in place",
+   "by": "scripts/build_daily_decisions.py"
+  },
+  "main:data_freshness": {
+   "kind": "derived",
+   "rule": "one row per dataset, overwritten each load",
+   "by": "scripts/lib_db.py"
+  },
+  "main:debarments": {
+   "kind": "mirror",
+   "rule": "DOL's debarment list as published",
+   "by": "scripts/ingest_debarments.py"
+  },
+  "main:employer_other_index": {
+   "kind": "derived",
+   "rule": "rebuilt from other tables on each run",
+   "by": "scripts/build_employer_map.py"
+  },
+  "main:employer_page_map": {
+   "kind": "derived",
+   "rule": "rebuilt from other tables on each run",
+   "by": "scripts/build_employer_map.py"
+  },
+  "main:estimate_predictions": {
+   "kind": "record",
+   "rule": "kept: the record, one row per estimate made (the scorecard); it grows with the source's own activity",
+   "by": "src/lib/db/predictions.ts"
+  },
+  "main:figure_scores": {
+   "kind": "record",
+   "rule": "kept: one row per figure, scope and DOL date scored (the scorecard of our figures)",
+   "by": "scripts/score_official_figures.py"
+  },
+  "main:firm_email_domains": {
+   "kind": "derived",
+   "rule": "rebuilt from other tables on each run",
+   "by": "scripts/build_firm_domains.py"
+  },
+  "main:firm_lca_history": {
+   "kind": "mirror",
+   "rule": "holds exactly what its source publishes, synced each load",
+   "by": "scripts/lca_history_rollups.py"
+  },
+  "main:firm_page_map": {
+   "kind": "mirror",
+   "rule": "holds exactly what its source publishes, synced each load",
+   "by": "scripts/build_employer_map.py"
+  },
+  "main:firm_programs": {
+   "kind": "mirror",
+   "rule": "holds exactly what its source publishes, synced each load",
+   "by": "scripts/build_firm_programs.py"
+  },
+  "main:firm_ranks": {
+   "kind": "derived",
+   "rule": "rebuilt from other tables on each run",
+   "by": "scripts/build_firm_ranks.py"
+  },
+  "main:h1b_employer_ranks": {
+   "kind": "derived",
+   "rule": "rebuilt from other tables on each run",
+   "by": "scripts/build_h1b_ranks.py"
+  },
+  "main:h1b_lottery_employers": {
+   "kind": "mirror",
+   "rule": "USCIS's FOIA release, replaced each load",
+   "by": "scripts/ingest_h1b_lottery_foia.py"
+  },
+  "main:h2b_groups": {
+   "kind": "mirror",
+   "rule": "DOL's H-2B groups as published",
+   "by": "scripts/ingest_h2b_groups.py"
+  },
+  "main:history_lca_cities": {
+   "kind": "derived",
+   "rule": "rolled up from the older LCA files on each load",
+   "by": "scripts/lca_history_totals.py"
+  },
+  "main:history_lca_spellings": {
+   "kind": "derived",
+   "rule": "rolled up from the older LCA files on each load",
+   "by": "scripts/lca_history_totals.py"
+  },
+  "main:i140_trends": {
+   "kind": "record",
+   "rule": "kept: the record, one row per USCIS quarter; it grows with the source's own activity",
+   "by": "scripts/ingest_i140_trends.py"
+  },
+  "main:i485_inventory": {
+   "kind": "record",
+   "rule": "kept: one set of rows per USCIS publication, each rewritten in place",
+   "by": "scripts/ingest_i485_inventory.py"
+  },
+  "main:ingest_runs": {
+   "kind": "pruned",
+   "rule": "run rows older than 400 days are deleted nightly (each job keeps its newest)",
+   "by": "scripts/lib_housekeeping.py"
+  },
+  "main:iv_scheduling": {
+   "kind": "mirror",
+   "rule": "holds exactly what its source publishes, synced each load",
+   "by": "scripts/ingest_iv_scheduling.py"
+  },
+  "main:lca_case_events": {
+   "kind": "record",
+   "rule": "kept: the record, one row per filing or status change DOL published; it grows with the source's own activity",
+   "by": "scripts/dump_observations.py"
+  },
+  "main:lca_case_numbers": {
+   "kind": "record",
+   "rule": "kept: the record, one row per filing or status change DOL published; it grows with the source's own activity",
+   "by": "scripts/build_employer_map.py"
+  },
+  "main:lca_case_status": {
+   "kind": "record",
+   "rule": "kept: the record, one row per filing or status change DOL published; it grows with the source's own activity",
+   "by": "scripts/build_employer_map.py"
+  },
+  "main:lca_cities": {
+   "kind": "derived",
+   "rule": "rebuilt from other tables on each run",
+   "by": "scripts/build_lca_cities.py"
+  },
+  "main:mirror_progress": {
+   "kind": "retired",
+   "rule": "nothing reads or writes it (2 rows); dropping it waits on the owner's yes",
+   "by": ""
+  },
+  "main:niv_issuances": {
+   "kind": "mirror",
+   "rule": "holds exactly what its source publishes, synced each load",
+   "by": "scripts/ingest_niv_issuances.py"
+  },
+  "main:oflc_occupation_basis": {
+   "kind": "mirror",
+   "rule": "holds exactly what its source publishes, synced each load",
+   "by": "scripts/ingest_oflc_wages.py"
+  },
+  "main:oflc_wage_geography": {
+   "kind": "mirror",
+   "rule": "holds exactly what its source publishes, synced each load",
+   "by": "scripts/ingest_oflc_wages.py"
+  },
+  "main:oflc_wage_levels": {
+   "kind": "mirror",
+   "rule": "holds exactly what its source publishes, synced each load",
+   "by": "scripts/ingest_oflc_wages.py"
+  },
+  "main:onet_occupations": {
+   "kind": "mirror",
+   "rule": "holds exactly what its source publishes, synced each load",
+   "by": "scripts/ingest_onet.py"
+  },
+  "main:osha_inspections": {
+   "kind": "mirror",
+   "rule": "holds exactly what its source publishes, synced each load",
+   "by": "scripts/ingest_osha.py"
+  },
+  "main:perm_case_events": {
+   "kind": "record",
+   "rule": "kept: the record, one row per filing or status change DOL published; it grows with the source's own activity",
+   "by": "scripts/ingest_case_status_direct.py"
+  },
+  "main:perm_case_status": {
+   "kind": "record",
+   "rule": "kept: the record, one row per filing or status change DOL published; it grows with the source's own activity",
+   "by": "scripts/ingest_case_status_direct.py"
+  },
+  "main:perm_cases": {
+   "kind": "record",
+   "rule": "kept: the record, one row per filing or status change DOL published; it grows with the source's own activity",
+   "by": "scripts/db_migrate.py"
+  },
+  "main:perm_cases_history": {
+   "kind": "record",
+   "rule": "kept: the record, one row per filing or status change DOL published; it grows with the source's own activity",
+   "by": "scripts/ingest_perm_history.py"
+  },
+  "main:perm_census_days": {
+   "kind": "mirror",
+   "rule": "holds exactly what its source publishes, synced each load",
+   "by": "scripts/build_census_days.py"
+  },
+  "main:perm_country_years": {
+   "kind": "derived",
+   "rule": "rebuilt per fiscal year on each load",
+   "by": "scripts/ingest_perm_history.py"
+  },
+  "main:perm_docs": {
+   "kind": "pruned",
+   "rule": "one row per key, rewritten in place; the dated daily counters are deleted after 90 days",
+   "by": "scripts/lib_housekeeping.py"
+  },
+  "main:perm_employer_years": {
+   "kind": "derived",
+   "rule": "rebuilt per fiscal year on each load",
+   "by": "scripts/ingest_perm_history.py"
+  },
+  "main:perm_entities": {
+   "kind": "derived",
+   "rule": "rebuilt from other tables on each run",
+   "by": "scripts/build_entity_detail.py"
+  },
+  "main:perm_entity_alias": {
+   "kind": "derived",
+   "rule": "one row per retired slug, re-pointed and reconciled each load",
+   "by": "scripts/db_migrate_public.py"
+  },
+  "main:perm_entity_facets": {
+   "kind": "derived",
+   "rule": "rebuilt from other tables on each run",
+   "by": "scripts/build_entity_detail.py"
+  },
+  "main:perm_entity_pending": {
+   "kind": "derived",
+   "rule": "rebuilt from other tables on each run",
+   "by": "scripts/build_entity_detail.py"
+  },
+  "main:perm_groups": {
+   "kind": "derived",
+   "rule": "rebuilt from other tables on each run",
+   "by": "scripts/build_groups.py"
+  },
+  "main:perm_history_alphabet": {
+   "kind": "derived",
+   "rule": "rebuilt from other tables on each run",
+   "by": "scripts/ingest_perm_history.py"
+  },
+  "main:perm_history_decided_days": {
+   "kind": "derived",
+   "rule": "rebuilt from other tables on each run",
+   "by": "scripts/ingest_perm_history.py"
+  },
+  "main:perm_history_entity_facets": {
+   "kind": "derived",
+   "rule": "rebuilt from the older PERM files on each load",
+   "by": "scripts/ingest_perm_history.py"
+  },
+  "main:perm_history_facets": {
+   "kind": "derived",
+   "rule": "rebuilt from other tables on each run",
+   "by": "scripts/ingest_perm_history.py"
+  },
+  "main:perm_history_month_days": {
+   "kind": "derived",
+   "rule": "rebuilt from other tables on each run",
+   "by": "scripts/ingest_perm_history.py"
+  },
+  "main:perm_history_wage_bands": {
+   "kind": "derived",
+   "rule": "rebuilt from other tables on each run",
+   "by": "scripts/ingest_perm_history.py"
+  },
+  "main:perm_history_wage_cells": {
+   "kind": "derived",
+   "rule": "rebuilt per fiscal year on each load",
+   "by": "scripts/ingest_perm_history.py"
+  },
+  "main:perm_history_worksites": {
+   "kind": "derived",
+   "rule": "rebuilt from other tables on each run",
+   "by": "scripts/ingest_perm_history.py"
+  },
+  "main:perm_live_only_index": {
+   "kind": "derived",
+   "rule": "rebuilt from other tables on each run",
+   "by": "scripts/build_entity_detail.py"
+  },
+  "main:perm_live_recent": {
+   "kind": "derived",
+   "rule": "the recent live-only cases, rebuilt by the entity build",
+   "by": "scripts/build_entity_detail.py"
+  },
+  "main:perm_month_stats": {
+   "kind": "derived",
+   "rule": "one row per filing month, rewritten by the sweep",
+   "by": "scripts/ingest_case_status_direct.py"
+  },
+  "main:perm_pwd_stats": {
+   "kind": "mirror",
+   "rule": "holds exactly what its source publishes, synced each load",
+   "by": "scripts/build_pwd_links.py"
+  },
+  "main:perm_serial_misses": {
+   "kind": "record",
+   "rule": "kept: the record, one row per number DOL never confirmed; it grows with the source's own activity",
+   "by": "scripts/sweep_serial_gaps.py"
+  },
+  "main:perm_wage_stats": {
+   "kind": "derived",
+   "rule": "rebuilt from other tables on each run",
+   "by": "scripts/db_migrate_public.py"
+  },
+  "main:policy_comment_counts": {
+   "kind": "record",
+   "rule": "kept: the record, one row per docket reading; it grows with the source's own activity",
+   "by": "scripts/ingest_regulations_gov.py"
+  },
+  "main:policy_held": {
+   "kind": "record",
+   "rule": "kept: one row per held caption with the person's decision",
+   "by": "scripts/lib_case_captions.py"
+  },
+  "main:policy_notices": {
+   "kind": "record",
+   "rule": "kept: the record, one row per notice in the policy feed; it grows with the source's own activity",
+   "by": "scripts/lib_policy_feed.py"
+  },
+  "main:ppp_loans": {
+   "kind": "mirror",
+   "rule": "holds exactly what its source publishes, synced each load",
+   "by": "scripts/ingest_ppp.py"
+  },
+  "main:processing_time_readings": {
+   "kind": "record",
+   "rule": "kept: the record, one row per DOL publication; it grows with the source's own activity",
+   "by": "scripts/ingest_processing_times.mts"
+  },
+  "main:processing_times": {
+   "kind": "record",
+   "rule": "kept: the record, one row per DOL PERM date; it grows with the source's own activity",
+   "by": "scripts/ingest_processing_times.mts"
+  },
+  "main:pwd_case_events": {
+   "kind": "record",
+   "rule": "kept: the record, one row per filing or status change DOL published; it grows with the source's own activity",
+   "by": "scripts/dump_observations.py"
+  },
+  "main:pwd_case_status": {
+   "kind": "record",
+   "rule": "kept: the record, one row per filing or status change DOL published; it grows with the source's own activity",
+   "by": "scripts/build_employer_map.py"
+  },
+  "main:pwd_cases": {
+   "kind": "record",
+   "rule": "kept: the record, one row per filing or status change DOL published; it grows with the source's own activity",
+   "by": "scripts/build_employer_map.py"
+  },
+  "main:reported_cases": {
+   "kind": "derived",
+   "rule": "rebuilt from other tables on each run",
+   "by": "scripts/build_reported_cases.py"
+  },
+  "main:reported_summary": {
+   "kind": "derived",
+   "rule": "rebuilt from other tables on each run",
+   "by": "scripts/build_reported_cases.py"
+  },
+  "main:rfi_funnel": {
+   "kind": "derived",
+   "rule": "one row per month, rewritten by the sweep",
+   "by": "scripts/ingest_case_status_direct.py"
+  },
+  "main:rule_pipeline": {
+   "kind": "mirror",
+   "rule": "the rules now in review, as OIRA lists them",
+   "by": "scripts/ingest_rule_pipeline.py"
+  },
+  "main:rule_pipeline_events": {
+   "kind": "record",
+   "rule": "kept: the record, one row per change in a rule's stage; it grows with the source's own activity",
+   "by": "scripts/ingest_rule_pipeline.py"
+  },
+  "main:sam_exclusions": {
+   "kind": "mirror",
+   "rule": "holds exactly what its source publishes, synced each load",
+   "by": "scripts/ingest_sam_exclusions.py"
+  },
+  "main:seasonal_case_events": {
+   "kind": "record",
+   "rule": "kept: the record, one row per filing or status change DOL published; it grows with the source's own activity",
+   "by": "scripts/dump_observations.py"
+  },
+  "main:seasonal_case_status": {
+   "kind": "record",
+   "rule": "kept: the record, one row per filing or status change DOL published; it grows with the source's own activity",
+   "by": "scripts/build_employer_map.py"
+  },
+  "main:seasonal_cases": {
+   "kind": "record",
+   "rule": "kept: the record, one row per filing or status change DOL published; it grows with the source's own activity",
+   "by": "scripts/build_employer_map.py"
+  },
+  "main:seasonal_employer_index": {
+   "kind": "derived",
+   "rule": "rebuilt from other tables on each run",
+   "by": "scripts/build_employer_map.py"
+  },
+  "main:seasonal_postings": {
+   "kind": "record",
+   "rule": "kept: the record, one row per seasonal job posting DOL published; it grows with the source's own activity",
+   "by": "scripts/ingest_seasonal_jobs.py"
+  },
+  "main:sevp_top_employers": {
+   "kind": "mirror",
+   "rule": "SEVP's published list, replaced each load",
+   "by": "scripts/ingest_sevp_top_employers.py"
+  },
+  "main:site_audit_links": {
+   "kind": "pruned",
+   "rule": "rows unread for 30 days are deleted by the audit itself",
+   "by": "scripts/site_audit.py"
+  },
+  "main:site_audit_pages": {
+   "kind": "pruned",
+   "rule": "rows unread for 30 days are deleted by the audit itself",
+   "by": "scripts/site_audit.py"
+  },
+  "main:soc_titles": {
+   "kind": "mirror",
+   "rule": "holds exactly what its source publishes, synced each load",
+   "by": "scripts/build_lca_cities.py"
+  },
+  "main:sponsor_index": {
+   "kind": "derived",
+   "rule": "rebuilt from other tables on each run",
+   "by": "scripts/build_sponsor_index.py"
+  },
+  "main:sponsor_jobs": {
+   "kind": "derived",
+   "rule": "rebuilt from other tables on each run",
+   "by": "scripts/build_sponsor_index.py"
+  },
+  "main:sweep_runs": {
+   "kind": "pruned",
+   "rule": "run rows older than 400 days are deleted nightly",
+   "by": "scripts/lib_housekeeping.py"
+  },
+  "main:taa_petitions": {
+   "kind": "mirror",
+   "rule": "holds exactly what its source publishes, synced each load",
+   "by": "scripts/ingest_taa.py"
+  },
+  "main:uscis_case_status": {
+   "kind": "pruned",
+   "rule": "a receipt's row is deleted 365 days after its last lookup",
+   "by": "src/lib/db/uscisCaseStatus.ts"
+  },
+  "main:uscis_eb_awaiting_visa": {
+   "kind": "record",
+   "rule": "kept: the record, one row per USCIS quarter (each quarter rewritten in place); it grows with the source's own activity",
+   "by": "scripts/ingest_uscis_quarterly.py"
+  },
+  "main:uscis_form_quarters": {
+   "kind": "record",
+   "rule": "kept: the record, one row per USCIS quarter (each quarter rewritten in place); it grows with the source's own activity",
+   "by": "scripts/ingest_uscis_quarterly.py"
+  },
+  "main:uscis_h1b_employers": {
+   "kind": "mirror",
+   "rule": "USCIS's H-1B employer hub, replaced each load",
+   "by": "scripts/ingest_uscis_h1b_hub.py"
+  },
+  "main:uscis_i129_rfe": {
+   "kind": "record",
+   "rule": "kept: the record, one row per USCIS month; it grows with the source's own activity",
+   "by": "scripts/ingest_uscis_rfe.py"
+  },
+  "main:uscis_i140_class_country": {
+   "kind": "record",
+   "rule": "kept: the record, one row per USCIS quarter (each quarter rewritten in place); it grows with the source's own activity",
+   "by": "scripts/ingest_uscis_quarterly.py"
+  },
+  "main:uscis_i485_offices": {
+   "kind": "record",
+   "rule": "kept: the record, one row per USCIS quarter (each quarter rewritten in place); it grows with the source's own activity",
+   "by": "scripts/ingest_uscis_quarterly.py"
+  },
+  "main:uscis_i765_categories": {
+   "kind": "record",
+   "rule": "kept: the record, one row per USCIS quarter (each quarter rewritten in place); it grows with the source's own activity",
+   "by": "scripts/ingest_uscis_quarterly.py"
+  },
+  "main:uscis_i765_pending_days": {
+   "kind": "record",
+   "rule": "kept: the record, one row per USCIS quarter (each quarter rewritten in place); it grows with the source's own activity",
+   "by": "scripts/ingest_uscis_quarterly.py"
+  },
+  "main:uscis_i907_premium": {
+   "kind": "record",
+   "rule": "kept: the record, one row per USCIS quarter (each quarter rewritten in place); it grows with the source's own activity",
+   "by": "scripts/ingest_uscis_quarterly.py"
+  },
+  "main:uscis_monthly_forms": {
+   "kind": "record",
+   "rule": "kept: the record, one row per USCIS month; it grows with the source's own activity",
+   "by": "scripts/ingest_uscis_monthly_forms.py"
+  },
+  "main:uscis_n400_offices": {
+   "kind": "record",
+   "rule": "kept: the record, one row per USCIS quarter (each quarter rewritten in place); it grows with the source's own activity",
+   "by": "scripts/ingest_uscis_quarterly.py"
+  },
+  "main:uscis_net_backlog": {
+   "kind": "record",
+   "rule": "kept: the record, one row per USCIS quarter (each quarter rewritten in place); it grows with the source's own activity",
+   "by": "scripts/ingest_uscis_quarterly.py"
+  },
+  "main:uscis_posted_labels": {
+   "kind": "mirror",
+   "rule": "USCIS's names for each form and office, replaced each load",
+   "by": "scripts/ingest_uscis_posted_times.py"
+  },
+  "main:uscis_posted_releases": {
+   "kind": "record",
+   "rule": "kept: the record, one row per USCIS release of posted times; it grows with the source's own activity",
+   "by": "scripts/ingest_uscis_posted_times.py"
+  },
+  "main:uscis_posted_times": {
+   "kind": "record",
+   "rule": "kept: the record, one row per form, office and release; it grows with the source's own activity",
+   "by": "scripts/check_ingest_health.py"
+  },
+  "main:uscis_sample_cases": {
+   "kind": "record",
+   "rule": "kept: one row per receipt in the USCIS sample with its newest status; it grows with the daily draw",
+   "by": "scripts/ingest_uscis_sample.py"
+  },
+  "main:uscis_sample_events": {
+   "kind": "record",
+   "rule": "kept: one row per status change the sample saw",
+   "by": "scripts/ingest_uscis_sample.py"
+  },
+  "main:visa_bulletins": {
+   "kind": "record",
+   "rule": "kept: the record, one row per monthly bulletin line; it grows with the source's own activity",
+   "by": "scripts/db_migrate_public.py"
+  },
+  "main:visa_issuances": {
+   "kind": "mirror",
+   "rule": "holds exactly what its source publishes, synced each load",
+   "by": "scripts/ingest_visa_issuances.py"
+  },
+  "main:visa_refusals": {
+   "kind": "mirror",
+   "rule": "holds exactly what its source publishes, synced each load",
+   "by": "scripts/ingest_visa_refusals.py"
+  },
+  "main:visa_wait_times": {
+   "kind": "mirror",
+   "rule": "holds exactly what its source publishes, synced each load",
+   "by": "scripts/ingest_visa_wait_times.py"
+  },
+  "main:wage_views": {
+   "kind": "derived",
+   "rule": "rebuilt from other tables on each run",
+   "by": "scripts/build_wage_views.py"
+  },
+  "main:warn_notices": {
+   "kind": "record",
+   "rule": "kept: one row per state WARN notice; a notice the state withdraws is deleted",
+   "by": "scripts/ingest_warn.py"
+  },
+  "main:whd_cases": {
+   "kind": "mirror",
+   "rule": "holds exactly what its source publishes, synced each load",
+   "by": "scripts/ingest_whd.py"
+  },
+  "main:willful_lca_history": {
+   "kind": "mirror",
+   "rule": "holds exactly what its source publishes, synced each load",
+   "by": "scripts/lca_history_rollups.py"
+  }
+ }
+}
