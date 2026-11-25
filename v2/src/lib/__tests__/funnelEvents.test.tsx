@@ -5,7 +5,39 @@ import { render, fireEvent, act } from "@testing-library/react";
 const capture = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/analytics", () => ({ analytics: { capture } }));
 
-import { queryShape, hrefGroup, useAlertFormTelemetry } from "../funnelEvents";
+import { queryShape, hrefGroup, searchMissText, trackSearchMiss, useAlertFormTelemetry } from "../funnelEvents";
+
+describe("search_miss", () => {
+  beforeEach(() => capture.mockClear());
+
+  it("sends the words of a search that found nothing, cut to 60 characters, and nothing else", () => {
+    trackSearchMiss("  green   card  for   chefs ");
+    expect(capture).toHaveBeenCalledWith("search_miss", { query: "green card for chefs" });
+    const long = "a".repeat(70);
+    trackSearchMiss(long);
+    expect(capture).toHaveBeenLastCalledWith("search_miss", { query: "a".repeat(60) });
+  });
+
+  it("never sends a number or an address that could name a filing or a person", () => {
+    for (const typed of [
+      "G-100-26254-230507",
+      "g10026254230507",
+      "IOE0912345678",
+      "IOE09123",
+      "2025-11",
+      "A123456789",
+      "555 867 5309",
+      "123-45-6789",
+      "me@example.com",
+      "ab",
+    ]) {
+      expect(searchMissText(typed), typed).toBeNull();
+    }
+    expect(searchMissText("15-1252")).toBe("15-1252");
+    trackSearchMiss("me@example.com");
+    expect(capture).not.toHaveBeenCalled();
+  });
+});
 
 describe("queryShape", () => {
   it("names what was typed without keeping it", () => {

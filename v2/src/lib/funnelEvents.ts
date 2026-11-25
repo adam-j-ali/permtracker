@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef } from "react";
 
 import { analytics } from "@/lib/analytics";
+import { redactIdentifiers } from "@/lib/analyticsRedact";
 import type { AlertSignupKind } from "@/lib/alertSignupEvent";
 import { normaliseCaseNumber } from "@/lib/caseNumberShape";
 import { looksLikeReceipt } from "@/lib/uscis/receipt";
@@ -12,11 +13,13 @@ import { ISO_MONTH_RE } from "@convex/lib/months";
  * The funnel's events: what people look up, how they search, whether they see
  * an alert form and start it, and whether they're shown an estimate.
  *
- * NOTHING TYPED IS SENT. A case number, receipt, name or email never leaves
- * the browser through these: a lookup sends the SHAPE of what was typed
- * ("case", "receipt", "month", "name"), a result click sends its group and
- * position. Those are enough to count the funnel and to tell whether a box is
- * being used for what it's for.
+ * NOTHING TYPED IS SENT, with one exception. A case number, receipt, name or
+ * email never leaves the browser through these: a lookup sends the SHAPE of
+ * what was typed ("case", "receipt", "month", "name"), a result click sends its
+ * group and position. Those are enough to count the funnel and to tell whether
+ * a box is being used for what it's for. The exception is `search_miss`: the
+ * words of a site search that found nothing, cut to 60 characters, and only
+ * when they can't be a number or an address (searchMissText says which).
  */
 
 export type QueryShape = "empty" | "case" | "case-undashed" | "receipt" | "month" | "name";
@@ -71,6 +74,31 @@ export function trackFinder(source: string, program: string, found: "cases" | "c
 /** A site-wide search box (header, palette, /case-search) was submitted. */
 export function trackSiteSearch(surface: string, raw: string): void {
   analytics.capture("site_search_submitted", { surface, shape: queryShape(raw) });
+}
+
+/** The most of a missed search's words that are sent. */
+export const SEARCH_MISS_MAX = 60;
+/** A search with this many digits or more could be a case, receipt, phone or A-number: it isn't sent. */
+const MISS_DIGITS_MAX = 7;
+
+/**
+ * The words a site search that found nothing sends: trimmed, one space between words, cut to SEARCH_MISS_MAX
+ * characters. Null for anything that could identify a filing or a person: a case number, a receipt or a month
+ * (each has its own row, so it never misses), seven or more digits, or an email address. What people look for and
+ * don't find is what the search should learn next.
+ */
+export function searchMissText(raw: string): string | null {
+  const q = raw.trim().replace(/\s+/g, " ");
+  if (q.length < 3 || queryShape(q) !== "name" || looksLikeReceipt(q)) return null;
+  if ((q.match(/\d/g) ?? []).length >= MISS_DIGITS_MAX) return null;
+  if (redactIdentifiers(q) !== q) return null;
+  return q.slice(0, SEARCH_MISS_MAX);
+}
+
+/** A site search found nothing: its words go (searchMissText), and nothing else. */
+export function trackSearchMiss(raw: string): void {
+  const query = searchMissText(raw);
+  if (query !== null) analytics.capture("search_miss", { query });
 }
 
 /** The search palette opened; `trigger` is "shortcut" or "button". */
