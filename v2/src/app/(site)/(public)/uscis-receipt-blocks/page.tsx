@@ -16,10 +16,12 @@ import { MonthTable } from "@/components/uscis/MonthTable";
 import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 import { ListPages } from "@/components/ui/list-pages";
 import { CaveatBox } from "@/components/ui/note";
-import { getSampleBlocks, getSampleMeta, getSampleMonths } from "@/lib/db/uscisSample";
-import { formatAsOf } from "@/lib/dolFormat";
+import { andList } from "@/lib/describe";
+import { getSampleBlocks, getSampleIssued, getSampleMeta, getSampleMonths } from "@/lib/db/uscisSample";
+import { formatAsOf, formatMonthDay } from "@/lib/dolFormat";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
+import { issuedWeek } from "@/lib/uscisIssued";
 import { blockForms, chartSeries, monthRows, topForms } from "@/lib/uscisSample";
 
 const TITLE = "USCIS Receipt Blocks: Where Approvals Are Now";
@@ -44,7 +46,13 @@ const int = (n: number) => n.toLocaleString("en-US");
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 
 export default async function UscisReceiptBlocksPage() {
-  const [meta, doc, months] = await Promise.all([getSampleMeta(), getSampleBlocks(), getSampleMonths()]);
+  const [meta, doc, months, issuedRuns] = await Promise.all([
+    getSampleMeta(),
+    getSampleBlocks(),
+    getSampleMonths(),
+    getSampleIssued(),
+  ]);
+  const issued = issuedWeek(issuedRuns);
   const forms = doc ? topForms(doc, 5) : [];
   const series = doc ? chartSeries(doc, forms) : [];
   const held = doc
@@ -105,7 +113,9 @@ export default async function UscisReceiptBlocksPage() {
             <h2 id="now-title" className="font-heading text-2xl font-bold">
               Where the sample sees approvals, {formatAsOf(meta.as_of)}
             </h2>{" "}
-            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3 [&>*]:min-w-0">
+            <div
+              className={`mt-4 grid grid-cols-1 gap-4 [&>*]:min-w-0 ${issued ? "sm:grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-3"}`}
+            >
               <div className="border-2 border-border bg-card p-5">
                 <p className="text-sm font-bold text-muted-foreground">
                   <KeepWhole>{"I-485 approvals seen up to block"}</KeepWhole>
@@ -123,6 +133,19 @@ export default async function UscisReceiptBlocksPage() {
                 <p className="mt-2 font-heading text-4xl font-bold leading-none tabular-nums">{int(held.length)}</p>{" "}
                 <p className="mt-2 text-base">Each block is 100,000 online (IOE) receipt numbers.</p>
               </div>
+              {issued ? (
+                <div className="border-2 border-border bg-card p-5">
+                  <p className="text-sm font-bold text-muted-foreground">Online receipts issued a day</p>{" "}
+                  <p className="mt-2 font-heading text-4xl font-bold leading-none tabular-nums">{int(issued.perDay)}</p>{" "}
+                  <p className="mt-2 text-base">
+                    <KeepWhole>
+                      {`New online (IOE) receipt numbers USCIS issued in the week to ${formatMonthDay(issued.to)}${
+                        issued.forms.length ? `, most for the ${andList(issued.forms.map((f) => f.form))}` : ""
+                      }.`}
+                    </KeepWhole>
+                  </p>
+                </div>
+              ) : null}
             </div>
           </section>
 
@@ -218,6 +241,12 @@ export default async function UscisReceiptBlocksPage() {
           about, and each is checked again later to see it move. A number counts once, at its newest status. Shares are
           weighted to the size of each range, and each comes with a 95% margin from the number of cases behind it. The
           receipt numbers themselves are never shown here or shared.
+        </p>{" "}
+        <p className="mt-3 text-base leading-relaxed">
+          Every day we also check each online block up to the newest number USCIS has given out. The cases found between
+          two of those checks got their numbers in between, so dividing them by the hours between the checks gives the
+          receipts issued a day. We add up a full week of checks first, because nights and weekends are quiet and one
+          check alone would mislead.
         </p>{" "}
         <DataProvenance datasets={["uscis-sample"]} className="mt-6" />
       </section>

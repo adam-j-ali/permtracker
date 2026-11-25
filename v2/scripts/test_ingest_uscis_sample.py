@@ -75,6 +75,18 @@ def test_check_figures():
           "a file with under 95% of the last load's cases is refused")
     check(refused(lambda: check_figures({**good, "cases": 7}, last=None, cases_read=1000), "cases"),
           "figures that disagree with the cases file are refused")
+    # The issued counts (Nov 25 2026): optional (older files have none), and refused when malformed.
+    run = {"day": "2026-11-25", "block": "IOE09", "issued": 30, "hours": 50.2, "per_day": 14,
+           "by_form": {"I-485": 10, "I-765": 20}}
+    check(check_figures({**good, "issued": [run]}, last=None, cases_read=1000) == "load", "issued runs load")
+    check(check_figures(good, last=None, cases_read=1000) == "load", "a file without issued runs still loads")
+    for bad, why in (({**run, "block": "IOE0912"}, "a block longer than five characters"),
+                     ({**run, "hours": 0}, "a run with no hours"),
+                     ({**run, "issued": -1}, "a negative count"),
+                     ({**run, "by_form": {"I-485": 5}}, "forms that don't add up to the count"),
+                     ({**run, "day": "Nov 25"}, "a day that isn't a date")):
+        check(refused(lambda: check_figures({**good, "issued": [bad]}, last=None, cases_read=1000), "issued"),
+              f"an issued run with {why} is refused")
     leaky = {**good, "by_month": {"note": "see IOE0000000000"}}
     check(refused(lambda: check_figures(leaky, last=None, cases_read=1000), "receipt"),
           "figures holding a receipt number are refused: only a number's own lookup shows it")

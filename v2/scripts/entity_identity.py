@@ -82,6 +82,13 @@ their spaces (the variants list, the typo rules and the lookup's whole-word matc
 read the words), so this is an alias map, published by the entity build as
 `keyAliases` and applied wherever a name is joined to a page.
 
+## Rule E - a name printed twice.  DETERMINISTIC, every kind.
+
+One law firm's record reads "Fragomen, Del Rey, Bernsen Loewy, LLP Fragomen, Del Rey, Bernsen Loewy, LLP", so its page
+title repeated itself. A key whose words are the same three or more words twice, in order, keys as one copy. Measured
+Nov 25 2026 over 49,314 employer and firm names: 1 match. Two-word repeats ("Walla Walla") are left alone, and the
+next entity build points the vanished slug at the surviving page through perm_entity_alias.
+
 THE SLUG RULES ARE MIRRORED IN `src/lib/entitySlug.ts`. A key computed
 differently in the writer than in the reader is a detail page that 404s from
 its own index, so `scripts/test_entity_identity.py` asserts both against one

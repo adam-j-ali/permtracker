@@ -89,6 +89,7 @@ def check_figures(figures: dict, *, last: dict | None, cases_read: int) -> str:
         raise SampleError(f"the figures count {figures.get('cases')} cases and the cases file holds {cases_read}")
     if not isinstance(figures.get("by_month"), dict) or not isinstance(figures.get("by_block"), dict):
         raise SampleError("sample-figures.json lacks its month or block estimates")
+    check_issued(figures.get("issued", []))
     if ANY_RECEIPT.search(json.dumps(figures)):
         raise SampleError("sample-figures.json holds a receipt number; only a number's own lookup may show one")
     if last:
@@ -99,6 +100,26 @@ def check_figures(figures: dict, *, last: dict | None, cases_read: int) -> str:
         if cases_read < SHRINK_FLOOR * int(last.get("cases") or 0):
             raise SampleError(f"{cases_read:,} cases against the last load's {last.get('cases'):,}: a shrink past 5%")
     return "load"
+
+
+BLOCK = re.compile(r"^[A-Z]{3}[0-9]{2}$")
+
+
+def check_issued(runs) -> None:
+    """The cases issued between census runs (the kit's issued_runs, Nov 25 2026): each run a day, a block (three letters
+    and two digits), a count, the hours since the last edge and the count by form, adding up. Raises SampleError."""
+    if not isinstance(runs, list):
+        raise SampleError("sample-figures.json's issued runs aren't a list")
+    for r in runs:
+        ok = (isinstance(r, dict) and isinstance(r.get("day"), str) and DAY.match(r["day"])
+              and isinstance(r.get("block"), str) and BLOCK.match(r["block"])
+              and isinstance(r.get("issued"), int) and r["issued"] >= 0
+              and isinstance(r.get("hours"), (int, float)) and r["hours"] > 0
+              and isinstance(r.get("by_form"), dict)
+              and all(isinstance(k, str) and isinstance(v, int) and v >= 0 for k, v in r["by_form"].items())
+              and sum(r["by_form"].values()) == r["issued"])
+        if not ok:
+            raise SampleError(f"sample-figures.json holds a malformed issued run: {json.dumps(r)[:120]}")
 
 
 def diff_cases(prev: dict[str, dict], new: dict[str, dict]) -> tuple[list[dict], list[str], list[dict]]:
@@ -123,6 +144,8 @@ def write_figures(db, figures: dict, cases: int) -> None:
                                           "by_month": figures["by_month"]})
     write_doc(db, "uscis_sample_blocks", {"as_of": figures["as_of"], "groups": figures.get("groups"),
                                           "by_block": figures["by_block"]})
+    if figures.get("issued"):
+        write_doc(db, "uscis_sample_issued", {"as_of": figures["as_of"], "runs": figures["issued"]})
     write_doc(db, "uscis_sample", {"as_of": figures["as_of"], "cases": cases, "made_at": figures.get("made_at"),
                                    "loaded_at": int(time.time() * 1000)})
     stamp_freshness(db, DATASET, as_of=figures["as_of"], source="USCIS Case Status Online, a spread of receipt numbers",

@@ -2,6 +2,7 @@ import "server-only";
 
 import { cache } from "react";
 
+import type { IssuedRun } from "@/lib/uscisIssued";
 import type { SampleBlocksDoc, SampleMonthsDoc } from "@/lib/uscisSample";
 
 import { one, rows } from "./client";
@@ -32,6 +33,12 @@ export const getSampleMeta = cache(async (): Promise<SampleMeta | null> => {
 export const getSampleBlocks = cache(async (): Promise<SampleBlocksDoc | null> => doc<SampleBlocksDoc>("uscis_sample_blocks"));
 
 export const getSampleMonths = cache(async (): Promise<SampleMonthsDoc | null> => doc<SampleMonthsDoc>("uscis_sample_months"));
+
+/** The census's runs that reached each block's newest number ('uscis_sample_issued'): cases issued between two runs. */
+export const getSampleIssued = cache(async (): Promise<IssuedRun[]> => {
+  const d = await doc<{ as_of: string; runs: IssuedRun[] }>("uscis_sample_issued");
+  return d?.runs ?? [];
+});
 
 export interface BlockMove {
   on_day: string;
