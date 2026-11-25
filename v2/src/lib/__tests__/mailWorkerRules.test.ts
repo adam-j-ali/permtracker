@@ -5,7 +5,7 @@
  */
 import { describe, expect, it } from 'vitest';
 // @ts-expect-error: a plain ES module the Worker bundles; no type declarations.
-import { checkText, holdsIt, KEY_PATTERN, keyMatches, keyTag, ownerMessage, ownerRecipient, provisionOpen, shouldForward } from '../../../workers/mail/rules.mjs';
+import { capInbound, checkText, holdsIt, INBOUND_LIMITS, KEY_PATTERN, keyMatches, keyTag, ownerMessage, ownerRecipient, provisionOpen, shouldForward } from '../../../workers/mail/rules.mjs';
 import { shouldForwardInbound } from '@convex/lib/supportEmailForward';
 
 const OWNER = 'owner@example.com';
@@ -135,5 +135,21 @@ describe('the spam check in the Worker', () => {
     expect(read).toContain('https://ok.example/y');
     expect(read).toContain('Hi');
     expect(read).toContain('bold');
+  });
+});
+
+describe('capInbound: a stranger\'s subject and name are cut before any check reads them', () => {
+  it('cuts a subject to the line length mail allows, and a name to 200 characters', () => {
+    expect(INBOUND_LIMITS).toEqual({ subject: 998, name: 200 });
+    expect(capInbound('x'.repeat(80_000), INBOUND_LIMITS.subject)).toHaveLength(998);
+    expect(capInbound('n'.repeat(5_000), INBOUND_LIMITS.name)).toHaveLength(200);
+  });
+  it('folds line breaks into spaces and trims, so a subject is one line', () => {
+    expect(capInbound('  Job\r\n request\n', 998)).toBe('Job request');
+  });
+  it('leaves an ordinary value alone and passes a missing one through', () => {
+    expect(capInbound('Hello, I am sending this email requesting a job', 998)).toBe('Hello, I am sending this email requesting a job');
+    expect(capInbound(undefined, 200)).toBeUndefined();
+    expect(capInbound('', 200)).toBe('');
   });
 });

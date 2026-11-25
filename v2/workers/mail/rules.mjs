@@ -14,6 +14,19 @@ export const SELF_ADDRESSED_ON_PURPOSE = ["support@permtracker.app"];
 /** The most of a From header any address check reads: a stranger writes it, and "<" with no ">" backtracks. */
 export const ADDRESS_HEADER_MAX = 2_000;
 
+/**
+ * The most of a stranger's subject and display name anything here reads: the check, the AI, Convex and the stored copy.
+ * A subject line may be 998 characters (RFC 5322); a name past 200 is never a person's. Cut before any check, since
+ * Convex's validators accept about a megabyte and the checks run patterns over these fields.
+ */
+export const INBOUND_LIMITS = { subject: 998, name: 200 };
+
+/** One line, trimmed and cut to `max`; a missing value stays missing. */
+export function capInbound(value, max) {
+  if (typeof value !== "string") return value;
+  return value.slice(0, max * 2).replace(/[ \t]*[\r\n]+[ \t]*/g, " ").trim().slice(0, max);
+}
+
 const bare = (from) => {
   const f = (from || "").slice(0, ADDRESS_HEADER_MAX);
   return (f.match(/<([^>]+)>/)?.[1] ?? f).trim().toLowerCase();

@@ -19,8 +19,8 @@ const RAW = [
   '',
 ].join('\r\n');
 
-function message(size?: number) {
-  const bytes = new TextEncoder().encode(RAW);
+function message(size?: number, raw: string = RAW) {
+  const bytes = new TextEncoder().encode(raw);
   const forwards: string[] = [];
   return {
     to: 'support@permtracker.app',
@@ -47,7 +47,7 @@ const json = (body: unknown, status = 200) => () => new Response(JSON.stringify(
 
 async function deliver(
   verdictReply: () => Response | Promise<Response>,
-  opts: { ai?: unknown; size?: number } = { ai: aiSpam },
+  opts: { ai?: unknown; size?: number; raw?: string } = { ai: aiSpam },
 ) {
   const ai = 'ai' in opts ? opts.ai : aiSpam;
   const size = opts.size;
@@ -64,7 +64,7 @@ async function deliver(
     }
     throw new Error(`unexpected fetch ${url}`);
   });
-  const m = message(size);
+  const m = message(size, opts.raw);
   const waits: Promise<unknown>[] = [];
   await worker.email(m, env(ai), { waitUntil: (p: Promise<unknown>) => waits.push(p) });
   await Promise.all(waits);
@@ -209,5 +209,17 @@ describe('the mail Worker never loses a message quietly', () => {
       headerFrom: 'PERM Tracker <notifications@permtracker.app>',
     });
     expect(r.forwards).toEqual([]);
+  });
+});
+
+describe('the mail Worker cuts a stranger\'s subject and name before any check', () => {
+  it('asks Convex and stores the message with the subject and name at their caps', async () => {
+    const raw = RAW.replace('Seller <', `${'N'.repeat(1_000)} <`).replace('Subject: Guest posts', `Subject: ${'S'.repeat(5_000)}`);
+    const r = await deliver(json({ ok: true, action: 'forward', score: 0, reasons: [] }), { ai: aiSpam, raw });
+    expect(String(r.asked[0]?.subject)).toHaveLength(998);
+    expect(String(r.asked[0]?.fromName)).toHaveLength(200);
+    expect(String(r.stored[0]?.subject)).toHaveLength(998);
+    expect(String(r.stored[0]?.fromName)).toHaveLength(200);
+    expect(r.forwards).toEqual(['owner@example.com']);
   });
 });

@@ -40,10 +40,12 @@ import { AI_SYSTEM_PROMPT, aiUserPrompt, readAiAnswer } from "../../convex/lib/s
 import { readMessage } from "./mime.mjs";
 import {
   AI_MODEL,
+  capInbound,
   CHECK_MAX_BYTES,
   CHECK_TIMEOUT_MS,
   checkText,
   holdsIt,
+  INBOUND_LIMITS,
   KEY_PATTERN,
   keyMatches,
   keyTag,
@@ -159,7 +161,8 @@ const worker = {
       }
     }
     const from = parsed?.from?.address || envelopeFrom;
-    const subject = parsed?.subject ?? h("subject") ?? "(No subject)";
+    const subject = capInbound(parsed?.subject ?? h("subject") ?? "(No subject)", INBOUND_LIMITS.subject);
+    const fromName = capInbound(parsed?.from?.name || undefined, INBOUND_LIMITS.name);
 
     // The check. Only a clear "hold" keeps it out of the inbox; anything else forwards.
     let verdict;
@@ -168,7 +171,7 @@ const worker = {
       try {
         const mail = {
           from,
-          fromName: parsed.from?.name || undefined,
+          fromName,
           subject,
           text: checkText(parsed),
           listUnsubscribe: h("list-unsubscribe"),
@@ -201,8 +204,8 @@ const worker = {
     const record = {
       to,
       from: parsed?.from?.address || envelopeFrom,
-      fromName: parsed?.from?.name || undefined,
-      subject: parsed?.subject ?? h("subject") ?? "(No subject)",
+      fromName: capInbound(parsed?.from?.name || undefined, INBOUND_LIMITS.name),
+      subject: capInbound(parsed?.subject ?? h("subject") ?? "(No subject)", INBOUND_LIMITS.subject),
       messageId: parsed?.messageId ?? h("message-id"),
       inReplyTo: parsed?.inReplyTo ?? h("in-reply-to"),
       references: parsed?.references ?? h("references"),
