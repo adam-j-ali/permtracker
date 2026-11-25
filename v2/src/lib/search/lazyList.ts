@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 
 /**
  * A list fetched at most once per visit and shared by everything that asks (the search palette, the 404 page): the
- * articles (/articles.json) and the consulates (/consulates.json). A failed fetch is forgotten, so the next caller
- * tries again, and an answer that isn't a list is refused rather than read.
+ * articles (/articles.json), the consulates (/consulates.json), the job titles (/soc-titles.json) and the cities
+ * (/cities.json). A failed fetch is forgotten, so the next caller tries again, and an answer that isn't a list is
+ * refused rather than read.
  */
 export function lazyList<T>(url: string) {
   let pending: Promise<T[]> | null = null;
@@ -25,15 +26,18 @@ export function lazyList<T>(url: string) {
     return pending;
   }
 
-  /** The list once `enabled`; `failed` when it couldn't be read. */
-  function useList(enabled: boolean): { list: T[]; failed: boolean } {
-    const [state, setState] = useState<{ list: T[]; failed: boolean }>({ list: [], failed: false });
+  /**
+   * The list once `enabled`; `failed` when it couldn't be read; `ready` once it has been, so an empty list read
+   * and a list not read yet can be told apart.
+   */
+  function useList(enabled: boolean): { list: T[]; failed: boolean; ready: boolean } {
+    const [state, setState] = useState<{ list: T[]; failed: boolean; ready: boolean }>({ list: [], failed: false, ready: false });
     useEffect(() => {
       if (!enabled) return;
       let live = true;
       load().then(
-        (list) => live && setState({ list, failed: false }),
-        () => live && setState((s) => ({ list: s.list, failed: true })),
+        (list) => live && setState({ list, failed: false, ready: true }),
+        () => live && setState((s) => ({ ...s, failed: true })),
       );
       return () => {
         live = false;
