@@ -200,3 +200,4 @@ export {
   type OptUnemploymentResult,
   type PendingExtensionResult,
 } from './f1Dates';
+export { I140_PREMIUM_BUSINESS_DAYS, premiumActionDeadline, type I140PremiumClass } from './premiumClock';

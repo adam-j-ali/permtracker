@@ -75,6 +75,7 @@ export {
   I140_FILING_DAYS,
   ETA9089_EXPIRATION_DAYS,
   PREMIUM_I140_BUSINESS_DAYS,
+  PREMIUM_I140_E13_E21_BUSINESS_DAYS,
   // RFI/RFE constants
   RFI_DUE_DAYS,
   RFI_WARNING_DAYS,
@@ -316,6 +317,9 @@ export {
   calculateBalcaRequestDeadline,
   type DenialReviewInput,
   type DenialReviewStep,
+  I140_PREMIUM_BUSINESS_DAYS,
+  premiumActionDeadline,
+  type I140PremiumClass,
 } from './calculators';
 
 // ============================================================================

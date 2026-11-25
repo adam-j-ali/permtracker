@@ -17,6 +17,7 @@ import { withSocialCard } from "@/lib/socialCard";
 import { buttonVariants } from "@/components/ui/button";
 import { StepBothSources } from "@/components/community/StepBothSources";
 import { KeepWhole } from "@/components/ui/keep-whole";
+import { PremiumClock } from "@/components/tools/PremiumClock";
 /**
  * I-140 queue calculator.
  *
@@ -174,6 +175,7 @@ export default async function I140CalculatorPage() {
             </p>
           </li>
         </ol>{" "}
+        <PremiumClock />{" "}
         <p className="mt-4 text-sm text-muted-foreground">
           <KeepWhole>
             {"Otherwise, a priority date that's years from current gains little from a faster I-140. The fee is " +

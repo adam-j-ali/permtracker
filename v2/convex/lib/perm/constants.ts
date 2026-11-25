@@ -63,6 +63,12 @@ export const JOB_ORDER_MIN_DAYS = 30;
 export const PREMIUM_I140_BUSINESS_DAYS = 15;
 
 /**
+ * Business days under premium processing for an I-140 in E13 (multinational executive or manager) or E21 (national
+ * interest waiver). USCIS, "How Do I Request Premium Processing?", last reviewed Nov 10 2026.
+ */
+export const PREMIUM_I140_E13_E21_BUSINESS_DAYS = 45;
+
+/**
  * Minimum duration for Notice of Filing posting.
  * Per 20 CFR § 656.10(d)(1)(ii) - Notice must be posted for at least 10 business days.
  */
