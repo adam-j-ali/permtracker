@@ -13,6 +13,7 @@ import type { Id } from "./_generated/dataModel";
 import { getCurrentUserId, getCurrentUserIdOrNull } from "./lib/auth";
 import { readUserCases } from "./lib/userCases";
 import { calendarCaseRow, type CaseDeadlineDates } from "./lib/caseDates";
+import type { CaseStatus, ProgressStatus } from "./lib/perm/statusTypes";
 import { buildDefaultProfile } from "./lib/userDefaults";
 
 
@@ -38,8 +39,8 @@ interface CalendarEventData extends CaseDeadlineDates {
   employerName: string;
   beneficiaryIdentifier: string;
   positionTitle: string;
-  caseStatus: "pwd" | "recruitment" | "eta9089" | "i140" | "closed";
-  progressStatus: "working" | "waiting_intake" | "filed" | "approved" | "under_review" | "rfi_rfe";
+  caseStatus: CaseStatus;
+  progressStatus: ProgressStatus;
   // RFI/RFE entries
   rfiEntries: CalendarRfiRfeEntry[];
   rfeEntries: CalendarRfiRfeEntry[];

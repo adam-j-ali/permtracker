@@ -10,6 +10,7 @@
  */
 
 import { v } from "convex/values";
+import schema from "./schema";
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { rateLimiter } from "./rateLimitConfig";
@@ -25,13 +26,7 @@ export const saveCaseOrder = mutation({
   args: {
     caseIds: v.array(v.id("cases")),
     filters: v.object({
-      status: v.optional(v.union(
-        v.literal("pwd"),
-        v.literal("recruitment"),
-        v.literal("eta9089"),
-        v.literal("i140"),
-        v.literal("closed")
-      )),
+      status: v.optional(schema.tables.cases.validator.fields.caseStatus),
       progressStatus: v.optional(v.union(
         v.literal("working"),
         v.literal("waiting_intake"),

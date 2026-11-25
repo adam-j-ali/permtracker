@@ -16,7 +16,7 @@ import {
   type ExtractedDeadline,
 } from "./dashboardHelpers";
 import { createCaseCardData } from "./caseListTypes";
-import { isRecruitmentComplete } from "./perm";
+import { isRecruitmentComplete, calculateGreenCardStatus, type CaseStatus, type GreenCardFields } from "./perm";
 
 // ============================================================================
 // NEXT DEADLINE CALCULATION
@@ -487,7 +487,8 @@ interface RfiRfeEntry {
  * Contains the minimum fields needed to determine what status
  * a closed case should have when reopened.
  */
-export interface CaseDataForReopenStatus {
+export interface CaseDataForReopenStatus extends GreenCardFields {
+  // Past the I-140: the path, the I-485 or consulate dates, the card (lib/perm/greenCard.ts)
   // I-140 stage fields
   i140ApprovalDate?: string;
   i140FilingDate?: string;
@@ -514,7 +515,7 @@ export interface CaseDataForReopenStatus {
  * Result of status determination for reopening a case.
  */
 export interface ReopenStatusResult {
-  caseStatus: "pwd" | "recruitment" | "eta9089" | "i140";
+  caseStatus: Exclude<CaseStatus, "closed">;
   progressStatus: "working" | "waiting_intake" | "filed" | "approved" | "under_review" | "rfi_rfe";
 }
 
@@ -522,6 +523,7 @@ export interface ReopenStatusResult {
  * Determine appropriate case status and progress status when reopening a closed case.
  *
  * Business rules (checked in reverse order - most advanced stage first):
+ * 0. Past the I-140 → complete, or the I-485 or consulate stage its dates reach (calculateGreenCardStatus)
  * 1. I-140 Approved → i140 / approved
  * 2. I-140 Filed → i140 / filed (or rfi_rfe if active RFE)
  * 3. ETA 9089 Certified → i140 / working
@@ -560,6 +562,11 @@ export function determineReopenStatus(
   );
 
   // Check in reverse order - most advanced stage first
+  const greenCard = calculateGreenCardStatus(caseData);
+  if (greenCard && greenCard.caseStatus !== "closed") {
+    return { caseStatus: greenCard.caseStatus, progressStatus: greenCard.progressStatus };
+  }
+
   if (caseData.i140ApprovalDate) {
     // I-140 Approved - reopen as I-140 approved
     return { caseStatus: "i140", progressStatus: "approved" };

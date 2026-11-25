@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { SelectInput, type SelectOption } from "@/components/forms/SelectInput";
 import { CaseSelectionItem, type CaseForSelection } from "./CaseSelectionItem";
 import { cn } from "@/lib/utils";
-import type { CaseStatus } from "@/lib/perm";
+import { CASE_STATUS_ORDER, type CaseStatus } from "@/lib/perm";
 import { rankFuzzy } from "@/lib/fuzzy";
 
 // Re-export for consumers
@@ -56,13 +56,7 @@ const filterOptions: SelectOption[] = [
 ];
 
 // Status order for sorting
-const STATUS_ORDER: Record<CaseStatus, number> = {
-  pwd: 1,
-  recruitment: 2,
-  eta9089: 3,
-  i140: 4,
-  closed: 5,
-};
+const STATUS_ORDER: Record<CaseStatus, number> = CASE_STATUS_ORDER;
 
 /**
  * CaseSelectionModal - Modal for selecting which cases to display on the timeline.

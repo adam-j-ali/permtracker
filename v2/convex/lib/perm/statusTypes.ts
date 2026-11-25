@@ -10,8 +10,18 @@
  * - convex/schema.ts (indirectly - schema uses v.literal() strings)
  */
 
-// Case lifecycle stages
-export type CaseStatus = "pwd" | "recruitment" | "eta9089" | "i140" | "closed";
+// Case lifecycle stages. After the I-140 the case takes one of two paths to the green card: "i485" (adjustment of
+// status in the US) or "consular" (an immigrant visa abroad). "complete" means the green card arrived
+// (lib/perm/greenCard.ts); "closed" is a case that ended without one.
+export type CaseStatus =
+  | "pwd"
+  | "recruitment"
+  | "eta9089"
+  | "i140"
+  | "i485"
+  | "consular"
+  | "complete"
+  | "closed";
 
 // Progress within a stage
 export type ProgressStatus =
@@ -28,6 +38,9 @@ export const CASE_STATUSES = [
   "recruitment",
   "eta9089",
   "i140",
+  "i485",
+  "consular",
+  "complete",
   "closed",
 ] as const satisfies readonly CaseStatus[];
 
@@ -39,6 +52,9 @@ export const PROGRESS_STATUSES = [
   "under_review",
   "rfi_rfe",
 ] as const satisfies readonly ProgressStatus[];
+
+/** Each stage's place in the case's life, 1 for the PWD: sorts a list of cases by how far along they are. */
+export const CASE_STATUS_ORDER = Object.fromEntries(CASE_STATUSES.map((s, i) => [s, i + 1])) as Record<CaseStatus, number>;
 
 // Type guards for runtime validation
 export function isCaseStatus(value: unknown): value is CaseStatus {

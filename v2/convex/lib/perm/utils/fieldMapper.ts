@@ -10,6 +10,7 @@
  */
 
 import type { CaseData } from '../types';
+import type { GreenCardFields } from '../greenCard';
 import type { CaseStatus, ProgressStatus } from '../statusTypes';
 import { getFirstRecruitmentStepForPwd } from '../dates/pwdValidity';
 
@@ -39,7 +40,9 @@ interface AdditionalRecruitmentMethod {
 /**
  * Input structure matching Convex mutation args (camelCase)
  */
-export interface CamelCaseFields {
+export interface CamelCaseFields extends Omit<GreenCardFields, 'greenCardPath' | 'ebCategory' | 'i140Category'> {
+  // Past the I-140 (greenCard.ts): the I-485 or consulate dates, the card, the countries.
+
   // PWD dates
   pwdFilingDate?: string | null;
   pwdDeterminationDate?: string | null;
@@ -172,6 +175,23 @@ export function mapToValidatorFormat(fields: CamelCaseFields): CaseData {
     rfe_received_date: activeRfe?.receivedDate || null,
     rfe_due_date: activeRfe?.responseDueDate || null,
     rfe_submitted_date: activeRfe?.responseSubmittedDate || null,
+
+    // Past the I-140
+    i485_filing_date: fields.i485FilingDate || null,
+    i485_receipt_date: fields.i485ReceiptDate || null,
+    i485_biometrics_date: fields.i485BiometricsDate || null,
+    i485_interview_date: fields.i485InterviewDate || null,
+    i485_approval_date: fields.i485ApprovalDate || null,
+    ead_filing_date: fields.eadFilingDate || null,
+    ead_approval_date: fields.eadApprovalDate || null,
+    ap_filing_date: fields.apFilingDate || null,
+    ap_approval_date: fields.apApprovalDate || null,
+    ds260_submitted_date: fields.ds260SubmittedDate || null,
+    consular_interview_date: fields.consularInterviewDate || null,
+    card_produced_date: fields.cardProducedDate || null,
+    card_received_date: fields.cardReceivedDate || null,
+    country_of_birth: fields.countryOfBirth || null,
+    chargeability_country: fields.chargeabilityCountry || null,
 
     // Status fields with defaults
     case_status: fields.caseStatus || 'pwd',

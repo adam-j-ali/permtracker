@@ -109,6 +109,11 @@
   --stage-recruitment: #9333ea;
   --stage-eta9089: #D97706;
   --stage-i140: #059669;
+  /* Past the I-140 (Nov 25 2026): white on the I-485 cyan 5.36:1 and the
+     consulate rose 6.04:1; black on the complete green 9.83:1. */
+  --stage-i485: #0E7490;
+  --stage-consular: #BE185D;
+  --stage-complete: #2ECC40;
   --stage-closed: #6B7280;
   --stage-success: #2ECC40;
 
@@ -170,6 +175,10 @@
   --stage-recruitment-ink: #9333EA;
   --stage-eta9089-ink: #AA5D05;
   --stage-i140-ink: #04805A;
+  /* 5.13:1 and 5.78:1 on the paper, 4.54:1 and 5.11:1 on the folder. */
+  --stage-i485-ink: #0E7490;
+  --stage-consular-ink: #BE185D;
+  --stage-complete-ink: #1A7A25;
   --stage-closed-ink: #6A717E;
   --stage-success-ink: #1A7A25;
   /* good had no -ink unlike warn/bad/none; this is the green ink. */
@@ -273,6 +282,10 @@
   --stage-recruitment-ink: #A95CEE;
   --stage-eta9089-ink: #D97706;
   --stage-i140-ink: #059669;
+  /* 6.37:1 and 7.13:1 on the dark page, 5.13:1 and 5.74:1 on its folder. */
+  --stage-i485-ink: #1AA3C4;
+  --stage-consular-ink: #F472B6;
+  --stage-complete-ink: #2ECC40;
   --stage-closed-ink: #7B8290;
   --stage-success-ink: #2ECC40;
   --data-good-ink: #2ECC40;
@@ -418,6 +431,9 @@ html:has(.chapter-ground) {
   --color-stage-recruitment: var(--stage-recruitment);
   --color-stage-eta9089: var(--stage-eta9089);
   --color-stage-i140: var(--stage-i140);
+  --color-stage-i485: var(--stage-i485);
+  --color-stage-consular: var(--stage-consular);
+  --color-stage-complete: var(--stage-complete);
   --color-stage-closed: var(--stage-closed);
   --color-urgency-urgent: var(--urgency-urgent);
   --color-urgency-soon: var(--urgency-soon);
@@ -434,6 +450,9 @@ html:has(.chapter-ground) {
   --color-stage-recruitment-ink: var(--stage-recruitment-ink);
   --color-stage-eta9089-ink: var(--stage-eta9089-ink);
   --color-stage-i140-ink: var(--stage-i140-ink);
+  --color-stage-i485-ink: var(--stage-i485-ink);
+  --color-stage-consular-ink: var(--stage-consular-ink);
+  --color-stage-complete-ink: var(--stage-complete-ink);
   --color-stage-closed-ink: var(--stage-closed-ink);
   --color-stage-success-ink: var(--stage-success-ink);
   --color-data-good-ink: var(--data-good-ink);

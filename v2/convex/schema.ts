@@ -12,7 +12,7 @@
  * - `userProfiles` - App-specific user data (settings, preferences)
  *
  * ### Case Management
- * - `cases` - PERM case tracking (PWD, recruitment, ETA 9089, I-140)
+ * - `cases` - PERM case tracking (PWD, recruitment, ETA 9089, I-140, then the I-485 or consulate and the card)
  *
  * ### Communications
  * - `notifications` - Deadline alerts and system messages
@@ -48,6 +48,7 @@ import { errorSourceValidator } from "./lib/errorRecording";
 import { alertKindValidator } from "./lib/alertKinds";
 import { contactEventTypeValidator } from "./marketingWebhook";
 import { CASE_STATUSES, PROGRESS_STATUSES } from "./lib/perm/statusTypes";
+import { EB_CATEGORIES, GREEN_CARD_PATHS, I140_CATEGORIES } from "./lib/perm/greenCard";
 
 // Reusable literal-union validators built from the single-source status arrays
 // in `lib/perm/statusTypes.ts`, so schema + app code never drift. `caseStatus`
@@ -59,6 +60,9 @@ const caseStatusValidator = v.union(
 const progressStatusValidator = v.union(
   ...PROGRESS_STATUSES.map((s) => v.literal(s)),
 );
+// Past the I-140, single-sourced from lib/perm/greenCard.ts.
+const greenCardPathValidator = v.union(...GREEN_CARD_PATHS.map((s) => v.literal(s)));
+const ebCategoryValidator = v.union(...EB_CATEGORIES.map((s) => v.literal(s)));
 
 export default defineSchema({
   // Spread authTables (includes users, authSessions, authAccounts, etc.)
@@ -466,9 +470,39 @@ export default defineSchema({
     i140ReceiptNumber: v.optional(v.string()),
     i140ApprovalDate: v.optional(v.string()),
     i140DenialDate: v.optional(v.string()),
-    i140Category: v.optional(v.union(v.literal("EB-1"), v.literal("EB-2"), v.literal("EB-2-NIW"), v.literal("EB-3"))),
+    i140Category: v.optional(v.union(...I140_CATEGORIES.map((s) => v.literal(s)))),
     i140PremiumProcessing: v.optional(v.boolean()),
     i140ServiceCenter: v.optional(v.string()),
+
+    // Past the I-140: the green card (convex/lib/perm/greenCard.ts). Every field is optional, so a case saved
+    // before they existed keeps its stage. Dates are ISO YYYY-MM-DD.
+    /** Adjustment of status in the US (I-485) or an immigrant visa at a consulate. */
+    greenCardPath: v.optional(greenCardPathValidator),
+    /** The preference category with its subclass; `i140Category` follows it for what still reads that field. */
+    ebCategory: v.optional(ebCategoryValidator),
+    /** Two-letter country codes. Chargeability is set only when it differs from the country of birth. */
+    countryOfBirth: v.optional(v.string()),
+    chargeabilityCountry: v.optional(v.string()),
+    // Adjustment of status: the I-485, and the work permit (I-765) and travel document (I-131) filed with it
+    i485FilingDate: v.optional(v.string()),
+    i485ReceiptDate: v.optional(v.string()),
+    i485ReceiptNumber: v.optional(v.string()),
+    i485BiometricsDate: v.optional(v.string()),
+    i485InterviewDate: v.optional(v.string()),
+    i485ApprovalDate: v.optional(v.string()),
+    eadFilingDate: v.optional(v.string()),
+    eadReceiptNumber: v.optional(v.string()),
+    eadApprovalDate: v.optional(v.string()),
+    apFilingDate: v.optional(v.string()),
+    apReceiptNumber: v.optional(v.string()),
+    apApprovalDate: v.optional(v.string()),
+    // Consular processing: the National Visa Center, the DS-260, the interview
+    nvcReceivedDate: v.optional(v.string()),
+    ds260SubmittedDate: v.optional(v.string()),
+    consularInterviewDate: v.optional(v.string()),
+    // The card, on either path. A received card makes the case complete.
+    cardProducedDate: v.optional(v.string()),
+    cardReceivedDate: v.optional(v.string()),
 
     // Organization & Metadata
     priorityLevel: v.union(

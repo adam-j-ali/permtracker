@@ -19,10 +19,50 @@ export {
   type CaseStatus,
   type ProgressStatus,
   CASE_STATUSES,
+  CASE_STATUS_ORDER,
   PROGRESS_STATUSES,
   isCaseStatus,
   isProgressStatus,
 } from './statusTypes';
+
+// ============================================================================
+// PAST THE I-140: THE GREEN CARD
+// ============================================================================
+
+export {
+  GREEN_CARD_PATHS,
+  GREEN_CARD_PATH_LABELS,
+  type GreenCardPath,
+  isGreenCardPath,
+  ADJUSTMENT_DATE_FIELDS,
+  CONSULAR_DATE_FIELDS,
+  CARD_DATE_FIELDS,
+  GREEN_CARD_DATE_FIELDS,
+  type GreenCardDateField,
+  GREEN_CARD_RECEIPT_FIELDS,
+  type GreenCardReceiptField,
+  GREEN_CARD_COUNTRY_FIELDS,
+  GREEN_CARD_TEXT_FIELDS,
+  type GreenCardTextField,
+  GREEN_CARD_FIELD_LABELS,
+  type GreenCardFields,
+  hasGreenCardDates,
+  greenCardPathOf,
+  EB_CATEGORIES,
+  EB_CATEGORY_LABELS,
+  type EbCategory,
+  isEbCategory,
+  I140_CATEGORIES,
+  type I140Category,
+  i140CategoryFor,
+  type BulletinCategory,
+  bulletinCategoryOf,
+  COUNTRY_CODES,
+  type CountryCode,
+  isCountryCode,
+  chargeabilityOf,
+  bulletinCountryOf,
+} from './greenCard';
 
 // ============================================================================
 // CORE TYPES
@@ -371,6 +411,9 @@ export {
   // RFE
   validateRFE,
   type RFEValidationInput,
+  // Past the I-140
+  validateGreenCard,
+  type GreenCardValidationInput,
   // Full case validation
   validateCase,
   type CaseData as ValidationCaseData,
@@ -414,6 +457,7 @@ export {
 
 export {
   calculateAutoStatus,
+  calculateGreenCardStatus,
   type StatusCalculationInput,
   type AutoStatusResult,
 } from './statusCalculation';

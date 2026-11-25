@@ -16,4 +16,5 @@ export { validateI140, type I140ValidationInput } from './i140';
 export { validateRFI, type RFIValidationInput } from './rfi';
 export { validateRFE, type RFEValidationInput } from './rfe';
 export { validateDenialReview, type DenialReviewValidationInput } from './denialReview';
+export { validateGreenCard, type GreenCardValidationInput } from './greenCard';
 export { validateCase, type ValidationCaseData as CaseData } from './validateCase';

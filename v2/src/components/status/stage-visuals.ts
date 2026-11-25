@@ -5,6 +5,8 @@
  * Ink on fill is measured, not assumed. White reads on the PWD blue (4.9:1),
  * the recruitment purple (5.4:1) and the closed grey (4.8:1); black is needed
  * on the ETA 9089 amber (white measured 3.2:1) and the I-140 teal (white 3.8:1).
+ * Past the I-140: white on the I-485 cyan (5.4:1) and the consulate rose
+ * (6.0:1), black on the complete green (9.8:1).
  */
 import {
   MegaphoneIcon,
@@ -12,6 +14,9 @@ import {
   FileTextIcon,
   SealCheckIcon,
   ArchiveIcon,
+  IdentificationCardIcon,
+  AirplaneTiltIcon,
+  CheckCircleIcon,
 } from "@phosphor-icons/react/ssr";
 // A type import is erased at compile, so the client-only main entry is safe here.
 import type { Icon } from "@phosphor-icons/react";
@@ -71,6 +76,33 @@ export const STAGE_VISUALS: Record<CaseStatus, StageVisual> = {
     border: "border-stage-i140",
     icon: SealCheckIcon,
   },
+  i485: {
+    label: "I-485",
+    code: "I-485",
+    fill: "bg-stage-i485",
+    onFill: "text-white",
+    ink: "text-stage-i485-ink",
+    border: "border-stage-i485",
+    icon: IdentificationCardIcon,
+  },
+  consular: {
+    label: "Consulate",
+    code: "Consul",
+    fill: "bg-stage-consular",
+    onFill: "text-white",
+    ink: "text-stage-consular-ink",
+    border: "border-stage-consular",
+    icon: AirplaneTiltIcon,
+  },
+  complete: {
+    label: "Green card",
+    code: "Card",
+    fill: "bg-stage-complete",
+    onFill: "text-black",
+    ink: "text-stage-complete-ink",
+    border: "border-stage-complete",
+    icon: CheckCircleIcon,
+  },
   closed: {
     label: "Closed",
     code: "Closed",
@@ -84,3 +116,6 @@ export const STAGE_VISUALS: Record<CaseStatus, StageVisual> = {
 
 /** The four working stages, in filing order. */
 export const PERM_PATH: readonly CaseStatus[] = ["pwd", "recruitment", "eta9089", "i140"];
+
+/** The stages past the I-140: one of the two paths, then the card. */
+export const GREEN_CARD_STAGES: readonly CaseStatus[] = ["i485", "consular", "complete"];

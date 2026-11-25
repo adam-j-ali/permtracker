@@ -7,6 +7,7 @@ import { validateI140 } from './i140';
 import { validateRFI } from './rfi';
 import { validateRFE } from './rfe';
 import { validateDenialReview } from './denialReview';
+import { validateGreenCard } from './greenCard';
 
 /**
  * Validation-relevant subset of CaseData (excludes status fields).
@@ -24,6 +25,7 @@ export type ValidationCaseData = Omit<CaseData, 'case_status' | 'progress_status
  * - I-140 (V-I140-01 to V-I140-03)
  * - RFI (V-RFI-01 to V-RFI-05)
  * - RFE (V-RFE-01 to V-RFE-05)
+ * - Past the I-140: the I-485 or consulate, the card, the countries (V-GC-01 to V-GC-07)
  */
 export function validateCase(caseData: ValidationCaseData): ValidationResult {
   return mergeResults([
@@ -75,5 +77,6 @@ export function validateCase(caseData: ValidationCaseData): ValidationResult {
       rfe_due_date: caseData.rfe_due_date,
       rfe_submitted_date: caseData.rfe_submitted_date,
     }),
+    validateGreenCard(caseData),
   ]);
 }

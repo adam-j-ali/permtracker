@@ -22,6 +22,14 @@ import {
 import { filterBySearch, projectCaseForCard, sortCases, determineReopenStatus } from "./lib/caseListHelpers";
 import { calculateDerivedDates, resolveEta9089ExpirationDate } from "./lib/derivedCalculations";
 import { validateCase, mapToValidatorFormat, calculateAutoStatus } from "./lib/perm";
+import {
+  GREEN_CARD_TEXT_FIELDS,
+  i140CategoryFor,
+  type EbCategory,
+  type GreenCardPath,
+  type GreenCardTextField,
+  type I140Category,
+} from "./lib/perm/greenCard";
 import { shouldSendEmail, formatCaseStatus, formatProgressStatus, buildUserNotificationPrefs } from "./lib/notificationHelpers";
 import { scheduleCalendarSync, scheduleCalendarSyncBulk } from "./lib/calendarSyncHelpers";
 import { loggers } from "./lib/logging";
@@ -111,13 +119,7 @@ const DEADLINE_RELEVANT_FIELDS = [
 export const list = query({
   args: {
     status: v.optional(
-      v.union(
-        v.literal("pwd"),
-        v.literal("recruitment"),
-        v.literal("eta9089"),
-        v.literal("i140"),
-        v.literal("closed")
-      )
+      schema.tables.cases.validator.fields.caseStatus
     ),
     favoritesOnly: v.optional(v.boolean()),
   },
@@ -268,6 +270,12 @@ const caseCreateArgs = {
 /** A text field `update` can clear: `null` removes the stored value. */
 const clearableText = v.optional(v.union(v.string(), v.null()));
 
+/** Every text field past the I-140 (dates, receipt numbers, countries), each clearable on update. */
+const greenCardClearables = Object.fromEntries(GREEN_CARD_TEXT_FIELDS.map((f) => [f, clearableText])) as Record<
+  GreenCardTextField,
+  typeof clearableText
+>;
+
 /**
  * `update` takes every field as optional, and an absent field keeps its stored
  * value. The fields listed here also take `null`, which clears them. Whether a
@@ -317,6 +325,9 @@ const caseUpdateArgs = {
   i140Category: v.optional(v.union(...caseTable.fields.i140Category.members, v.null())),
   jobDescription: clearableText,
   jobDescriptionPositionTitle: clearableText,
+  ...greenCardClearables,
+  greenCardPath: v.optional(v.union(...caseTable.fields.greenCardPath.members, v.null())),
+  ebCategory: v.optional(v.union(...caseTable.fields.ebCategory.members, v.null())),
 };
 
 /**
@@ -341,6 +352,49 @@ type CaseArgsFitTable = false extends
   : true;
 const _caseArgsFitTable: CaseArgsFitTable = true;
 void _caseArgsFitTable;
+
+/**
+ * And the other way: every field lib/perm/greenCard.ts names is a stored text field, and the choice and category are
+ * exactly its unions. A field added to the list but not the table, or narrowed in one, fails here at compile time.
+ */
+type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
+type GreenCardFitsTable = false extends
+  | { [K in GreenCardTextField]: Same<Exclude<StoredCase[K], undefined>, string> }[GreenCardTextField]
+  | Same<Exclude<StoredCase["greenCardPath"], undefined>, GreenCardPath>
+  | Same<Exclude<StoredCase["ebCategory"], undefined>, EbCategory>
+  | Same<Exclude<StoredCase["i140Category"], undefined>, I140Category>
+  ? never
+  : true;
+const _greenCardFitsTable: GreenCardFitsTable = true;
+void _greenCardFitsTable;
+
+/** The fields past the I-140 as a new case stores them: empty text is no value. */
+function greenCardFieldsForCreate(
+  args: CaseCreateArgs,
+): Partial<Pick<StoredCase, GreenCardTextField | "greenCardPath" | "ebCategory">> {
+  const out: Partial<Pick<StoredCase, GreenCardTextField | "greenCardPath" | "ebCategory">> = {};
+  for (const f of GREEN_CARD_TEXT_FIELDS) {
+    const value = args[f];
+    if (value) out[f] = value;
+  }
+  if (args.greenCardPath) out.greenCardPath = args.greenCardPath;
+  if (args.ebCategory) out.ebCategory = args.ebCategory;
+  return out;
+}
+
+/**
+ * The older I-140 category, kept in step with the preference category: what the caller sent when it sent one,
+ * otherwise the one the subclass belongs to (none for EB-4 and EB-5). `keep` is what the case holds now.
+ */
+function i140CategoryFollowing(
+  ebCategory: EbCategory | null | undefined,
+  sent: I140Category | null | undefined,
+  keep: I140Category | undefined,
+): I140Category | undefined {
+  if (sent !== undefined) return sent ?? undefined;
+  if (ebCategory) return i140CategoryFor(ebCategory);
+  return keep;
+}
 
 /** `create`'s arguments: a case's own fields, as a person enters them. */
 export type CaseCreateArgs = ObjectType<typeof caseCreateArgs>;
@@ -416,6 +470,8 @@ export function planCaseCreate(args: CaseCreateArgs) {
     isProfessionalOccupation,
     additionalRecruitmentMethods: args.additionalRecruitmentMethods,
     additionalRecruitmentEndDate: args.additionalRecruitmentEndDate,
+    // Past the I-140
+    ...greenCardFieldsForCreate(args),
   });
 
   // Use auto-calculated status unless progressStatusOverride is explicitly true
@@ -434,6 +490,7 @@ export function planCaseCreate(args: CaseCreateArgs) {
     validationErrors,
     effectiveCaseStatus,
     effectiveProgressStatus,
+    i140Category: i140CategoryFollowing(args.ebCategory, args.i140Category, undefined),
   };
 }
 
@@ -553,9 +610,11 @@ export async function insertCaseByCreateRules(
     i140ReceiptNumber: args.i140ReceiptNumber,
     i140ApprovalDate: args.i140ApprovalDate,
     i140DenialDate: args.i140DenialDate,
-    i140Category: args.i140Category,
+    i140Category: plan.i140Category,
     i140PremiumProcessing: args.i140PremiumProcessing,
     i140ServiceCenter: args.i140ServiceCenter,
+    // Past the I-140: the path, the category, the countries, the I-485 or consulate, the card
+    ...greenCardFieldsForCreate(args),
 
     // Optional text fields. A DOL number typed only in a step's box becomes the case's DOL number, so it's
     // watched wherever it was entered (convex/lib/dolCaseNumber.ts).
@@ -766,6 +825,18 @@ function planCaseUpdate(caseDoc: Doc<"cases">, args: CaseUpdateArgs) {
   const isMetadataOnlyUpdate = updateKeys.length > 0 &&
     updateKeys.every((k) => STATUS_ONLY_FIELDS.has(k) || METADATA_FIELDS.has(k));
 
+  // The fields past the I-140, merged the same way: null clears, absent keeps.
+  const greenCardText: Partial<Record<GreenCardTextField, string>> = {};
+  for (const f of GREEN_CARD_TEXT_FIELDS) {
+    const value = resolve(args[f], caseDoc[f]);
+    if (value) greenCardText[f] = value;
+  }
+  const greenCard = {
+    ...greenCardText,
+    greenCardPath: args.greenCardPath === undefined ? caseDoc.greenCardPath : (args.greenCardPath ?? undefined),
+    ebCategory: args.ebCategory === undefined ? caseDoc.ebCategory : (args.ebCategory ?? undefined),
+  };
+
   // Merge case data (always needed for auto-status calculation)
   const fullCaseData = {
     // PWD dates
@@ -802,6 +873,8 @@ function planCaseUpdate(caseDoc: Doc<"cases">, args: CaseUpdateArgs) {
     // RFI/RFE entries
     rfiEntries: args.rfiEntries ?? caseDoc.rfiEntries,
     rfeEntries: args.rfeEntries ?? caseDoc.rfeEntries,
+    // Past the I-140
+    ...greenCard,
     // Status
     caseStatus: args.caseStatus ?? caseDoc.caseStatus,
     progressStatus: args.progressStatus ?? caseDoc.progressStatus,
@@ -848,6 +921,8 @@ function planCaseUpdate(caseDoc: Doc<"cases">, args: CaseUpdateArgs) {
     isProfessionalOccupation: fullCaseData.isProfessionalOccupation ?? false,
     additionalRecruitmentMethods: fullCaseData.additionalRecruitmentMethods,
     additionalRecruitmentEndDate: fullCaseData.additionalRecruitmentEndDate,
+    // Past the I-140 (merged)
+    ...greenCard,
   });
 
   return {
@@ -954,6 +1029,11 @@ export const update = mutation({
       updates.liveStatus = undefined;
       updates.liveStatusSeenAt = undefined;
       updates.liveStatusIsFinal = undefined;
+    }
+
+    // The older I-140 category follows a new preference category, so what reads it still agrees.
+    if (args.ebCategory !== undefined && args.i140Category === undefined) {
+      updates.i140Category = i140CategoryFollowing(args.ebCategory, undefined, undefined);
     }
 
     // Encrypt FEIN if being updated
@@ -1539,13 +1619,7 @@ export const bulkRemove = mutation({
 export const bulkUpdateStatus = mutation({
   args: {
     ids: v.array(v.id("cases")),
-    status: v.union(
-      v.literal("pwd"),
-      v.literal("recruitment"),
-      v.literal("eta9089"),
-      v.literal("i140"),
-      v.literal("closed")
-    ),
+    status: schema.tables.cases.validator.fields.caseStatus,
     /** Why the cases are being closed; only read when status is "closed". */
     closureReason: v.optional(v.union(
       v.literal("withdrawn"),

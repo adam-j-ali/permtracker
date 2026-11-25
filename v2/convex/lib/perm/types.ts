@@ -185,6 +185,23 @@ export interface CaseData {
   rfe_due_date: string | null;
   rfe_submitted_date: string | null;
 
+  // Past the I-140 (greenCard.ts); optional so older builders keep compiling
+  i485_filing_date?: string | null;
+  i485_receipt_date?: string | null;
+  i485_biometrics_date?: string | null;
+  i485_interview_date?: string | null;
+  i485_approval_date?: string | null;
+  ead_filing_date?: string | null;
+  ead_approval_date?: string | null;
+  ap_filing_date?: string | null;
+  ap_approval_date?: string | null;
+  ds260_submitted_date?: string | null;
+  consular_interview_date?: string | null;
+  card_produced_date?: string | null;
+  card_received_date?: string | null;
+  country_of_birth?: string | null;
+  chargeability_country?: string | null;
+
   // Status
   case_status: CaseStatus;
   progress_status: ProgressStatus;

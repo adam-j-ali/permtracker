@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useDeferredValue } from "react";
 import type { CaseForSelection } from "./CaseSelectionItem";
-import type { CaseStatus } from "@/lib/perm";
+import { CASE_STATUS_ORDER, type CaseStatus } from "@/lib/perm";
 import { rankFuzzy } from "@/lib/fuzzy";
 
 /**
@@ -60,13 +60,7 @@ export interface UseCaseSelectionReturn {
  * Status order for sorting by case progression
  * Earlier stages have lower numbers
  */
-const STATUS_ORDER: Record<CaseStatus, number> = {
-  pwd: 1,
-  recruitment: 2,
-  eta9089: 3,
-  i140: 4,
-  closed: 5,
-};
+const STATUS_ORDER: Record<CaseStatus, number> = CASE_STATUS_ORDER;
 
 /**
  * useCaseSelection - Custom hook for case selection logic with search, filter, sort, and bulk actions.

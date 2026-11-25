@@ -17,6 +17,7 @@
 
 import { parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
+import type { CaseStatus, ProgressStatus } from "@/lib/perm";
 import { extractMilestones, extractRangeBars } from "@/lib/timeline/milestones";
 import {
   calculatePosition,
@@ -49,14 +50,8 @@ interface TimelineCaseData {
   id: Id<"cases">;
   employerName: string;
   positionTitle: string;
-  caseStatus: "pwd" | "recruitment" | "eta9089" | "i140" | "closed";
-  progressStatus:
-    | "working"
-    | "waiting_intake"
-    | "filed"
-    | "approved"
-    | "under_review"
-    | "rfi_rfe";
+  caseStatus: CaseStatus;
+  progressStatus: ProgressStatus;
   // PWD dates
   pwdFilingDate?: string;
   pwdDeterminationDate?: string;

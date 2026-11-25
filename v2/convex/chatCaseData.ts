@@ -10,6 +10,7 @@
  */
 
 import { FUZZY_MATCH_MIN, everyWordScore } from "./lib/fuzzy";
+import schema from "./schema";
 import { query } from "./_generated/server";
 import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
@@ -203,13 +204,7 @@ export const queryCases = query({
   args: {
     // Status filters (lowercase values matching schema)
     caseStatus: v.optional(
-      v.union(
-        v.literal("pwd"),
-        v.literal("recruitment"),
-        v.literal("eta9089"),
-        v.literal("i140"),
-        v.literal("closed")
-      )
+      schema.tables.cases.validator.fields.caseStatus
     ),
     progressStatus: v.optional(
       v.union(

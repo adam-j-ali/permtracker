@@ -17,6 +17,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { getCurrentUserId, getCurrentUserIdOrNull } from "./lib/auth";
 import { readUserCases } from "./lib/userCases";
 import { caseDeadlineDates, type CaseDeadlineDates } from "./lib/caseDates";
+import type { CaseStatus, ProgressStatus } from "./lib/perm/statusTypes";
 import { onTimeline, timelineSwitchFor } from "./lib/timelineShow";
 
 /**
@@ -184,8 +185,8 @@ interface TimelineCaseData extends CaseDeadlineDates {
   id: Id<"cases">;
   employerName: string;
   positionTitle: string;
-  caseStatus: "pwd" | "recruitment" | "eta9089" | "i140" | "closed";
-  progressStatus: "working" | "waiting_intake" | "filed" | "approved" | "under_review" | "rfi_rfe";
+  caseStatus: CaseStatus;
+  progressStatus: ProgressStatus;
   // RFI/RFE entries
   rfiEntries: TimelineRfiRfeEntry[];
   rfeEntries: TimelineRfiRfeEntry[];

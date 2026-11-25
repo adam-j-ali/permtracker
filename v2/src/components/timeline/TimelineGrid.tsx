@@ -25,6 +25,7 @@ import {
   eachMonthOfInterval,
 } from "date-fns";
 import { cn } from "@/lib/utils";
+import type { CaseStatus, ProgressStatus } from "@/lib/perm";
 import { SIDEBAR_WIDTH_CLASSES, SIDEBAR_WIDTHS } from "@/lib/timeline/constants";
 import { MIN_MONTH_PX } from "@/lib/timeline/positioning";
 import { useScrollToToday } from "@/lib/timeline/useScrollToToday";
@@ -51,14 +52,8 @@ interface TimelineCaseData {
   id: Id<"cases">;
   employerName: string;
   positionTitle: string;
-  caseStatus: "pwd" | "recruitment" | "eta9089" | "i140" | "closed";
-  progressStatus:
-    | "working"
-    | "waiting_intake"
-    | "filed"
-    | "approved"
-    | "under_review"
-    | "rfi_rfe";
+  caseStatus: CaseStatus;
+  progressStatus: ProgressStatus;
   // PWD dates
   pwdFilingDate?: string;
   pwdDeterminationDate?: string;

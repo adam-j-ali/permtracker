@@ -66,6 +66,10 @@ export interface CaseText {
   jobDescription?: string | null;
   recruitmentNotes?: string | null;
   recruitmentSummaryCustom?: string | null;
+  i140ReceiptNumber?: string | null;
+  i485ReceiptNumber?: string | null;
+  eadReceiptNumber?: string | null;
+  apReceiptNumber?: string | null;
 }
 
 /**
@@ -84,6 +88,10 @@ export function validateCaseText(c: CaseText): void {
     { value: c.jobDescription, name: "Job description", limit: INPUT_LIMITS.LONG },
     { value: c.recruitmentNotes, name: "Recruitment notes", limit: INPUT_LIMITS.MEDIUM },
     { value: c.recruitmentSummaryCustom, name: "Recruitment summary", limit: INPUT_LIMITS.MEDIUM },
+    { value: c.i140ReceiptNumber, name: "I-140 receipt number", limit: INPUT_LIMITS.SHORT },
+    { value: c.i485ReceiptNumber, name: "I-485 receipt number", limit: INPUT_LIMITS.SHORT },
+    { value: c.eadReceiptNumber, name: "Work permit receipt number", limit: INPUT_LIMITS.SHORT },
+    { value: c.apReceiptNumber, name: "Travel document receipt number", limit: INPUT_LIMITS.SHORT },
   ]);
   if (c.socCode && c.socCode.trim() && !isSocCode(c.socCode)) {
     throw new ConvexError("SOC code must be a code such as 15-1252 or 15-1252.00.");
