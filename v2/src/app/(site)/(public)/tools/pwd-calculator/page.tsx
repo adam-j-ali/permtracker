@@ -9,7 +9,10 @@ import { FaqList } from "@/components/tools/FaqList";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { getPwdEstimatorData } from "@/lib/db/estimate";
-import { getPwdLine } from "@/lib/db/pwdDayQueue";
+import { getPwdDayData, getPwdLine, getPwdNowDocs } from "@/lib/db/pwdDayQueue";
+import { PwdDateEstimate } from "@/components/pwd/PwdDateEstimate";
+import { softFail } from "@/lib/softRead";
+import { easternDay } from "@/lib/time";
 import { currentMonthUtc } from "@/lib/dolFormat";
 import { QueueAlertForm } from "../../perm-processing-times/QueueAlertForm";
 
@@ -28,7 +31,7 @@ import { StepBothSources } from "@/components/community/StepBothSources";
 
 const TITLE = "PWD Processing Time Calculator";
 const DESCRIPTION =
-  "How many prevailing wage requests sit ahead of yours, from DOL's own published backlog. The first PERM step, and the one that sets every deadline.";
+  "When a wage request is likely to be decided, from our daily check of DOL's case status, and how many sit ahead of it in DOL's own published backlog.";
 
 export const metadata: Metadata = withSocialCard({
   title: TITLE,
@@ -59,8 +62,8 @@ const FAQS = [
     a: "Because the rest of the case is measured from the determination date. The filing date doesn't start any of those clocks. The recruitment window and the ETA-9089 filing window are both arithmetic on it, and the determination itself expires, so a long wage queue moves every deadline that follows.",
   },
   {
-    q: "Why is there no estimated wait shown?",
-    a: "DOL publishes how many requests are pending but not how fast it clears them. The count of requests ahead of you is exact and comes straight from DOL. Turning that into a date needs a clearance rate, which we measure from DOL's own figures as they change over time.",
+    q: "How is the estimate worked out?",
+    a: "From our daily check of DOL's case status. It counts the PERM wage requests still in process that were filed before yours and divides them by how many DOL has been finishing a working day, counted in the days DOL works. The range is how far earlier estimates landed from the day DOL decided, or DOL's fastest and slowest recent pace where too few have been tested. DOL's own table counts pending requests by month only, which is why the month box shows how many are ahead.",
   },
   {
     q: "What’s the difference between the OEWS and non-OEWS queues?",
@@ -69,7 +72,15 @@ const FAQS = [
 ];
 
 export default async function PwdCalculatorPage() {
-  const [data, line] = await Promise.all([getPwdEstimatorData(), getPwdLine()]);
+  const [data, line, dayData, nowDocs] = await Promise.all([
+    getPwdEstimatorData(),
+    getPwdLine(),
+    // Our daily count by filing day: the day rule (estimatePwdDay) that /pwd-cases and the case page date from.
+    getPwdDayData().catch(softFail("tools/pwd-calculator.getPwdDayData", null)),
+    getPwdNowDocs().catch(softFail("tools/pwd-calculator.getPwdNowDocs", { queue: null, trend: null })),
+  ]);
+  // The day the page rendered, Eastern; the sweep revalidates this page after each run (revalidate-sweep/paths.ts).
+  const today = easternDay();
 
   const faqSchema = {
     "@context": "https://schema.org",
@@ -90,10 +101,22 @@ export default async function PwdCalculatorPage() {
           Wage request wait calculator
         </h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-          How many prevailing wage requests sit ahead of yours, counted from the
-          Department of Labor&apos;s own published backlog.
+          When a prevailing wage request is likely to be decided, and how many sit ahead of it in the Department of
+          Labor&apos;s own published backlog.
         </p>
       </header>
+
+      {dayData ? (
+        <section aria-labelledby="pwd-when-h" className="object mt-10 p-6 sm:p-8">
+          <h2 id="pwd-when-h" className="font-heading text-2xl font-bold leading-tight">
+            When might mine be decided?
+          </h2>{" "}
+          <p className="mt-2 text-base text-muted-foreground">Put in the day it was filed. No number needed.</p>{" "}
+          <div className="mt-5">
+            <PwdDateEstimate data={dayData} lineDay={line?.day ?? null} filedByDay={nowDocs.queue?.filedByDay ?? []} />
+          </div>
+        </section>
+      ) : null}{" "}
 
       <section data-embed="pwd-queue" className="mt-10">
         <PwdQueueEstimator
@@ -102,6 +125,8 @@ export default async function PwdCalculatorPage() {
           asOf={data ? data.asOf : null}
           clearancePerMonth={data ? data.clearancePerMonth : null}
           measured={line ? { day: line.day, asOf: line.asOf } : null}
+          dayData={dayData}
+          today={today}
         />
       </section>
 

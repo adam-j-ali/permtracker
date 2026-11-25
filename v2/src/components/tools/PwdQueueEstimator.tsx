@@ -14,7 +14,9 @@
 import { useCallback, useId, useMemo, useState } from "react";
 import { ScalesIcon as Scale } from "@phosphor-icons/react";
 
-import { estimatePwdQueue, type PwdBacklogMonth } from "@/lib/perm";
+import { estimatePwdDay, estimatePwdQueue, type PwdBacklogMonth } from "@/lib/perm";
+import { formatInt } from "@/lib/format";
+import type { PwdDayData } from "@/lib/pwdDay";
 import { formatMonth } from "@/lib/dolFormat";
 import { longDate } from "@convex/lib/months";
 import { PwdBacklogChart } from "@/components/tools/PwdBacklogChart";
@@ -30,6 +32,14 @@ export interface PwdQueueEstimatorProps {
   clearancePerMonth: number | null;
   /** Where our own daily check of DOL's case status puts the line (src/lib/pwdLine.ts), which DOL's table trails. */
   measured?: { day: string; asOf: string } | null;
+  /**
+   * Our daily count of the requests in process, by filing day, and DOL's pace (getPwdDayData). With it the estimated
+   * determination is the day rule's (estimatePwdDay), as on the case page and /pwd-cases; without it, or when it's
+   * too old, DOL's month table at its clearance rate stands in.
+   */
+  dayData?: PwdDayData | null;
+  /** The page's Eastern day when it rendered (easternDay), so the server's HTML and the browser agree. */
+  today?: string | null;
   className?: string;
 }
 
@@ -39,6 +49,8 @@ export function PwdQueueEstimator({
   asOf,
   clearancePerMonth,
   measured,
+  dayData,
+  today,
   className,
 }: PwdQueueEstimatorProps) {
   const selectId = useId();
@@ -76,6 +88,17 @@ export function PwdQueueEstimator({
       }),
     [month, frontier, backlog, asOf, clearancePerMonth],
   );
+
+  // THE DAY RULE (D6, Nov 25 2026): a request filed in the middle of the month picked, or today if that's still to
+  // come, dated by the requests in process filed before it over DOL's pace a working day. It measured about 0 days off
+  // where the month table at its clearance rate measured about 15.
+  const middle = `${month}-15`;
+  const filedOn = today && middle > today ? today : middle;
+  const byDay = dayData && today
+    ? estimatePwdDay({ filingDate: filedOn, today, queue: dayData.queue, measuredRange: dayData.measuredRange })
+    : null;
+  const dated = byDay && byDay.kind === "estimate" ? byDay : null;
+  const reached = dated !== null && measured != null && filedOn <= measured.day;
 
   if (backlog.length === 0) {
     return (
@@ -191,7 +214,24 @@ export function PwdQueueEstimator({
         />
       </div>
 
-      {estimate.estimatedMonth ? (
+      {dated ? (
+        <div className="border-b-2 border-border p-6 sm:p-8">
+          <p className="text-sm font-bold text-muted-foreground">
+            Estimated determination
+          </p>{" "}
+          <p className="mt-2 font-heading text-3xl font-bold leading-none sm:text-4xl">
+            {reached ? "Any day now" : `Around ${longDate(dated.date)}`}
+          </p>{" "}
+          <p className="mt-3 text-base leading-relaxed text-muted-foreground">
+            {`For a request filed ${longDate(filedOn)}${filedOn === middle ? ", the middle of the month" : ""}: `}
+            {reached
+              ? "DOL is already deciding requests filed that day. "
+              : `most likely between ${longDate(dated.earliest)} and ${longDate(dated.latest)}. `}
+            {`${formatInt(dated.requestsAhead)} filed before it are still waiting, and DOL finishes about ` +
+              `${formatInt(Math.round(dated.pace))} a working day.`}
+          </p>
+        </div>
+      ) : estimate.estimatedMonth ? (
         <div className="border-b-2 border-border p-6 sm:p-8">
           <p className="text-sm font-bold text-muted-foreground">
             Estimated determination
@@ -201,7 +241,8 @@ export function PwdQueueEstimator({
           </p>{" "}
           <p className="mt-3 text-base leading-relaxed text-muted-foreground">
             At the {Math.round(clearancePerMonth || 0).toLocaleString("en-US")}{" "}
-            requests a month DOL has been clearing.
+            requests a month DOL has been clearing. Our daily count, which dates a request by its day, isn&apos;t
+            available right now, so this reads DOL&apos;s month table instead.
           </p>
         </div>
       ) : null}
