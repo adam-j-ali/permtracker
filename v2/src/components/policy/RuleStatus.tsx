@@ -3,7 +3,7 @@ import { reginfoUrl } from "@convex/lib/ruleSteps";
 import { RuleCard } from "@/components/policy/RulePipeline";
 import { getCommentCounts } from "@/lib/db/policyComments";
 import { readRules } from "@/lib/db/rulePipeline";
-import { easternDay } from "@/lib/seasonalTiming";
+import { easternDay } from "@convex/lib/time";
 
 /**
  * Where one rule stands, from the rule watch's record (`scripts/ingest_rule_pipeline.py`), for an

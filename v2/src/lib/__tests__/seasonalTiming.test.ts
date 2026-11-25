@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import { easternDay, H2A_FAR_FIRST_DAY_DAYS, parseSeasonalTiming, timingView, viewEstimate, type SeasonalTiming } from "../seasonalTiming";
+import { easternDay } from "@convex/lib/time";
+import { H2A_FAR_FIRST_DAY_DAYS, parseSeasonalTiming, timingView, viewEstimate, type SeasonalTiming } from "../seasonalTiming";
 
 // The production doc of Oct 3 2026 (FY2026 files), trimmed to what the tests read.
 const DOC = {

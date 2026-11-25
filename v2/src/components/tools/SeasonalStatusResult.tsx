@@ -24,7 +24,8 @@ import {
 import { isLookupGap } from "@/lib/dolMiss";
 import { SEASONAL_STATUSES, statusAnchor } from "@/lib/statusDictionary";
 import { seasonalForm } from "@/lib/seasonalForms";
-import { awaitingFirstDecision, easternDay, timingView } from "@/lib/seasonalTiming";
+import { awaitingFirstDecision, timingView } from "@/lib/seasonalTiming";
+import { easternDay } from "@convex/lib/time";
 import { getSeasonalCheck, getSeasonalTiming } from "@/lib/db/seasonalTiming";
 import { getH2bGroupTiming, h2bGroupOf } from "@/lib/db/h2bGroups";
 import { pickGroup } from "@/lib/h2bGroups";

@@ -2,7 +2,7 @@ import { ruleCompareCells, type RuleCell } from "@convex/lib/ruleSteps";
 
 import { ComparisonTable } from "@/components/content/ComparisonTable";
 import { readRules } from "@/lib/db/rulePipeline";
-import { easternDay } from "@/lib/seasonalTiming";
+import { easternDay } from "@convex/lib/time";
 import { keepWhole } from "@/components/ui/keep-whole";
 
 /**

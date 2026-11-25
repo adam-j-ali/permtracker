@@ -17,7 +17,7 @@ import {
   type WeekCount,
 } from "@/lib/byTheNumbers";
 import { dolDayOf } from "@/lib/dolDay";
-import { easternDay } from "@/lib/seasonalTiming";
+import { easternDay } from "@convex/lib/time";
 
 import { rows } from "./client";
 import { DIRECT_EVENT_SOURCE } from "./rfi";

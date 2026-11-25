@@ -9,7 +9,7 @@
 import dynamic from "next/dynamic";
 import { getPwdDayData } from "@/lib/db/pwdDayQueue";
 import { getPwdEstimatorData } from "@/lib/db/estimate";
-import { easternDay } from "@/lib/seasonalTiming";
+import { easternDay } from "@convex/lib/time";
 import { buildPwdQueueRun } from "./model";
 import { softFail } from "@/lib/softRead";
 

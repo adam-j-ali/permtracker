@@ -9,7 +9,7 @@
  */
 
 import { formatInt } from "../../convex/lib/format";
-import { DAYS_PER_MONTH_2DP } from "../../convex/lib/time";
+import { DAYS_PER_MONTH_2DP, easternDay } from "../../convex/lib/time";
 import { MONTH_NAMES } from "../../convex/lib/months";
 
 /**
@@ -49,9 +49,21 @@ export function formatAsOf(value: string | null | undefined): string | null {
   return name ? `${name} ${Number(m[3])}, ${m[1]}` : null;
 }
 
-/** A date or a timestamp ("2026-08-20T13:05:00") to "August 20, 2026"; null when it's neither. */
+/** A timestamp that names its zone ("...Z", "...+00:00"): an instant, whose day depends on where it's read. */
+const ZONED = /^\d{4}-\d{2}-\d{2}T[\d:.]+(?:Z|[+-]\d{2}:?\d{2})$/;
+
+/**
+ * A date or a timestamp to "August 20, 2026"; null when it's neither. A date, or a timestamp with no zone (DOL's
+ * "2026-08-20T13:05:00"), is named by the day it's written with; an instant with a zone by its Eastern day, since
+ * after 8 PM Eastern its UTC date is already tomorrow.
+ */
 export function formatDay(value: string | null | undefined): string | null {
-  return formatAsOf(value ? value.slice(0, 10) : null);
+  if (!value) return null;
+  if (ZONED.test(value)) {
+    const at = Date.parse(value);
+    return Number.isFinite(at) ? formatAsOf(easternDay(at)) : null;
+  }
+  return formatAsOf(value.slice(0, 10));
 }
 
 /**

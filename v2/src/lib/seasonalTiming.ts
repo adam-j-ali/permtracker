@@ -375,12 +375,3 @@ export function parseSeasonalCheck(json: string): SeasonalCheck | null {
   return Object.keys(out).length ? out : null;
 }
 
-/** Today's date in Eastern time, YYYY-MM-DD: after 8 PM Eastern the UTC date is already tomorrow. */
-export function easternDay(now: Date = new Date()): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/New_York",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(now);
-}

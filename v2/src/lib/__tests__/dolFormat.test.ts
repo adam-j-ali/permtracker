@@ -3,6 +3,7 @@ import {
   formatMonth,
   formatAsOf,
   formatCount,
+  formatDay,
   monthsMoved,
   daysAsApproxMonths,
 } from "../dolFormat";
@@ -97,5 +98,27 @@ describe("null and nonsense guards", () => {
     expect(formatCount(null)).toBeNull();
     expect(formatCount(undefined)).toBeNull();
     expect(formatCount(Number.NaN)).toBeNull();
+  });
+});
+
+describe("formatDay", () => {
+  it("names a date-only value's own day, and a timestamp without a zone by its written date", () => {
+    expect(formatDay("2026-08-20")).toBe("August 20, 2026");
+    expect(formatDay("2026-08-20T13:05:00")).toBe("August 20, 2026");
+    expect(formatDay("2026-08-20T00:00:00.000")).toBe("August 20, 2026");
+  });
+
+  it("names a zoned instant by its Eastern day: after 8 PM Eastern the UTC date is already tomorrow", () => {
+    expect(formatDay("2026-11-25T03:00:00Z")).toBe("November 24, 2026");
+    expect(formatDay("2026-11-25T03:00:00.000Z")).toBe("November 24, 2026");
+    expect(formatDay("2026-11-25T08:00:00+00:00")).toBe("November 25, 2026");
+    expect(formatDay("2026-07-01T02:30:00Z")).toBe("June 30, 2026");
+  });
+
+  it("returns null for nothing and for what isn't a day", () => {
+    expect(formatDay(null)).toBeNull();
+    expect(formatDay("")).toBeNull();
+    expect(formatDay("not a day")).toBeNull();
+    expect(formatDay("2026-13-45T03:00:00Z")).toBeNull();
   });
 });
