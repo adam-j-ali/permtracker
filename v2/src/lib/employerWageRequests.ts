@@ -145,7 +145,8 @@ export function narrowFound(
   return {
     rows,
     more: found.more || kept.length > WAGE_REQUESTS_SHOWN,
-    mostLikely: mostLikelyOf(kept),
+    // Past the read's cap, requests were never weighed, so the one left isn't known to be the only one.
+    mostLikely: found.more ? null : mostLikelyOf(kept),
     ruledOut: [...counts].map(([why, count]) => ({ why, count })),
   };
 }

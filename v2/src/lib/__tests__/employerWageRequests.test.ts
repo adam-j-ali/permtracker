@@ -176,4 +176,11 @@ describe("narrowFound", () => {
     const two = narrowFound({ rows: [row("P-100-a", "2025-09-25"), row("P-100-b", "2025-07-01")], more: false }, perm, new Map());
     expect(two.mostLikely).toBeNull();
   });
+
+  it("names none when the read stopped at its cap: requests past it were never weighed, so one left isn't the only one", () => {
+    const got = narrowFound({ rows: [row("P-100-only", "2025-09-25")], more: true }, perm, new Map());
+    expect(got.rows.map((r) => r.caseNumber)).toEqual(["P-100-only"]);
+    expect(got.more).toBe(true);
+    expect(got.mostLikely).toBeNull();
+  });
 });
