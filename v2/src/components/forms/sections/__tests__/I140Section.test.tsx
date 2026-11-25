@@ -416,3 +416,27 @@ describe("I140Section - Form Fields", () => {
     expect(screen.getByLabelText(/Premium processing/i)).toBeChecked();
   });
 });
+
+describe("I140Section: the receipt number read as it's typed (Nov 25 2026)", () => {
+  const hintOf = () => document.getElementById("i140ReceiptNumber-hint")?.textContent ?? "";
+
+  it("keeps the plain hint for an empty field", () => {
+    renderI140Section({});
+    expect(hintOf()).toBe("USCIS receipt number (optional)");
+  });
+
+  it("names the office and what's left while a receipt is typed", () => {
+    renderI140Section({ i140ReceiptNumber: "lin" });
+    expect(hintOf()).toBe("Nebraska Service Center. 10 more digits.");
+  });
+
+  it("names the first wrong character and tells an A-number apart, never blocking the save", () => {
+    const { unmount } = renderI140Section({ i140ReceiptNumber: "LIN2X" });
+    expect(hintOf()).toBe("Character 5 should be a digit.");
+    expect(screen.getByLabelText(/Receipt number/i)).not.toHaveAttribute("aria-invalid", "true");
+    unmount();
+    renderI140Section({ i140ReceiptNumber: "A-123-456-789" });
+    expect(hintOf()).toMatch(/A-number/);
+  });
+});
+

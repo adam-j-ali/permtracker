@@ -19,7 +19,8 @@ import type { I140Category } from "@/lib/processing-times/i140ProcessingTimes";
 import { CheckCircleIcon as CheckCircle2, InfoIcon, WarningIcon } from "@phosphor-icons/react";
 import { CharLimit } from "@/components/ui/char-limit";
 import { ChoiceRow } from "@/components/ui/choice-row";
-import { KeepWhole } from "@/components/ui/keep-whole";
+import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
+import { describeTypedReceipt } from "@/lib/uscis/receipt";
 
 type ServiceCenter = "" | "Texas" | "Nebraska" | "California" | "Vermont";
 const SERVICE_CENTERS: readonly { value: ServiceCenter; label: string }[] = [
@@ -134,6 +135,17 @@ function buildI140FilingWindowData(
 // ============================================================================
 // COMPONENT
 // ============================================================================
+
+
+/**
+ * The receipt field's hint: the same reading the public lookup box gives (describeTypedReceipt), the office and year
+ * as they're typed, the first wrong character, an A-number told apart. It never blocks a save: firms type notes here.
+ */
+function receiptNumberHint(value: string | undefined): React.ReactNode {
+  const read = describeTypedReceipt(value ?? "");
+  if (!read) return "USCIS receipt number (optional)";
+  return read.tone === "warn" ? <span className="text-data-warn-ink">{keepWhole(read.text)}</span> : keepWhole(read.text);
+}
 
 /**
  * I140Section Component
@@ -323,7 +335,7 @@ export function I140Section(props: I140SectionProps) {
             label="Receipt number"
             name="i140ReceiptNumber"
             error={errors?.i140ReceiptNumber}
-            hint="USCIS receipt number (optional)"
+            hint={receiptNumberHint(values.i140ReceiptNumber)}
           >
             <CharLimit max={50}>
               <Input

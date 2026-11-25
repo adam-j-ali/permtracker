@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  describeTypedReceipt,
   RECEIPT_PREFIXES,
   RECEIPT_SHAPE_MESSAGE,
   decodeReceipt,
@@ -213,4 +214,33 @@ describe("the box and the results page read a pasted receipt the same way (revie
       expect(looksLikeReceipt(pasted)).toBe(true);
     },
   );
+});
+
+describe("describeTypedReceipt: one reading for every box a receipt is typed in (Nov 25 2026)", () => {
+  it("says nothing for an empty box", () => {
+    expect(describeTypedReceipt("")).toBeNull();
+    expect(describeTypedReceipt("   ")).toBeNull();
+  });
+
+  it("names the office from three letters and counts what's left", () => {
+    expect(describeTypedReceipt("lin")).toEqual({ tone: "info", text: "Nebraska Service Center. 10 more digits." });
+  });
+
+  it("adds the year and the series as they arrive, and stops counting once it's whole", () => {
+    expect(describeTypedReceipt("IOE09")).toEqual({ tone: "info", text: "USCIS online filing (ELIS), filed online. 8 more digits." });
+    expect(describeTypedReceipt("EAC2112312345")?.text).toBe("Vermont Service Center, fiscal year 2021. Look it up for the rest.");
+    expect(describeTypedReceipt("EAC2190012345")?.text).toBe("Vermont Service Center, fiscal year 2021, a lockbox number. Look it up for the rest.");
+  });
+
+  it("names the first character that can't belong, by its position", () => {
+    expect(describeTypedReceipt("LIN2X")).toEqual({ tone: "warn", text: "Character 5 should be a digit." });
+    expect(describeTypedReceipt("EAC21900123456")).toEqual({ tone: "warn", text: "That's 14 characters. A receipt number has 13." });
+  });
+
+  it("tells an A-number apart, dashes or not", () => {
+    for (const a of ["A123456789", "A-123-456-789"]) {
+      expect(describeTypedReceipt(a)?.tone, a).toBe("warn");
+      expect(describeTypedReceipt(a)?.text, a).toMatch(/A-number/);
+    }
+  });
 });

@@ -249,3 +249,37 @@ export function looksLikeReceipt(input: string): boolean {
  */
 export const RECEIPT_SHAPE_MESSAGE =
   "A USCIS receipt number is three letters and ten digits, like EAC2190123456, with no spaces or dashes. It's on the top of every I-797 notice.";
+
+/** What the characters typed so far say, in one line. The day digits wait for the result, where their caveat is. */
+export function receiptReadingLine(r: PartialReceipt): string {
+  if (!r.prefix) return "A receipt number is three letters, then ten digits.";
+  const parts = [r.office ? r.office.name : `${r.prefix}, letters USCIS doesn't list`];
+  if (r.series === "online") parts.push("filed online");
+  if (r.fiscalYear !== null) parts.push(`fiscal year ${r.fiscalYear}`);
+  if (r.series === "lockbox") parts.push("a lockbox number");
+  const left = r.remaining > 0 ? ` ${r.remaining} more ${r.remaining === 1 ? "digit" : "digits"}.` : " Look it up for the rest.";
+  return `${parts.join(", ")}.${left}`;
+}
+
+/** The first thing wrong with what's typed, by position, or null. */
+export function receiptProblemLine(r: PartialReceipt): string | null {
+  if (!r.problem) return null;
+  if (r.problem.expected === "end") return `That's ${r.typed.length} characters. A receipt number has 13.`;
+  return `Character ${r.problem.position} should be a ${r.problem.expected}.`;
+}
+
+export const A_NUMBER_MESSAGE =
+  "That's an A-number, the number USCIS gives a person. A receipt number names one case: three letters and ten digits, at the top of the I-797 notice.";
+
+/**
+ * One reading for every box a receipt is typed in (the lookup box, the app's case form): null for an empty box, a
+ * warning for an A-number or the first wrong character, otherwise what the characters so far say.
+ */
+export function describeTypedReceipt(input: string): { tone: "info" | "warn"; text: string } | null {
+  if (input.trim() === "") return null;
+  const r = readPartialReceipt(input);
+  if (r.otherKind === "a-number") return { tone: "warn", text: A_NUMBER_MESSAGE };
+  const problem = receiptProblemLine(r);
+  if (problem) return { tone: "warn", text: problem };
+  return { tone: "info", text: receiptReadingLine(r) };
+}

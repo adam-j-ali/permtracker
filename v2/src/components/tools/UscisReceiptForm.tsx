@@ -2,7 +2,7 @@
 
 import { useId, useState } from "react";
 
-import { readPartialReceipt, type PartialReceipt } from "@/lib/uscis/receipt";
+import { A_NUMBER_MESSAGE, readPartialReceipt, receiptProblemLine, receiptReadingLine, type PartialReceipt } from "@/lib/uscis/receipt";
 import { buttonVariants } from "@/components/ui/button";
 import { KeepWhole } from "@/components/ui/keep-whole";
 
@@ -35,23 +35,6 @@ export interface UscisReceiptFormProps {
 /** A DOL FLAG number: letter, dash, digits. Never a USCIS receipt. */
 const DOL_SHAPE = /^[A-Z]-\d/i;
 
-/** What the characters typed so far say, in one line. The day digits wait for the result, where their caveat is. */
-function readingLine(r: PartialReceipt): string {
-  if (!r.prefix) return "A receipt number is three letters, then ten digits.";
-  const parts = [r.office ? r.office.name : `${r.prefix}, letters USCIS doesn't list`];
-  if (r.series === "online") parts.push("filed online");
-  if (r.fiscalYear !== null) parts.push(`fiscal year ${r.fiscalYear}`);
-  if (r.series === "lockbox") parts.push("a lockbox number");
-  const left = r.remaining > 0 ? ` ${r.remaining} more ${r.remaining === 1 ? "digit" : "digits"}.` : " Look it up for the rest.";
-  return `${parts.join(", ")}.${left}`;
-}
-
-function problemLine(r: PartialReceipt): string | null {
-  if (!r.problem) return null;
-  if (r.problem.expected === "end") return `That's ${r.typed.length} characters. A receipt number has 13.`;
-  return `Character ${r.problem.position} should be a ${r.problem.expected}.`;
-}
-
 /** The number in its parts as far as it's right, each part padded to its length so what's left shows. */
 function segments(r: PartialReceipt): { chars: string; size: number; label: string }[] {
   const good = r.problem ? r.typed.slice(0, r.problem.position - 1) : r.typed;
@@ -76,7 +59,7 @@ export function UscisReceiptForm({ defaultValue = "", className, live = false }:
   const aNumber = edited && typed.length > 0 && reading.otherKind === "a-number";
   const isDol = edited && !aNumber && DOL_SHAPE.test(typed);
   const showReading = edited && typed.length > 0 && !isDol;
-  const problem = showReading && !aNumber ? problemLine(reading) : null;
+  const problem = showReading && !aNumber ? receiptProblemLine(reading) : null;
   const malformed = problem !== null || aNumber;
 
   return (
@@ -136,8 +119,7 @@ export function UscisReceiptForm({ defaultValue = "", className, live = false }:
         ) : aNumber ? (
           <span className="font-bold text-data-warn-ink">
             <KeepWhole>
-              {"That's an A-number, the number USCIS gives a person. A receipt number names one case: three " +
-                "letters and ten digits, at the top of the I-797 notice."}
+              {A_NUMBER_MESSAGE}
             </KeepWhole>
           </span>
         ) : problem ? (
@@ -156,7 +138,7 @@ export function UscisReceiptForm({ defaultValue = "", className, live = false }:
             )}
           </>
         ) : showReading ? (
-          <span className="font-bold text-foreground">{readingLine(reading)}</span>
+          <span className="font-bold text-foreground">{receiptReadingLine(reading)}</span>
         ) : live ? (
           <>
             <KeepWhole>

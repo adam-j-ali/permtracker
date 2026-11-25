@@ -236,4 +236,10 @@ describe("a case box with nothing typed", () => {
     fireEvent.change(box(), { target: { value: "12345" } });
     expect(screen.getByText(/They look like G-100-26125-868956\./)).toBeTruthy();
   });
+
+  it("names a typed receipt's office and year before sending it to the USCIS page (Nov 25 2026)", () => {
+    render(<CaseLookupForm />);
+    fireEvent.change(box(), { target: { value: "lin2612312345" } });
+    expect(screen.getByText(textContent(/^That looks like a USCIS receipt number \(Nebraska Service Center, fiscal year 2026\)/))).toBeTruthy();
+  });
 });

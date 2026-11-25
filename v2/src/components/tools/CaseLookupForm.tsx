@@ -11,7 +11,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useFinderDock } from "@/components/tools/FinderDock";
 import { normaliseCaseNumber } from "@/lib/caseNumberShape";
-import { looksLikeReceipt } from "@/lib/uscis/receipt";
+import { looksLikeReceipt, readPartialReceipt } from "@/lib/uscis/receipt";
 import { RecentSearchesField } from "@/components/search/RecentSearches";
 import { keepWhole } from "@/components/ui/keep-whole";
 
@@ -157,9 +157,14 @@ export function CaseLookupForm({
   const looksLikeName = names && /[A-Za-z]{2}/.test(value) && (value.match(/[A-Za-z]/g) ?? []).length > (value.match(/\d/g) ?? []).length;
   const malformed =
     edited && !isReceipt && !looksLikeName && value.trim().length > 0 && normaliseCaseNumber(value) === null;
+  // The same reading the USCIS page's own box gives (Nov 25 2026): the office and year, so the visitor sees it was read.
+  const receiptRead = isReceipt ? readPartialReceipt(value) : null;
+  const receiptFrom = receiptRead?.office
+    ? ` (${receiptRead.office.name}${receiptRead.fiscalYear !== null ? `, fiscal year ${receiptRead.fiscalYear}` : ""})`
+    : "";
   const hint = isReceipt ? (
     <span className="text-data-warn-ink">
-      That looks like a USCIS receipt number, which is USCIS&apos;s record rather than DOL&apos;s.
+      {`That looks like a USCIS receipt number${receiptFrom}, which is USCIS's record rather than DOL's. `}
       Checking it takes you to the USCIS page.
     </span>
   ) : malformed ? (
