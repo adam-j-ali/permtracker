@@ -41,6 +41,9 @@ export const MAIN_JOBS: readonly string[] = [
  * "naics" or "nationality" to the page that filters by it.
  */
 export const PAGE_KEYWORDS: Readonly<Record<string, string>> = {
+  // Renamed Nov 25 2026 (one name per page): the words people searched under the old names stay findable.
+  "/perm-queue": "queue backlog pending waiting in process how many cases ahead line",
+  "/tools/cspa-age-calculator": "cspa child status protection act age out aging out turning 21 dependent child",
   "/for-employers": "employer employers company hr human resources people team global mobility immigration manager in-house track our company's perm cases follow every case email when certified",
   "/perm-case-status": "check track lookup status case number dol flag g-100",
   "/case-search": "search find case employer firm without number",
@@ -118,19 +121,11 @@ const OTHER_GO_TO = [
   "/soc-codes/browse",
 ];
 
-/** The browse hubs share one page name; search needs to tell them apart. */
-const SEARCH_LABELS: Readonly<Record<string, string>> = {
-  "/perm-employers/browse": "Browse employers A to Z",
-  "/perm-attorneys/browse": "Browse law firms A to Z",
-  "/perm-wages/browse": "Browse occupations A to Z",
-  "/soc-codes/browse": "Browse job titles A to Z",
-};
-
 export function staticIndex(): SiteIndexEntry[] {
   const out: SiteIndexEntry[] = [];
   const add = (p: SitePage, group: string, base = "") =>
     out.push({
-      label: SEARCH_LABELS[p.href] ?? PAGE_NAMES.get(p.href) ?? p.name,
+      label: PAGE_NAMES.get(p.href) ?? p.name,
       href: p.href,
       group,
       keywords: `${base} ${PAGE_KEYWORDS[p.href] ?? ""}`.trim(),
