@@ -13,6 +13,7 @@ import {
   RecentApprovals,
   RfeBars,
   StageMedians,
+  BesideTheCase,
   ThirdFta0Line,
   ThirtyDayLine,
   WhoIsWaiting,
@@ -262,6 +263,7 @@ export default async function GreenCardTimelinesPage() {
                 <div className="mt-5">
                   <StepsByStage steps={summary.steps} />
                 </div>{" "}
+                {board ? <BesideTheCase metrics={board.metrics} /> : null}{" "}
                 <p className="mt-6 max-w-3xl text-base leading-relaxed">
                   What each step means, and what to do while you wait:{" "}
                   <Link href="/guides/i485-timeline-each-step" className="link font-bold">

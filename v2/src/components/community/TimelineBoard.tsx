@@ -193,6 +193,31 @@ const DOT: Record<string, string> = {
 /** A mark's outline: the green card a diamond, biometrics a square, every other step a circle. */
 const shape = (id: string) => (id === "greenCardOn" ? "rotate-45" : id === "biometricsOn" ? "" : "rounded-full");
 
+/**
+ * The RFE and H-4 medians, which only the timelines saved on PERM Tracker carry: the merged figures from every source
+ * have no step for them yet. Drawn beside the merged steps so a reader who saw them before the merge still finds them
+ * (Nov 25 2026: the summary's branch had hidden them for good). Nothing until one of them has a median: on Nov 25 all
+ * five held 0 of the 5 reports one needs, and five empty rows would only repeat that.
+ */
+export function BesideTheCase({ metrics }: { metrics: readonly MetricResult[] }) {
+  const side = metrics.filter((m) => SIDE_METRIC_IDS.includes(m.id));
+  if (!side.some((m) => m.median !== null)) return null;
+  return (
+    <div className="mt-8">
+      <h3 className="font-heading text-xl font-bold">
+        <KeepWhole>{"Beside the case: RFEs and a spouse's H-4"}</KeepWhole>
+      </h3>{" "}
+      <p className="mt-2 max-w-2xl text-base text-muted-foreground">
+        Counted from the timelines people saved on PERM Tracker. The steps above merge every source, and none of the
+        others reports these dates yet.
+      </p>{" "}
+      <div className="mt-4">
+        <StageMedians metrics={side} />
+      </div>
+    </div>
+  );
+}
+
 export function BoardKey() {
   return (
     <ul className="flex flex-wrap gap-x-5 gap-y-2 text-sm" aria-label="What each mark means">
