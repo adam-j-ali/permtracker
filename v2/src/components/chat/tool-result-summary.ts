@@ -79,7 +79,12 @@ export function summarizeToolResult(tool: string, result?: string): string {
       case 'visaBulletin':
       case 'searchSponsors':
       case 'sponsorProfile':
-      case 'findSocCode': {
+      case 'findSocCode':
+      case 'uscisFigures':
+      case 'receiptSample':
+      case 'consulates':
+      case 'reportedTimelines':
+      case 'estimateAccuracy': {
         // The read's own words when it found nothing; otherwise its source and the date it's true for.
         if (typeof parsed.error === 'string') return truncate(parsed.error, 60);
         return parsed.asOf ? `From ${parsed.source ? String(parsed.source).split(',')[0] : 'the record'}, ${parsed.asOf}` : 'Read';

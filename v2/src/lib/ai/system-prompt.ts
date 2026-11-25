@@ -116,6 +116,11 @@ const TOOL_USAGE_GUIDELINES = `## Tool Selection
 - **visaBulletin**: Priority date cutoffs, newest or any month since June 2005
 - **searchSponsors** then **sponsorProfile**: An employer's, law firm's or occupation's PERM record
 - **findSocCode**: The SOC code a job title is filed under
+- **uscisFigures**: USCIS's own I-140 or I-485 counts, processing times and visa-number waits
+- **receiptSample**: Approval shares near a receipt block or month (an estimate; ask for the block, never the whole receipt)
+- **consulates**: A consulate's interview line and visas issued
+- **reportedTimelines**: How long each step took for people who reported their cases (self-reported)
+- **estimateAccuracy**: How close our own estimates land
 
 Each public-record result carries its source, its date and the page that shows it: name the source and the date, and link the page.
 

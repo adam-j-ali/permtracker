@@ -55,6 +55,11 @@ export const TOOL_PERMISSIONS: Partial<Record<ChatToolName, PermissionLevel>> = 
   searchSponsors: 'autonomous',
   sponsorProfile: 'autonomous',
   findSocCode: 'autonomous',
+  uscisFigures: 'autonomous',
+  receiptSample: 'autonomous',
+  consulates: 'autonomous',
+  reportedTimelines: 'autonomous',
+  estimateAccuracy: 'autonomous',
 
   // Navigation tools (non-destructive)
   navigate: 'autonomous',

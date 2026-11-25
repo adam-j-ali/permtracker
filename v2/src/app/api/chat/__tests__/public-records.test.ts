@@ -21,6 +21,18 @@ const findCases = vi.fn();
 vi.mock("@/lib/api/reads", () => ({ readCase, readEstimate, readQueue, readBulletin, readEntity, searchEntities, findCases }));
 const lookupSoc = vi.fn();
 vi.mock("@/lib/api/socLookup", () => ({ lookupSoc }));
+const figures = {
+  readReceiptBlocks: vi.fn(),
+  readReceiptBlock: vi.fn(),
+  readReceiptMonths: vi.fn(),
+  readUscisI140: vi.fn(),
+  readUscisI485: vi.fn(),
+  readConsulates: vi.fn(),
+  readConsulate: vi.fn(),
+  readTimelines: vi.fn(),
+  readAccuracy: vi.fn(),
+};
+vi.mock("@/lib/api/figureReads", () => figures);
 
 const { createTools, PUBLIC_RECORD_TOOLS } = await import("../create-tools");
 const { MCP_TOOLS } = await import("@/lib/api/openapi");
@@ -46,7 +58,7 @@ const say = (text: string) => ({
 
 describe("the chat's public-record tools", () => {
   beforeEach(() => {
-    for (const f of [readCase, readEstimate, readQueue, readBulletin, readEntity, searchEntities, findCases, lookupSoc]) f.mockReset();
+    for (const f of [readCase, readEstimate, readQueue, readBulletin, readEntity, searchEntities, findCases, lookupSoc, ...Object.values(figures)]) f.mockReset();
   });
 
   it("covers every MCP tool, read-only, under the chat's own name", () => {
@@ -111,6 +123,14 @@ describe("the chat's public-record tools", () => {
     const model = new MockLanguageModelV4({ doGenerate: [call("dolQueue", {}), say("The records couldn't be read just now.")] });
     await generateText({ model, tools: createTools("token"), prompt: "Processing times?", stopWhen: stepCountIs(4) });
     expect(JSON.stringify(model.doGenerateCalls[1]!.prompt)).toContain("couldn't be read just now");
+  });
+
+  it("reads a receipt block's figures, never asking for a whole receipt", async () => {
+    figures.readReceiptBlock.mockResolvedValue({ ok: true, data: { block: "IOE09366", forms: [] }, meta: { source: "PERM Tracker's sample", asOf: "2026-11-25", url: "https://permtracker.app/uscis-receipt-blocks/IOE09366" } });
+    const model = new MockLanguageModelV4({ doGenerate: [call("receiptSample", { block: "IOE09366" }), say("Done.")] });
+    await generateText({ model, tools: createTools("token"), prompt: "How is IOE09366 moving?", stopWhen: stepCountIs(4) });
+    expect(figures.readReceiptBlock).toHaveBeenCalledWith("IOE09366");
+    expect(JSON.stringify(model.doGenerateCalls[1]!.prompt)).toContain("uscis-receipt-blocks/IOE09366");
   });
 
   it("maps the sponsor kinds to the API's", async () => {

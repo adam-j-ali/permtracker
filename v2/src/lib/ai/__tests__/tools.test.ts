@@ -852,8 +852,8 @@ describe('Tool Definitions', () => {
     });
 
     it('has all expected tools', () => {
-      // 7 original + 8 public records + 5 case CRUD + 6 notification/calendar + 2 settings + 4 bulk + 4 job description = 36
-      expect(Object.keys(chatTools)).toHaveLength(36);
+      // 7 original + 13 public records + 5 case CRUD + 6 notification/calendar + 2 settings + 4 bulk + 4 job description = 41
+      expect(Object.keys(chatTools)).toHaveLength(41);
     });
   });
 });

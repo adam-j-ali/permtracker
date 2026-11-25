@@ -9,7 +9,7 @@
  * - Colors follow semantic meaning
  */
 
-import { ArchiveIcon, BuildingsIcon, HourglassMediumIcon, ListNumbersIcon, TagIcon, ArrowCounterClockwiseIcon as RotateCcw, ArrowDownIcon, ArrowsClockwiseIcon as CalendarSync, ArrowsClockwiseIcon as RefreshCw, BellIcon, BellSlashIcon as BellOff, BookOpenIcon, CalendarIcon, CalendarMinusIcon, CalendarPlusIcon, CheckIcon, ChecksIcon as CheckCheck, DatabaseIcon, EyeIcon, FileTextIcon, GearIcon as Settings, GlobeIcon, MagnifyingGlassIcon as Search, NavigationArrowIcon as Navigation2, PencilIcon, PlusIcon, SlidersHorizontalIcon, TrashIcon as Trash2 } from "@phosphor-icons/react/ssr";
+import { ArchiveIcon, BuildingsIcon, ChartBarIcon, GlobeHemisphereWestIcon, TargetIcon, UsersThreeIcon, HourglassMediumIcon, ListNumbersIcon, TagIcon, ArrowCounterClockwiseIcon as RotateCcw, ArrowDownIcon, ArrowsClockwiseIcon as CalendarSync, ArrowsClockwiseIcon as RefreshCw, BellIcon, BellSlashIcon as BellOff, BookOpenIcon, CalendarIcon, CalendarMinusIcon, CalendarPlusIcon, CheckIcon, ChecksIcon as CheckCheck, DatabaseIcon, EyeIcon, FileTextIcon, GearIcon as Settings, GlobeIcon, MagnifyingGlassIcon as Search, NavigationArrowIcon as Navigation2, PencilIcon, PlusIcon, SlidersHorizontalIcon, TrashIcon as Trash2 } from "@phosphor-icons/react/ssr";
 import type { Icon as PhosphorIcon } from "@phosphor-icons/react";
 
 /**
@@ -31,6 +31,11 @@ export const TOOL_ICONS: Record<string, PhosphorIcon> = {
   searchSponsors: Search,
   sponsorProfile: BuildingsIcon,
   findSocCode: TagIcon,
+  uscisFigures: ListNumbersIcon,
+  receiptSample: ChartBarIcon,
+  consulates: GlobeHemisphereWestIcon,
+  reportedTimelines: UsersThreeIcon,
+  estimateAccuracy: TargetIcon,
 
   // Case CRUD tools
   createCase: PlusIcon,
@@ -146,6 +151,11 @@ export const TOOL_DISPLAY_NAMES: Record<string, string> = {
   searchSponsors: 'Sponsor search',
   sponsorProfile: 'Sponsor record',
   findSocCode: 'SOC code',
+  uscisFigures: 'USCIS figures',
+  receiptSample: 'Receipt-number sample',
+  consulates: 'Consulates',
+  reportedTimelines: 'Reported timelines',
+  estimateAccuracy: 'Estimate record',
 
   // Case CRUD tools
   createCase: 'Create case',
@@ -205,6 +215,11 @@ export const TOOL_LOADING_MESSAGES: Record<string, string> = {
   searchSponsors: "Searching DOL's records...",
   sponsorProfile: "Reading the sponsor's record...",
   findSocCode: 'Finding the SOC code...',
+  uscisFigures: "Reading USCIS's figures...",
+  receiptSample: "Reading the receipt-number sample...",
+  consulates: "Reading State's consulate figures...",
+  reportedTimelines: 'Reading the reported timelines...',
+  estimateAccuracy: "Reading the estimates' record...",
 
   // Case CRUD tools
   createCase: 'Creating case...',

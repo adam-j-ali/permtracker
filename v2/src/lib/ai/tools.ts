@@ -2087,6 +2087,22 @@ export const SponsorProfileInputSchema = z.object({
 export const FindSocCodeInputSchema = z.object({
   query: z.string().min(2).max(80).describe('A job title or a SOC code.'),
 });
+export const UscisFiguresInputSchema = z.object({
+  form: z.enum(['I-140', 'I-485']).describe('I-140 or I-485'),
+});
+export const ReceiptSampleInputSchema = z.object({
+  block: z.string().max(12).optional().describe('A receipt block, IOE and five digits (IOE09366). Never a whole receipt number.'),
+  form: z.string().max(12).optional().describe('A USCIS form, like I-485 or I-765. I-485 when left out.'),
+  byMonth: z.boolean().optional().describe('True for the shares by the month USCIS received the cases instead of by block.'),
+});
+export const ConsulatesInputSchema = z.object({
+  slug: z.string().max(120).optional().describe("One consulate's slug, from the list. Leave out for every consulate."),
+});
+export const ReportedTimelinesInputSchema = z.object({
+  office: z.string().max(3).optional().describe("A USCIS office's three-letter code, like SFV."),
+  consulate: z.string().max(120).optional().describe("A consulate's slug, from the consulates tool."),
+});
+export const EstimateAccuracyInputSchema = z.object({});
 
 export const lookupDolCaseTool = tool({
   description: `Look up any DOL case by its number in DOL's own record: status, filing date, employer, job, and DOL's decision once decided.
@@ -2125,6 +2141,28 @@ export const findSocCodeTool = tool({
   description: `The SOC codes employers filed a job title under in DOL's files, with each code's share; or a code's title.`,
   inputSchema: FindSocCodeInputSchema,
 });
+export const uscisFiguresTool = tool({
+  description: `USCIS's own I-140 or I-485 figures: receipts, approvals, denials and pending by quarter (the I-485 by office), the median and posted processing times, the I-140s awaiting a visa number and the pending employment-based I-485 inventory.
+Use for: USCIS backlogs and processing times. Prefer this over searchWeb.`,
+  inputSchema: UscisFiguresInputSchema,
+});
+export const receiptSampleTool = tool({
+  description: `The share of sampled USCIS cases approved, in an evidence request or waiting, by online receipt block (IOE09366) or by receipt month, each with a 95% margin. From receipt numbers PERM Tracker checks on USCIS's Case Status page: an estimate.
+Use for: "is USCIS approving cases near my receipt number?". Ask for the block (the first eight characters), never the whole receipt number.`,
+  inputSchema: ReceiptSampleInputSchema,
+});
+export const consulatesTool = tool({
+  description: `Each consulate's immigrant visa interview line (the month of documentarily complete cases it's scheduling, from State's tool) and the visas it issued. One consulate's history with its slug.`,
+  inputSchema: ConsulatesInputSchema,
+});
+export const reportedTimelinesTool = tool({
+  description: `How long each green card step took for the people who reported their own cases, counted once each, and who's still waiting. For everyone, one USCIS office or one consulate. Self-reported: say so.`,
+  inputSchema: ReportedTimelinesInputSchema,
+});
+export const estimateAccuracyTool = tool({
+  description: `How close PERM Tracker's own estimates land: every estimate with its check, the PERM backtest on real decisions, and the daily sample graded as DOL decides.`,
+  inputSchema: EstimateAccuracyInputSchema,
+});
 
 export const chatTools = {
   // Query tools (autonomous)
@@ -2141,6 +2179,11 @@ export const chatTools = {
   searchSponsors: searchSponsorsTool,
   sponsorProfile: sponsorProfileTool,
   findSocCode: findSocCodeTool,
+  uscisFigures: uscisFiguresTool,
+  receiptSample: receiptSampleTool,
+  consulates: consulatesTool,
+  reportedTimelines: reportedTimelinesTool,
+  estimateAccuracy: estimateAccuracyTool,
 
   // Navigation tools (autonomous)
   navigate: navigateTool,

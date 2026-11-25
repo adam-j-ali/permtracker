@@ -66,9 +66,25 @@ import {
   SearchSponsorsInputSchema,
   SponsorProfileInputSchema,
   FindSocCodeInputSchema,
+  UscisFiguresInputSchema,
+  ReceiptSampleInputSchema,
+  ConsulatesInputSchema,
+  ReportedTimelinesInputSchema,
+  EstimateAccuracyInputSchema,
 } from '@/lib/ai/tools';
 import { findCases, readBulletin, readCase, readEntity, readEstimate, readQueue, searchEntities, type ReadResult } from '@/lib/api/reads';
 import { lookupSoc } from '@/lib/api/socLookup';
+import {
+  readAccuracy,
+  readConsulate,
+  readConsulates,
+  readReceiptBlock,
+  readReceiptBlocks,
+  readReceiptMonths,
+  readTimelines,
+  readUscisI140,
+  readUscisI485,
+} from '@/lib/api/figureReads';
 import type { ActionMode } from '@/lib/ai/tool-permissions';
 import { executeWithCache, createCacheStats, type CacheableToolName } from '@/lib/ai/cache';
 import { captureError } from '@/lib/sentry';
@@ -162,6 +178,15 @@ export const PUBLIC_RECORD_TOOLS = {
   get_law_firm: 'sponsorProfile',
   get_occupation: 'sponsorProfile',
   lookup_soc: 'findSocCode',
+  get_uscis_petitions: 'uscisFigures',
+  get_uscis_adjustments: 'uscisFigures',
+  get_receipt_blocks: 'receiptSample',
+  get_receipt_block: 'receiptSample',
+  get_receipt_months: 'receiptSample',
+  list_consulates: 'consulates',
+  get_consulate: 'consulates',
+  get_timelines: 'reportedTimelines',
+  get_accuracy: 'estimateAccuracy',
 } as const;
 
 const SPONSOR_KIND = { employer: 'employer', 'law firm': 'attorney', occupation: 'occupation' } as const;
@@ -667,6 +692,38 @@ AUTONOMOUS: No confirmation needed.`,
       description: "The SOC codes a job title is filed under in DOL's files, with each code's share; or a code's title.",
       inputSchema: FindSocCodeInputSchema,
       execute: async ({ query }: { query: string }) => publicRecord(() => lookupSoc(query)),
+    },
+
+    uscisFigures: {
+      description: "USCIS's own I-140 or I-485 figures: counts by quarter, processing times, and what's waiting for a visa number.",
+      inputSchema: UscisFiguresInputSchema,
+      execute: async ({ form }: { form: 'I-140' | 'I-485' }) => publicRecord(() => (form === 'I-485' ? readUscisI485() : readUscisI140())),
+    },
+
+    receiptSample: {
+      description: "Sampled USCIS cases' approval shares by receipt block or receipt month, with margins. One block with block.",
+      inputSchema: ReceiptSampleInputSchema,
+      execute: async ({ block, form, byMonth }: { block?: string; form?: string; byMonth?: boolean }) =>
+        publicRecord(() => (block ? readReceiptBlock(block) : byMonth ? readReceiptMonths(form ?? null) : readReceiptBlocks(form ?? null))),
+    },
+
+    consulates: {
+      description: "Each consulate's immigrant visa interview line and issuances. Send a slug for one consulate's history.",
+      inputSchema: ConsulatesInputSchema,
+      execute: async ({ slug }: { slug?: string }) => publicRecord(() => (slug ? readConsulate(slug) : readConsulates())),
+    },
+
+    reportedTimelines: {
+      description: 'How long each step took for the people who reported their cases, for everyone, one USCIS office or one consulate.',
+      inputSchema: ReportedTimelinesInputSchema,
+      execute: async ({ office, consulate }: { office?: string; consulate?: string }) =>
+        publicRecord(() => readTimelines({ office: office ?? null, consulate: consulate ?? null })),
+    },
+
+    estimateAccuracy: {
+      description: "How close PERM Tracker's own estimates land, graded against real decisions.",
+      inputSchema: EstimateAccuracyInputSchema,
+      execute: async () => publicRecord(() => readAccuracy()),
     },
 
     navigate: {
