@@ -2471,7 +2471,7 @@ Save the user's custom case order, replacing any saved before.
 saveCaseOrder(args: {
   caseIds: Id<"cases">[];   // the cases in the order the user set
   filters: {
-    status?: "pwd" | "recruitment" | "eta9089" | "i140" | "closed";
+    status?: "pwd" | "recruitment" | "eta9089" | "i140" | "i485" | "consular" | "complete" | "closed";
     progressStatus?: "working" | "waiting_intake" | "filed" | "approved" | "under_review" | "rfi_rfe";
     searchQuery?: string;
     favoritesOnly?: boolean;

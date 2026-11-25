@@ -142,6 +142,21 @@ export default function PrivacyPage() {
               <li>Case status and progress information</li>{" "}
               <li>Important dates (PWD filing, recruitment dates, etc.)</li>{" "}
               <li>
+                The green card&apos;s own steps, if you enter them: whether the case goes through adjustment of
+                status in the US or a visa at a consulate, the preference category and its kind (such as EB-2 or
+                EB-3 other worker), and the dates of the I-485, the work permit, the travel document, the National
+                Visa Center, the DS-260, the interview and the card
+              </li>{" "}
+              <li>
+                USCIS receipt numbers you enter for the I-485, the work permit and the travel document. We use a
+                receipt number only to show it on your case and to link it to the public status page you ask for
+              </li>{" "}
+              <li>
+                The country of birth and, when it differs, the country the case is charged to. We store each as a
+                two-letter country code. We use them to name the visa bulletin line your case is in, and nowhere
+                else. They&apos;re deleted with the case or your account
+              </li>{" "}
+              <li>
                 Notes, and any documents you upload to a case. An uploaded file is
                 deleted when you delete it, its case or your account
               </li>{" "}
@@ -328,6 +343,15 @@ export default function PrivacyPage() {
                 bulletin moves, USCIS times and new rules, in one email). It
                 needs the same confirming click, and we keep your email address
                 and when you confirmed
+              </li>{" "}
+              <li>
+                If you switch on &quot;Email me when this line moves&quot; on a case, we send the visa bulletin
+                alert for that case&apos;s line (its category and the bulletin column its country falls in) to your
+                account&apos;s address. It&apos;s the same alert anyone can sign up for on the bulletin pages, with the
+                same link to stop it in every email. We store your address and the line, never the country of birth
+                itself. Two cases on the same line share one alert. If your account&apos;s address hasn&apos;t been
+                confirmed, we email it once to ask first. The alert stops when you switch it off, use the link in an
+                email, or delete your account
               </li>{" "}
               <li>
                 If you follow a prevailing wage request and DOL later publishes
