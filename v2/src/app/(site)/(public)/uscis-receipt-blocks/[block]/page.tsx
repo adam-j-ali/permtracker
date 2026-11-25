@@ -186,7 +186,8 @@ export default async function UscisReceiptBlockPage({ params }: { params: Promis
               </ul>
             ) : (
               <p className="mt-3 max-w-2xl text-base text-muted-foreground">
-                No status changes seen here yet. The sample checks a pending case again each week, so moves appear as it does.
+                No status changes seen here yet. The sample checks the pending cases it drew at random again each week, so moves
+                appear as it does.
               </p>
             )}
           </section>
