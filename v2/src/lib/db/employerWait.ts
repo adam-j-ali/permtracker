@@ -2,17 +2,10 @@ import "server-only";
 
 import { cache } from "react";
 
-import { buildCaseEstimate } from "@/lib/caseEstimate";
-import { caseEstimateInputs } from "@/lib/caseEstimateInputs";
-import { getPermDayQueue } from "@/lib/db/permDayQueue";
 import { one, rows } from "@/lib/db/client";
+import { estimatePermCase, loadPermEstimateContext } from "@/lib/db/permEstimate";
 import { summariseWaits, type WaitSummary } from "@/lib/waitSummary";
-import { getDecisionPace } from "@/lib/db/decisionPace";
-import { getEstimatorData } from "@/lib/db/estimate";
-import { getLiveBacklog } from "@/lib/db/publicData";
-import { getSweepCoverage } from "@/lib/db/sweepCoverage";
 import { MS_PER_DAY } from "@/lib/time";
-import { softFail } from "@/lib/softRead";
 
 /**
  * How long one employer's PERM cases are taking, against every employer's,
@@ -80,37 +73,16 @@ export interface FiledToday {
 }
 
 /**
- * The estimate a case filed today gets on the case page and the calculator:
- * the same two calls, so the employer page never quotes a different date.
+ * The estimate a case filed today gets on the case page: the shared assembler (estimatePermCase), so the employer page
+ * never quotes a different date or range. Until Nov 25 2026 this built its own inputs and left out the measured range,
+ * which sets the earliest and latest days. Early in a new month, before the census holds it, casesAhead is null and
+ * the estimate falls back to the month-level models, as the case page does.
  */
 export const getFiledTodayEstimate = cache(async (): Promise<FiledToday | null> => {
+  // UTC, as the case page counts (todayUtc in CaseStatusPage.tsx), so both pages estimate the same filing day.
   const today = new Date().toISOString().slice(0, 10);
-  const [backlog, estimator, decisionPace, sweep, byDay] = await Promise.all([
-    getLiveBacklog().catch(softFail("employerWait.getLiveBacklog", [])),
-    getEstimatorData().catch(softFail("employerWait.getEstimatorData", null)),
-    getDecisionPace().catch(softFail("employerWait.getDecisionPace", null)),
-    getSweepCoverage().catch(softFail("employerWait.getSweepCoverage", null)),
-    getPermDayQueue(),
-  ]);
-  // Early in a new month, before the census holds it, casesAhead is null and
-  // the estimate falls back to the month-level models, as the case page does.
-  const { casesAhead, sweepAgeDays } = caseEstimateInputs({
-    backlog,
-    filingDate: today,
-    sweepFinishedOn: sweep?.finishedOn ?? null,
-    today,
-    byDay,
-  });
-  const est = buildCaseEstimate({
-    filingDate: today,
-    status: "ANALYST REVIEW",
-    isFinal: false,
-    estimator,
-    casesAhead,
-    decisionPace: decisionPace?.pace ?? null,
-    sweepAgeDays,
-    today,
-  });
+  const ctx = await loadPermEstimateContext();
+  const { estimate: est, casesAhead } = estimatePermCase(ctx, { filingDate: today, status: "ANALYST REVIEW" }, today);
   if (!est || est.kind !== "date") return null;
   return { estimatedDate: est.estimatedDate, earliestDate: est.earliestDate, latestDate: est.latestDate, casesAhead };
 });

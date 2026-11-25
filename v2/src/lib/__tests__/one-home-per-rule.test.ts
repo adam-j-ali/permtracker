@@ -83,6 +83,23 @@ const RULES: readonly Rule[] = [
       "    /** certified / (certified + denied), or null under the floor. */",
     ].join("\n"),
   },
+  {
+    name: "a PERM case's decision estimate, assembled",
+    // Each assembler passes every input (stragglers, the measured range, the stage figures, the RFI clock); one that
+    // left five out quoted employer pages a different range than the case page gave a case filed the same day
+    // (Nov 25 2026). A new surface calls estimatePermCase (src/lib/db/permEstimate.ts) instead of a sixth assembler.
+    homes: [
+      "src/lib/caseEstimate.ts",
+      "src/lib/db/permEstimate.ts",
+      "src/components/tools/CaseStatusResult.tsx",
+      "src/components/tools/CaseEstimate.tsx",
+      "src/lib/appCaseEstimate.ts",
+      "src/lib/__tests__/caseEstimate.test.ts",
+    ],
+    copy: /\bbuildCaseEstimate\(/,
+    probe: "  const est = buildCaseEstimate({ filingDate: today, status: \"ANALYST REVIEW\", isFinal: false, estimator, today });",
+    spare: 'import { buildCaseEstimate, type CaseEstimate } from "@/lib/caseEstimate";',
+  },
 ];
 
 /** Where a file computes a rule outside its homes, as file:line (a copy may run over several lines). */
