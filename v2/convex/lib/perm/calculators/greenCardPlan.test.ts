@@ -409,3 +409,18 @@ describe('buildPlan', () => {
     expect(MILESTONE_ORDER).toEqual(['pwdFiled', 'pwdIssued', 'permFiled', 'permCertified', 'i140Filed', 'i140Approved', 'i485Filed', 'greenCard']);
   });
 });
+
+describe('the I-140 preparation step, measured or assumed (Nov 25 2026)', () => {
+  const certified: PlanInput = { ...base, known: { permCertified: '2026-10-28' } };
+
+  it("says the step is measured from people's reports when the reports hold enough, and dates it from them", () => {
+    const plan = buildPlan(certified, { ...FIGURES, spans: { ...FIGURES.spans, i140Prep: { low: 21, mid: 38, high: 86 } }, i140PrepMeasured: { n: 24, windowDays: 183 } });
+    const prep = step(plan, 'i140Prep');
+    expect(prep.basis).toMatch(/middle half of 24 I-140s filed in the last 6 months/);
+    expect(prep.end?.mid).toBe('2026-12-05'); // Oct 28 + 38
+  });
+
+  it("keeps the assumption's wording when nothing is measured", () => {
+    expect(step(buildPlan(certified, FIGURES), 'i140Prep').basis).toBe("Your attorney's timing, inside the 180 days");
+  });
+});

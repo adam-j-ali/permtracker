@@ -25,6 +25,7 @@ import { getPermBoard, getPwdBoard } from "./board";
 import { getConsularIndex } from "./consularPosts";
 import { doc } from "./publicData";
 import { getBulletinBoard } from "./bulletin";
+import { getReportedSummary } from "./reportedSummary";
 import { getRecruitmentSummary } from "./recruitment";
 import { getUscisFormHistory, type UscisFormHistoryPoint } from "./uscisQuarterly";
 import { softFail } from "@/lib/softRead";
@@ -130,7 +131,7 @@ const quarterOf = (points: readonly UscisFormHistoryPoint[], title: string): str
  * step undated rather than failing the page.
  */
 export const getPlanReading = cache(async (): Promise<PlanReading> => {
-  const [perm, pwd, board, recruitment, i140, i485, i765, i131, nvcDoc, consular] = await Promise.all([
+  const [perm, pwd, board, recruitment, i140, i485, i765, i131, nvcDoc, consular, reported] = await Promise.all([
     getPermBoard().catch(softFail("planFigures.getPermBoard", null)),
     getPwdBoard().catch(softFail("planFigures.getPwdBoard", null)),
     getBulletinBoard().catch(softFail("planFigures.getBulletinBoard", null)),
@@ -141,7 +142,15 @@ export const getPlanReading = cache(async (): Promise<PlanReading> => {
     getUscisFormHistory(USCIS_ROWS.ap.form).catch(softFail("planFigures.getUscisFormHistory.ap", [])),
     doc<{ readings?: NvcReading[] }>("nvc_timeframes").catch(softFail("planFigures.doc", null)),
     getConsularIndex().catch(softFail("planFigures.getConsularIndex", null)),
+    getReportedSummary().catch(softFail("planFigures.getReportedSummary", null)),
   ]);
+  // Certification to the I-140's filing, from people's own reports when they hold a median (employment cases by
+  // definition). The consulate's step keeps its assumption: the merged NVC-to-interview figure is mostly family visas.
+  const prepStep = reported?.steps.find((st) => st.id === "cert-to-i140");
+  const prepMeasured =
+    prepStep && prepStep.median !== null && prepStep.p25 !== null && prepStep.p75 !== null && prepStep.windowDays !== null
+      ? { span: { low: prepStep.p25, mid: prepStep.median, high: prepStep.p75 }, n: prepStep.n, windowDays: prepStep.windowDays }
+      : null;
   const nvc = nvcSpans(nvcDoc?.readings);
 
   const lead = recruitment?.lead.firstStep ?? null;
@@ -156,7 +165,7 @@ export const getPlanReading = cache(async (): Promise<PlanReading> => {
         ? { low: Math.max(lead.p10, RECRUITMENT_MIN_DAYS), mid: Math.max(lead.p50, RECRUITMENT_MIN_DAYS), high: Math.max(lead.p90, RECRUITMENT_MIN_DAYS) }
         : { low: RECRUITMENT_MIN_DAYS, mid: RECRUITMENT_MIN_DAYS, high: RECRUITMENT_MIN_DAYS },
       perm: perm?.span ? waitSpanOf(perm.span, perm.day) : null,
-      i140Prep: { low: I140_PREP_DAYS_ASSUMED, mid: I140_PREP_DAYS_ASSUMED, high: I140_PREP_DAYS_ASSUMED },
+      i140Prep: prepMeasured?.span ?? { low: I140_PREP_DAYS_ASSUMED, mid: I140_PREP_DAYS_ASSUMED, high: I140_PREP_DAYS_ASSUMED },
       i140: {
         EB2: uscisSpanOf(i140, USCIS_ROWS.i140.title, eighty("EB2")),
         EB3: uscisSpanOf(i140, USCIS_ROWS.i140.title, eighty("EB3")),
@@ -167,6 +176,7 @@ export const getPlanReading = cache(async (): Promise<PlanReading> => {
       consular: nvc?.consular ?? null,
     },
     nvcCreation: nvc?.creation ?? null,
+    i140PrepMeasured: prepMeasured ? { n: prepMeasured.n, windowDays: prepMeasured.windowDays } : null,
     consularPause: pauseActive() ? { sinceLabel: CONSULAR_PAUSE.sinceLabel } : null,
     pace: paceByLine(board?.finalAction ?? [], (c) => (c.category in PLAN_I140_CLASS ? `${c.category}|${c.country}` : null)),
     bulletinMonth: board?.lastMonth ?? null,
@@ -199,7 +209,9 @@ export const getPlanReading = cache(async (): Promise<PlanReading> => {
     recruitment: lead
       ? `DOL's record of ${lead.n.toLocaleString("en-US")} cases: first recruitment step to filing, the 10th, 50th and 90th percentile`
       : "The shortest the rules allow: a 30-day job order, then 30 days before filing",
-    i140Prep: "An assumption that isn't measured: set it to your attorney's plan, inside the 180 days",
+    i140Prep: prepMeasured
+      ? `People's own reports: ${prepMeasured.n} I-140s filed in the last ${prepMeasured.windowDays <= 183 ? 6 : 12} months, the quarter quickest, the middle and the quarter slowest. Set it to your attorney's plan, inside the 180 days`
+      : "An assumption that isn't measured: set it to your attorney's plan, inside the 180 days",
     i140: `USCIS's newest quarterly median, between the quickest and slowest of the last four quarters and its 80% figure (read ${PROCESSING_TIMES_AS_OF})`,
     i485: "USCIS's employment-based median, the newest quarter between the quickest and slowest of the last four",
     ead: "USCIS's work-permit median for a pending I-485, the last four quarters",

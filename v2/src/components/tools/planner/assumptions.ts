@@ -76,6 +76,8 @@ export function figuresFor(
       ap: own.ap ?? base.spans.ap,
       consular: own.consular ?? base.spans.consular,
     },
+    // A length the reader sets for the I-140's preparation is theirs, no longer people's reports.
+    i140PrepMeasured: own.i140Prep ? null : (base.i140PrepMeasured ?? null),
     // The reader's own consulate length is their assumption about when interviews run, so the pause
     // stops withholding the visa date once they set one.
     consularPause: own.consular ? null : (base.consularPause ?? null),

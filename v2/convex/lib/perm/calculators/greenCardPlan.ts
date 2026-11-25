@@ -176,10 +176,10 @@ const stageInfo = (key: PlanStage): StageInfo => [...PLAN_STAGES, CONSULAR_STAGE
 export const RECRUITMENT_MIN_DAYS = JOB_ORDER_MIN_DAYS + FILING_WINDOW_WAIT_DAYS;
 
 /**
- * Days from certification to filing the I-140 when the reader hasn't said. Nothing
- * measures this (no public file dates an I-140's filing), so it's an assumption the
- * page names as one and the reader changes; the rule only says it must be inside the
- * 180 days a certification is valid (20 CFR 656.30(b)(1)).
+ * Days from certification to filing the I-140 when the reader hasn't said and people's own reports hold too few to
+ * measure it (no public file dates an I-140's filing; the merged reports do, from Nov 25 2026, as i140PrepMeasured).
+ * An assumption the page names as one and the reader changes; the rule only says it must be inside the 180 days a
+ * certification is valid (20 CFR 656.30(b)(1)).
  */
 export const I140_PREP_DAYS_ASSUMED = 30;
 /**
@@ -235,6 +235,12 @@ export interface PlanFigures {
   };
   /** Through a consulate: days from the I-140's approval until NVC has created the case (NVC's own weekly figure). */
   nvcCreation?: Span | null;
+  /**
+   * The I-140's preparation measured from people's own reports (the merged summary's "cert-to-i140": certification to
+   * the I-140's filing, its middle half), with how many cases over how many days. Absent while the span is the
+   * assumption, or once the reader sets their own.
+   */
+  i140PrepMeasured?: { n: number; windowDays: number } | null;
   /**
    * Through a consulate, while the record says immigrant visa interviews are paused worldwide
    * (scripts/data/consular_facts.json): the visa isn't dated, since nothing says when interviews
@@ -585,7 +591,14 @@ export function buildPlan(input: PlanInput, figures: PlanFigures): Plan {
     chain('perm', figures.spans.perm, "DOL's wait now, from the filing days it decided last");
   }
 
-  chain('i140Prep', prepSpan, "Your attorney's timing, inside the 180 days");
+  const prepMeasured = figures.i140PrepMeasured;
+  chain(
+    'i140Prep',
+    prepSpan,
+    prepMeasured
+      ? `People's own reports: the middle half of ${prepMeasured.n} I-140s filed in the last ${prepMeasured.windowDays <= 183 ? 6 : 12} months, inside the 180 days`
+      : "Your attorney's timing, inside the 180 days",
+  );
 
   // The I-140: premium processing is fixed in business days.
   const i140Info = stageInfo('i140');
