@@ -63,7 +63,6 @@ export const PAGE_CARD_ALT = {
   "pwd-calculator": "PWD processing time calculator. Where the National Prevailing Wage Center's queue stands and when a wage request is likely to issue.",
   "pwd-validity": "Prevailing wage determination validity. The window a determination stays usable, and the last day to file the PERM inside it.",
   "rfi-deadline": "PERM RFI and audit response deadline. The day a request for information or an audit response is due, from the date on DOL's letter.",
-  "salary-explorer": "PERM salary explorer. What employers offered on certified PERM cases, by occupation and state, from DOL's files.",
   "visa-bulletin-family": "Family-sponsored visa bulletin history. Every F1, F2A, F2B, F3 and F4 cutoff from the bulletin archive, by country, with every retrogression.",
   "sponsor-finder": "Find a green card sponsor. Employers that file PERM cases for a job, filtered by state, industry, recent filings, approval rate, offered wage and timing.",
   "perm-by-the-numbers": "PERM by the numbers: the totals DOL's own case records add up to, from cases waiting by stage to holds, decisions per day and new filings.",

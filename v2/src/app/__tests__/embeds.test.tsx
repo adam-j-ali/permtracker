@@ -40,11 +40,25 @@ describe("the embed registry", () => {
     (slug, def) => {
       const src = routeSource(slug);
       const m = /import ToolPage from "@\/app\/\(site\)\/\(public\)(\/[^"]+)\/page";/.exec(src);
-      expect(m, `${slug} imports a public page`).not.toBeNull();
-      expect(m![1]).toBe(def.href === "/visa-bulletin" ? "/tools/priority-date-calculator" : def.href);
-      const page = readFileSync(join(PUBLIC, ...m![1]!.split("/").filter(Boolean), "page.tsx"), "utf8");
+      // The page whose marked section shows: the one the route imports, or (for a shared component) the one it links.
+      const pagePath = m ? m[1]! : def.href.split("#")[0]!;
+      const page = readFileSync(join(PUBLIC, ...pagePath.split("/").filter(Boolean), "page.tsx"), "utf8");
       const markers = [...page.matchAll(/data-embed="([^"]+)"/g)].flatMap((x) => x[1]!.split(" "));
-      expect(markers).toContain(slug);
+      expect(markers, `${pagePath} marks the section ${slug} shows`).toContain(slug);
+      if (m) {
+        // The usual embed frames the whole page and shows only its marked section.
+        expect(m[1]).toBe(def.href === "/visa-bulletin" ? "/tools/priority-date-calculator" : def.href.split("#")[0]);
+      } else {
+        // A tool that became one section of a bigger page frames that section's own component instead, so the embed
+        // stays light; the page must render the same component inside its marked section (the salary explorer, a
+        // part of /perm-wages since Nov 24 2026). Either way the embed and the page can't drift apart.
+        const c = /import \{ (\w+) \} from "(@\/components\/[^"]+)";/.exec(src.replace(/import \{ EmbedFrame[^\n]+\n/, ""));
+        expect(c, `${slug} frames a public page or a shared component`).not.toBeNull();
+        expect(src).toContain(`<${c![1]} />`);
+        expect(page).toContain(`import { ${c![1]} } from "${c![2]}";`);
+        const section = new RegExp(`data-embed="[^"]*\\b${slug}\\b[^"]*"[^>]*>[\\s\\S]{0,400}<${c![1]} />`);
+        expect(page, `${pagePath} renders ${c![1]} inside its marked section`).toMatch(section);
+      }
       expect(src).toContain(`embedMetadata("${slug}")`);
       expect(src).toContain(`<EmbedFrame slug="${slug}">`);
     },
@@ -52,7 +66,8 @@ describe("the embed registry", () => {
 
   it("links every entry to a page that exists", () => {
     for (const e of EMBEDS) {
-      expect(existsSync(join(PUBLIC, ...e.href.split("/").filter(Boolean), "page.tsx")), e.href).toBe(true);
+      const path = e.href.split("#")[0]!;
+      expect(existsSync(join(PUBLIC, ...path.split("/").filter(Boolean), "page.tsx")), e.href).toBe(true);
     }
   });
 

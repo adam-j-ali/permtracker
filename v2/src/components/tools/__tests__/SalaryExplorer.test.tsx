@@ -3,7 +3,7 @@ import { render, screen, within } from "@testing-library/react";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: vi.fn() }),
-  usePathname: () => "/tools/salary-explorer",
+  usePathname: () => "/perm-wages",
   useSearchParams: () => new URLSearchParams(),
 }));
 

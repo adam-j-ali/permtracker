@@ -28,10 +28,15 @@ import { BrowseTeaser } from "@/components/entities/BrowseBody";
 import { fetchEntitySeed } from "@/lib/entitySeed";
 import { getDisclosureStats } from "@/lib/db/publicData";
 import {
+  getStateLadders,
   getVolumeLadders,
   getWageBandRates,
   getWageBandRatesByYear,
+  MIN_CASES_FOR_LADDER,
 } from "@/lib/db/wages";
+import { FaqList } from "@/components/tools/FaqList";
+import { SplitLadderNote } from "@/components/wages/SplitLadderNote";
+import { WageExplorer } from "@/components/wages/WageExplorer";
 import { TwoMarketsNote } from "@/components/wages/LadderComb";
 import { LadderCombViews } from "@/components/wages/LadderViews";
 import { DenialByWageBand } from "@/components/wages/DenialByWageBand";
@@ -46,7 +51,27 @@ import { SITE_URL } from "@/lib/constants/site";
 import { entityHref } from "@/lib/entityPayload";
 const TITLE = "PERM Salaries by Occupation";
 const DESCRIPTION =
-  "What PERM cases pay: the full wage ladder by occupation, with volume and approval rates, from DOL's own disclosure files.";
+  "What PERM cases pay: the full wage ladder by occupation, filters by job, state and year, with volume and approval rates, from DOL's own disclosure files.";
+
+// The salary explorer's questions, kept when the explorer joined this page (Nov 24 2026).
+const FAQS = [
+  {
+    q: "Is this what the job actually pays?",
+    a: "It's the wage the employer offered on the ETA-9089, which is the figure DOL publishes. It has to meet or beat the prevailing wage determination for that job in that area, so it's a floor set by the process. It isn't a market survey. Bonuses and equity aren't in it. The determinations themselves are held too, about 634,000 of them, so a wage request looked up by its P- number shows the wage DOL set for that job.",
+  },
+  {
+    q: "Why does a filter sometimes show no figures?",
+    a: "Because the selection is too thin to support one. Below 30 cases a median moves by thousands when a single case lands, so nothing is shown. Between 30 and 100 the middle is shown and the 5th and 95th are withheld, because at that size each tail rests on fewer than five filings.",
+  },
+  {
+    q: "Why is certified the default?",
+    a: "A denied case's offered wage was never agreed to by anyone. Benchmarking against certified wages is the more useful comparison, and every other outcome is one filter away.",
+  },
+  {
+    q: "Why is the average higher than the median in most selections?",
+    a: "Because the top of the wage range runs much further from the middle than the bottom does. A handful of very high offers pull an average up and leave a median where it is, which is why both are shown.",
+  },
+];
 
 export const metadata: Metadata = withSocialCard({
   title: TITLE,
@@ -75,12 +100,13 @@ export const metadata: Metadata = withSocialCard({
 export const revalidate = 604800;
 
 export default async function PermWagesPage() {
-  const [stats, seed, ladders, bandsByYear, bandsPooled] = await Promise.all([
+  const [stats, seed, ladders, bandsByYear, bandsPooled, stateLadders] = await Promise.all([
     getDisclosureStats(),
     fetchEntitySeed("occupation"),
     getVolumeLadders(12),
     getWageBandRatesByYear(),
     getWageBandRates(),
+    getStateLadders(60),
   ]);
   const { rows: occupations, total: occupationCount } = seed;
   const ladder = stats?.wageLadder ?? null;
@@ -104,11 +130,23 @@ export default async function PermWagesPage() {
 
   const chapters: ChapterItem[] = [
     ...(ladder ? [{ id: "ladder", label: "The ladder" }] : []),
+    { id: "explore", label: "Filter by state and year" },
     ...(ladders.length > 0 ? [{ id: "by-job", label: "By job" }] : []),
+    ...(stateLadders.length > 0 ? [{ id: "by-state", label: "By state" }] : []),
     ...(bandsPooled.length > 0 ? [{ id: "denials", label: "Denials by wage" }] : []),
     { id: "all", label: `All ${formatInt(occupationCount)}` },
     { id: "a-z", label: "A to Z" },
   ];
+
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage" as const,
+    mainEntity: FAQS.map((f) => ({
+      "@type": "Question" as const,
+      name: f.q,
+      acceptedAnswer: { "@type": "Answer" as const, text: f.a },
+    })),
+  };
 
   const datasetSchema = getDatasetSchema(SITE_URL, {
     name: "PERM offered wages by occupation",
@@ -119,6 +157,7 @@ export default async function PermWagesPage() {
   return (
     <div className="mx-auto w-full max-w-7xl px-4 pb-12 sm:px-6 sm:pb-16">
       <JsonLdScript schema={datasetSchema} />
+      <JsonLdScript schema={faqSchema} />
 
       <IndexHeader
         title="What PERM cases pay"
@@ -195,6 +234,11 @@ export default async function PermWagesPage() {
             </section>
           ) : null}
 
+          {/* The explorer leads with its own heading ("What does this job pay on a PERM?") and says what it filters. */}
+          <section id="explore" data-embed="salary-explorer" className="mt-10">
+            <WageExplorer />
+          </section>
+
           {ladders.length > 0 ? (
             <FigurePlate
               title="Two pay scales, one process"
@@ -220,6 +264,26 @@ export default async function PermWagesPage() {
                   return slug ? entityHref("occupation", slug) : null;
                 }}
               />
+            </FigurePlate>
+          ) : null}
+
+          {stateLadders.length > 0 ? (
+            <FigurePlate
+              title="Every state on one axis"
+              subject={`${stateLadders.length} states and territories with ${MIN_CASES_FOR_LADDER}+ certified cases`}
+              caption={
+                <>
+                  <SplitLadderNote ladders={stateLadders} className="mb-3" />
+                  Each row is one state&apos;s certified offers, cut at seven points, ordered by how many cases it
+                  files. These come from the pre-computed cells, and the filters above don&apos;t change them, so they
+                  cover the whole window and every state at once.
+                </>
+              }
+              source="DOL PERM disclosure files, certified cases only"
+              className="mt-10"
+              id="by-state"
+            >
+              <LadderCombViews label="Wage ladder by state" subjectLabel="State" ladders={stateLadders} />
             </FigurePlate>
           ) : null}
 
@@ -273,11 +337,14 @@ export default async function PermWagesPage() {
         <div >
           <h2 className="font-heading text-lg font-bold">Comparing an offer?</h2>{" "}
           <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-            The{" "}
-            <Link href="/tools/salary-explorer" className="link">
-              salary explorer
+            <Link href="/tools/compare-my-offer" className="link">
+              Compare my offer
             </Link>{" "}
-            recomputes the ladder over any occupation, state and year.
+            places one wage against cases for the same job, and the{" "}
+            <Link href="#explore" className="link">
+              filters above
+            </Link>{" "}
+            recompute the ladder over any occupation, state and year.
           </p>
         </div>
         <div >
@@ -294,6 +361,12 @@ export default async function PermWagesPage() {
             .
           </p>
         </div>
+      </section>
+      <section className="mt-12" aria-labelledby="wage-faqs">
+        <h2 id="wage-faqs" className="font-heading text-2xl font-bold">
+          Questions
+        </h2>{" "}
+        <FaqList items={FAQS} />
       </section>
       <PageBasics page="perm-wages" />{" "}
       <p className="mt-8 max-w-3xl text-sm leading-relaxed text-muted-foreground">

@@ -536,7 +536,7 @@
   },
   "blog/perm-salary-data-by-occupation": {
     "capture": {
-      "url": "/tools/salary-explorer"
+      "url": "/perm-wages#explore"
     },
     "credit": "Screenshot of permtracker.app, October 15, 2026",
     "alt": "The salary explorer: certified PERM wages filtered by job, state and year"
@@ -1609,5 +1609,15 @@
     },
     "credit": "Screenshot of permtracker.app, November 23, 2026",
     "alt": "The PERM processing times page answering whether PERM is getting faster, with the median wait month by month"
+  },
+  "changelog/one-page-for-each-question": {
+    "capture": {
+      "url": "/perm-wages#explore",
+      "clip": "fromm:What does this job pay on a PERM?",
+      "maxHeight": 650,
+      "css": "aside.lg\\:block{display:none!important}"
+    },
+    "credit": "Screenshot of permtracker.app, November 24, 2026",
+    "alt": "PERM wages by job with its filters for occupation, worksite state, fiscal year and outcome, above the median and percentile figures"
   }
 }

@@ -322,7 +322,6 @@ export async function pagesEntries(): Promise<Entry[]> {
     { url: `${base}/perm-industries`, lastModified: at("/perm-industries"), images: [`${base}/og/perm-industries.jpg`] },
     { url: `${base}/perm-countries`, lastModified: at("/perm-countries"), images: [`${base}/og/perm-countries.jpg`] },
     { url: `${base}/green-card-timelines`, lastModified: at("/green-card-timelines"), images: [`${base}/og/green-card-timelines.jpg`] },
-    { url: `${base}/tools/salary-explorer`, lastModified: at("/tools/salary-explorer"), images: [`${base}/og/salary-explorer.jpg`] },
     { url: `${base}/tools/i140-trends`, lastModified: at("/tools/i140-trends"), images: [`${base}/og/i140-trends.jpg`] },
     { url: `${base}/uscis-processing-times`, lastModified: at("/uscis-processing-times"), images: [`${base}/og/uscis-processing-times.jpg`] },
     // One page per form, a fixed list (`FORM_PAGES`), each dated by the template.

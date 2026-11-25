@@ -343,6 +343,12 @@ html {
   scroll-padding-top: calc(var(--site-header-h) + 1.5rem);
 }
 
+/* A page with the sticky "On this page" bar (.chapter-ground, 60px under the header) leaves room for that bar too:
+   measured Nov 24 2026, every chapter jump landed with its first 36px under the bar, at 1440 and at 390. */
+html:has(.chapter-ground) {
+  scroll-padding-top: calc(var(--site-header-h) + 60px + 1rem);
+}
+
 /* A link in running text: green ink, always underlined (so it never rests on
    colour alone), the underline thickening on hover. The one link style for
    prose, notes and answers; navigation and buttons have their own. */

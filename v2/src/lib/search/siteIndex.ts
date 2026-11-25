@@ -92,6 +92,8 @@ export const PAGE_KEYWORDS: Readonly<Record<string, string>> = {
   "/reviews": "reviews review testimonials rating ratings stars feedback what people say",
   "/perm-employers/browse": "browse alphabetical index employers companies sponsors",
   "/perm-attorneys/browse": "browse alphabetical index attorneys law firms counsel",
+  // The salary explorer joined /perm-wages (Nov 24 2026): its words find the page that now holds its filters.
+  "/perm-wages": "salary explorer salaries pay offered wage by state by year filter occupation percentile median ladder",
   "/perm-wages/browse": "browse alphabetical index occupations job titles soc wages",
   "/soc-codes/browse": "browse alphabetical index job titles soc codes occupation codes a to z",
 };

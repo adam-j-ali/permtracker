@@ -69,7 +69,7 @@ export const LOOK: Partial<Record<DataGroup, BandLook>> = {
   Wages: {
     lead: "What certified jobs pay, and where an offer sits among them.",
     picture: DATA_SHOTS.wages,
-    url: "permtracker.app/tools/salary-explorer",
+    url: "permtracker.app/perm-wages",
     caption: "Captured October 21, 2026.",
   },
   "Students and OPT": {

@@ -224,12 +224,6 @@ const DATA_PAGES: { path: string; label: string; blurb: string }[] = [
     blurb: "Every step to an employment-based green card dated from the reader's own dates and today's DOL and USCIS figures, with the government fees.",
   },
   {
-    path: "/tools/salary-explorer",
-    label: "PERM salary explorer",
-    blurb:
-      "What sponsorship actually pays, by occupation, state and year, from the wage committed to on each certified filing. Not a survey estimate: every figure came off a federal form.",
-  },
-  {
     path: "/lca-wages",
     label: "H-1B salary explorer",
     blurb:

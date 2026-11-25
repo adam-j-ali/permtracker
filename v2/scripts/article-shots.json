@@ -131,8 +131,8 @@
  },
  {
   "name": "salary-explorer",
-  "url": "https://permtracker.app/tools/salary-explorer",
-  "wait": "main",
+  "url": "https://permtracker.app/perm-wages#explore",
+  "wait": "#explore",
   "width": 1280,
   "height": 820,
   "settle": 1500

@@ -40,7 +40,6 @@ export const DISCLOSURE_PAGES = [
   "/perm-attorneys",
   "/perm-attorneys/browse",
   "/methodology",
-  "/tools/salary-explorer",
   "/lca-wages",
   "/h1b-employers",
   "/law-firm-rankings",

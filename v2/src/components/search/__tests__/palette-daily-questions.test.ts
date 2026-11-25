@@ -23,3 +23,9 @@ describe("the palette's answers to the daily questions", () => {
     expect(first(q)).toBe("/today");
   });
 });
+
+describe("the salary explorer's words lead to the wages page that holds its filters", () => {
+  it.each(["salary explorer", "perm salary explorer", "salary by state"])("%s → /perm-wages", (q) => {
+    expect(first(q)).toBe("/perm-wages");
+  });
+});

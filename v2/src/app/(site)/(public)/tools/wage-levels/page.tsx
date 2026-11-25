@@ -93,7 +93,7 @@ export default async function WageLevelsPage({ searchParams }: { searchParams: P
         currentHref="/tools/wage-levels"
         reading={[
           { href: "/guides/how-dol-sets-a-prevailing-wage", label: "How DOL sets a prevailing wage", note: "the level rule and the survey behind it" },
-          { href: "/tools/salary-explorer", label: "Salary explorer", note: "what certified PERM jobs offered, by occupation and state" },
+          { href: "/perm-wages#explore", label: "PERM wages by job", note: "what certified PERM jobs offered, by occupation, state and year" },
           { href: "/tools/pwd-validity", label: "Wage determination validity", note: "when a determination expires" },
         ]}
       />

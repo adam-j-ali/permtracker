@@ -326,6 +326,9 @@ const nextConfig: NextConfig = {
       { source: "/guides/what-dol-publishes-about-perm", destination: "/blog/what-dol-publishes-about-perm", permanent: true },
       { source: "/guides/how-perm-wage-data-is-published", destination: "/blog/how-perm-wage-data-is-published", permanent: true },
       { source: "/guides/what-to-do-while-you-wait", destination: "/blog/what-to-do-while-you-wait", permanent: true },
+      // The salary explorer joined the wages page on Nov 24 2026 (one page per question): its address and its
+      // filters in the query string (soc, state, fy, status, city, sector) land on the same filters there.
+      { source: "/tools/salary-explorer", destination: "/perm-wages#explore", permanent: true },
       { source: "/demo", destination: "/tools", permanent: true },
       { source: "/demo.html", destination: "/tools", permanent: true },
       { source: "/register.html", destination: "/signup", permanent: true },

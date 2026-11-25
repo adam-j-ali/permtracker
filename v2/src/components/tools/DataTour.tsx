@@ -60,7 +60,7 @@ const BANDS: Record<DataGroup, { lead: string; shot: DataShot; url: string }> = 
   Wages: {
     lead: "What certified jobs pay, and where an offer sits among them.",
     shot: "wages",
-    url: "permtracker.app/tools/salary-explorer",
+    url: "permtracker.app/perm-wages",
   },
   "Other visas": {
     lead: "H-1B LCAs and the lottery, and the seasonal H-2A, H-2B and CW-1 programs, from the same DOL counter.",

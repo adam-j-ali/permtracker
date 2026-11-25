@@ -11,7 +11,7 @@ let search = new URLSearchParams();
 const replace = vi.fn();
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace }),
-  usePathname: () => "/tools/salary-explorer",
+  usePathname: () => "/perm-wages",
   useSearchParams: () => search,
 }));
 

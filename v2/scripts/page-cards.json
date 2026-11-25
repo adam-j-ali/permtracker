@@ -807,21 +807,6 @@
   "maxWidth": 1100
  },
  {
-  "slug": "salary-explorer",
-  "path": "/tools/salary-explorer",
-  "title": "PERM salary explorer",
-  "label": "Wages on certified PERM cases, by occupation, state and year.",
-  "shot": "salary-explorer.png",
-  "crop": [
-   0,
-   0,
-   1504,
-   1000
-  ],
-  "from": "Where the wages land",
-  "mask": "figures"
- },
- {
   "slug": "visa-bulletin-family",
   "path": "/visa-bulletin/family",
   "title": "Family-sponsored cutoffs",

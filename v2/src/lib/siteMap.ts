@@ -70,7 +70,6 @@ export type DataSection =
   | "layoffs"
   | "debarments"
   | "wages"
-  | "salary-explorer"
   | "lca-wages"
   | "wage-levels"
   | "soc-codes"
@@ -219,7 +218,6 @@ export const SECTIONS: DataNavSection[] = [
   s("by-country", "Breakdowns", "By citizenship", "/perm-countries"),
 
   s("wages", "Wages", "PERM wages by job", "/perm-wages"),
-  t("salary-explorer", "Wages", "PERM salary explorer", "/tools/salary-explorer", "What certified PERM jobs pay, as a ladder."),
   s("lca-wages", "Wages", "H-1B salaries", "/lca-wages"),
   t("compare-offer", "Wages", "Compare my offer", "/tools/compare-my-offer", "Where an offer sits among certified filings."),
   s("wage-sources", "Wages", "H-1B wage sources", "/lca-wage-sources"),

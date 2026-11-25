@@ -93,7 +93,7 @@ interface Props {
 type Program = "lca" | "perm";
 const PROGRAM: Record<Program, { api: string; name: string; noun: string; explorer: string }> = {
   lca: { api: "/api/lca-wages", name: "H-1B LCAs", noun: "certified LCAs", explorer: "/lca-wages" },
-  perm: { api: "/api/perm-wages", name: "PERM offers", noun: "certified PERM cases", explorer: "/tools/salary-explorer" },
+  perm: { api: "/api/perm-wages", name: "PERM offers", noun: "certified PERM cases", explorer: "/perm-wages#explore" },
 };
 
 const UNITS = [

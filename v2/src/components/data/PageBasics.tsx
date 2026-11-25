@@ -95,10 +95,10 @@ export const BASICS: Record<string, BasicsEntry[]> = {
           A PERM filing must offer at least the prevailing wage DOL determines
           for the job and place, so these figures show what sponsorship
           actually pays by occupation. The{" "}
-          <Link href="/tools/salary-explorer" className={link}>
-            salary explorer
+          <Link href="#explore" className={link}>
+            filters on this page
           </Link>{" "}
-          breaks the same data down by state and year.
+          break the same data down by state and year.
         </>
       ),
     },

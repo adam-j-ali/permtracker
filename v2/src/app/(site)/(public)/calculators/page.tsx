@@ -56,7 +56,7 @@ export const dynamic = "force-static";
 /** The explorers: they take nothing about the reader's case. Named by the site map, like every page. */
 const EXPLORERS = [
   {
-    href: "/tools/salary-explorer",
+    href: "/perm-wages#explore",
     icon: CurrencyDollarIcon,
     kind: "Distribution",
     blurb:
@@ -156,7 +156,7 @@ export default function CalculatorsPage() {
                 { s: "Deciding between EB-2 and EB-3", q: "Which line has fewer people ahead of my date?", href: "/tools/eb2-vs-eb3", tool: "EB-2 vs EB-3" },
                 { s: "Before the PERM", q: "Which employment green card could my job lead to?", href: "/tools/which-green-card", tool: "Which green card fits" },
                 { s: "Just starting, or planning ahead", q: "When will I get my green card, and what will it cost?", href: "/tools/green-card-timeline", tool: "Green card timeline and planner" },
-                { s: "Writing the job offer, before any of the above", q: "What does this role pay here?", href: "/tools/salary-explorer", tool: "Salary explorer" },
+                { s: "Writing the job offer, before any of the above", q: "What does this role pay here?", href: "/perm-wages#explore", tool: "PERM wages by job" },
                 { s: "Weighing EB-2 against EB-3", q: "Which category is USCIS clearing?", href: "/tools/i140-trends", tool: "I-140 trends" },
               ].map((r) => (
                 <tr key={r.href} className="border-t border-border/40">

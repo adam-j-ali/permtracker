@@ -182,8 +182,8 @@
   },
   "data/wages": {
     "capture": {
-      "url": "/tools/salary-explorer",
-      "clip": "fromm:PERM salary explorer",
+      "url": "/perm-wages#explore",
+      "clip": "fromm:Filter by job, state and year",
       "maxHeight": 1150,
       "wait": 5000
     },

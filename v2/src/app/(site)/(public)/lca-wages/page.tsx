@@ -140,8 +140,8 @@ export default async function LcaWagesPage() {
         currentHref="/lca-wages"
         reading={[
           {
-            href: "/tools/salary-explorer",
-            label: "PERM salary explorer",
+            href: "/perm-wages#explore",
+            label: "PERM wages by job",
             note: "The same ladder over the wage offered on the permanent job, which is usually the next filing.",
           },
           {

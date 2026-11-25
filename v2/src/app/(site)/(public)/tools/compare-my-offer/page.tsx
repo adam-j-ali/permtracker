@@ -112,9 +112,9 @@ export default async function CompareMyOfferPage() {
             note: "The whole distribution the H-1B percentile is read from, by occupation, state and year.",
           },
           {
-            href: "/tools/salary-explorer",
-            label: "PERM salary explorer",
-            note: "The same for the permanent job's offered wage.",
+            href: "/perm-wages#explore",
+            label: "PERM wages by job",
+            note: "The same for the permanent job's offered wage, filtered by occupation, state and year.",
           },
           {
             href: "/tools/pwd-calculator",
