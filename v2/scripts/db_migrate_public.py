@@ -283,6 +283,9 @@ def main() -> int:
     db.execute("""CREATE TABLE IF NOT EXISTS perm_entity_alias (
         kind TEXT NOT NULL, slug TEXT NOT NULL, target_slug TEXT NOT NULL,
         PRIMARY KEY (kind, slug))""")
+    # The re-pointing below and reconcile_entity_aliases.py find aliases by where they point. Live since before the
+    # scripts named every index; written here so a rebuilt table gets it.
+    db.execute("CREATE INDEX IF NOT EXISTS perm_entity_alias_target ON perm_entity_alias (kind, target_slug)")
     if alias_rows:
         insert_rows(db, "perm_entity_alias", ["kind", "slug", "target_slug"], alias_rows)
         for kind, old, target in alias_rows:

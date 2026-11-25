@@ -34,6 +34,9 @@ def main() -> int:
     check("lca_cases_history_soc_state_st_dec" not in names("lca_cases_history"),
           "the job-and-state index stays on the current LCA files only")
     check("pwd_cases_emp_title" not in names("pwd_cases"), "the wage-request files get no title index")
+    check("idx_lca_cases_pw_case" in names("lca_cases"), "the current LCA files keep the index of the wage requests they cite")
+    check(not any("pw_case" in n for t in ("lca_cases_history", "pwd_cases", "seasonal_cases") for n in names(t)),
+          "no other file gets it")
 
     # The decision activity feed reads the seasonal programs' wage requests (P-400, P-500) from pwd_cases. Those are
     # about one in seven of its rows, so without an index of their own a job or state filter walks every program's

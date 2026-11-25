@@ -2246,6 +2246,10 @@ def main() -> int:
     # ordering free.
     db.execute("""CREATE INDEX IF NOT EXISTS case_status_stage
         ON perm_case_status (current_status, is_final, filing_date)""")
+    # The month counts (filings by month and status, the census and the pending-by-month reads) group on the
+    # filing month. Live since before the scripts named every index; written here so a rebuilt table gets it.
+    db.execute("""CREATE INDEX IF NOT EXISTS case_status_month
+        ON perm_case_status (substr(filing_date,1,7), current_status)""")
 
     through = None
     sql_args: list = []

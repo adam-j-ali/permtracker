@@ -558,6 +558,10 @@ def index_ddl(table: str) -> list[str]:
         # lca_cases, the one table big enough to need it; created on production by hand that night.
         f"CREATE INDEX IF NOT EXISTS {table}_soc_state_st_dec ON {table} "
         "(substr(soc_code, 1, 7), worksite_state, case_status, decision_date)",
+        # The filings that cite one wage request (a wage request's page): about 0.2% of LCAs name one, so the index
+        # holds only those. Built on production by hand on Nov 21 2026 (1.9 s) under this name, which predates the
+        # table-prefixed names; kept so the live index and this line stay one.
+        "CREATE INDEX IF NOT EXISTS idx_lca_cases_pw_case ON lca_cases(pw_case) WHERE pw_case IS NOT NULL",
     ] if table == "lca_cases" else []) + ([
         # A name with a job title (`disclosureByTitleIndex`, and `disclosureHistoryByTitleIndex` for the older
         # files): the title is in the index, so the search tests it without opening each filing. "EMC" holds 2,204
