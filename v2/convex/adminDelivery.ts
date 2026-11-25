@@ -20,8 +20,8 @@ import { QUEUE_MAX } from "./confirmationQueue";
 import { RETRY_MAX_ROWS, dailyCeilings, utcDay } from "./lib/emailLimits";
 import { easternDay, MS_PER_DAY } from "./lib/time";
 
-/** At most this many of a day's Worker-forwarded messages are counted (a flood reads as "500 or more"). */
-const WORKER_FORWARDS_READ = 500;
+/** At most this many of a day's forwarded messages are read (each row carries the whole message). */
+const WORKER_FORWARDS_READ = 200;
 
 /** Budget refusal rows read: one per pool per day, so a week of pools fits many times over. */
 const REFUSALS_READ = 200;
@@ -164,13 +164,13 @@ export const getDelivery = query({
       queuedBy.set(r.pool, (queuedBy.get(r.pool) ?? 0) + (r.queued ?? 0));
     }
 
-    // Mail the Worker forwarded (its rows carry a "cloudflare:" id): newest first, stopping at a day old.
-    let workerForwards = 0;
-    for await (const row of ctx.db.query("supportEmails").order("desc")) {
-      if (row._creationTime < now - MS_PER_DAY) break;
-      if (row.status === "forwarded" && String(row.resendEmailId ?? "").startsWith("cloudflare:")) workerForwards += 1;
-      if (workerForwards >= WORKER_FORWARDS_READ) break;
-    }
+    // Mail the Worker forwarded in the last day (its rows carry a "cloudflare:" id), read through the status index
+    // and capped: a row holds the whole message, so an unbounded read could pass the query's limit on a busy day.
+    const forwardedRows = await ctx.db
+      .query("supportEmails")
+      .withIndex("by_status", (q) => q.eq("status", "forwarded").gte("_creationTime", now - MS_PER_DAY))
+      .take(WORKER_FORWARDS_READ);
+    const workerForwards = forwardedRows.filter((row) => String(row.resendEmailId ?? "").startsWith("cloudflare:")).length;
 
     const pools = [];
     for (const [name, b] of Object.entries(BUDGETS) as [BudgetName, (typeof BUDGETS)[BudgetName]][]) {
