@@ -149,7 +149,7 @@ def test_load_one_commit():
                   f"a load writes its cases in one transaction a request ({len(writes)} requests)")
             check(int(db.scalar("SELECT count(*) FROM uscis_sample_cases")) == 1200, "every case is written")
             doc = json.loads(db.scalar("SELECT json FROM perm_docs WHERE key = 'uscis_sample_block_mix'") or "{}")
-            check(doc.get("as_of") == "2026-11-25" and doc.get("by_block", {}).get("IOE00000") == [["waiting", "Case Was Received", 1200]],
+            check(doc.get("as_of") == "2026-11-25" and doc.get("by_block", {}).get("IOE00000") == {"I-765": [["waiting", "Case Was Received", 1200]]},
                   f"the load saves each block's counts for its card: {str(doc)[:120]}")
             again = ingest_uscis_sample.load(folder, dry_run=False)
             check(again == 0, "the same day again is a repeat, nothing written")
@@ -191,15 +191,19 @@ def test_block_mix():
         case("IOE0000000006", "denied", "Case Was Denied"),
         case("EAC3512345678", "approved", "Case Was Approved"),
     ]}
+    cases["IOE0000000007"] = {**case("IOE0000000007", "approved", "Case Was Approved"), "form": "I-765"}
     mix = block_mix(cases)
     check(set(mix) == {"IOE00000"}, f"one entry per online block, none for a paper number: {sorted(mix)}")
-    check(sorted(map(tuple, mix["IOE00000"])) == [("approved", "", 2), ("denied", "", 1),
-                                                 ("waiting", "Case Was Received and A Receipt Notice Was Sent", 2),
-                                                 ("waiting", "Interview Was Scheduled", 1)],
-          f"outcomes by group, waiting by its words: {mix['IOE00000']}")
-    check(not any("IOE" in str(cell) for rows in mix.values() for row in rows for cell in row), "no receipt number in a count")
+    check(set(mix["IOE00000"]) == {"I-485", "I-765"}, f"each block's cases form by form: {sorted(mix['IOE00000'])}")
+    check(sorted(map(tuple, mix["IOE00000"]["I-485"])) == [("approved", "", 2), ("denied", "", 1),
+                                                          ("waiting", "Case Was Received and A Receipt Notice Was Sent", 2),
+                                                          ("waiting", "Interview Was Scheduled", 1)],
+          f"outcomes by group, waiting by its words: {mix['IOE00000']['I-485']}")
+    check(mix["IOE00000"]["I-765"] == [["approved", "", 1]], f"a form's own counts: {mix['IOE00000']['I-765']}")
+    check(not any("IOE" in str(cell) for forms in mix.values() for rows in forms.values() for row in rows for cell in row),
+          "no receipt number in a count")
     many = {f"IOE00000000{i:02d}": case(f"IOE00000000{i:02d}", "waiting", f"Step {i % 15}") for i in range(90)}
-    rows = block_mix(many)["IOE00000"]
+    rows = block_mix(many)["IOE00000"]["I-485"]
     named = [r for r in rows if r[1]]
     check(len(named) == 12 and rows[-1] == ["waiting", "", 18] and sum(r[2] for r in rows) == 90,
           f"a block keeps its 12 commonest waiting steps by name and counts the rest together: {rows[-2:]}")

@@ -10,10 +10,9 @@ import { notFound } from "next/navigation";
 
 import { DataProvenance } from "@/components/data/DataProvenance";
 import { FigurePlate } from "@/components/tools/FigurePlate";
-import { ShareLine } from "@/components/updates/ShareLine";
 import { BlockApprovalChart } from "@/components/uscis/BlockApprovalChart";
 import { BlockSearch } from "@/components/uscis/BlockSearch";
-import { BlockStatusCard } from "@/components/uscis/BlockStatusCard";
+import { BlockStatusChooser } from "@/components/uscis/BlockStatusChooser";
 import { keepWhole } from "@/components/ui/keep-whole";
 import { CaveatBox } from "@/components/ui/note";
 import { ScrollBox } from "@/components/ui/scroll-box";
@@ -22,7 +21,7 @@ import { formatAsOf } from "@/lib/dolFormat";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { softFail } from "@/lib/softRead";
 import { withSocialCard } from "@/lib/socialCard";
-import { blockCoverage, blockForms, blockShareLine, blockStatusMix, chartSeries, neighbours, topForms } from "@/lib/uscisSample";
+import { blockCoverage, blockFormChoices, blockForms, blockShareLine, chartSeries, neighbours, topForms } from "@/lib/uscisSample";
 
 export const revalidate = 3600;
 
@@ -78,7 +77,8 @@ export default async function UscisReceiptBlockPage({ params }: { params: Promis
     getBlockMoves(block).catch(softFail("getBlockMoves", [])),
     getBlockMix(block).catch(softFail("getBlockMix", null)),
   ]);
-  const mix = mixRows ? blockStatusMix(mixRows.rows) : null;
+  const choices = mixRows ? blockFormChoices(mixRows.byForm) : [];
+  const mix = choices[0]?.mix ?? null;
   const coverage = blockCoverage(doc?.by_block[block]);
   const forms = doc ? blockForms(doc.by_block[block] ?? {}) : [];
   const near = doc ? neighbours(doc, block) : { before: null, after: null };
@@ -112,12 +112,12 @@ export default async function UscisReceiptBlockPage({ params }: { params: Promis
           <h2 id="card-title" className="sr-only">
             Every case&apos;s status in {block}
           </h2>{" "}
-          <BlockStatusCard block={block} asOf={mixRows.as_of} mix={mix} every={coverage.every} />{" "}
-          <ShareLine
-            className="mt-5"
-            line={blockShareLine(block, mixRows.as_of, mix, coverage)}
-            day={mixRows.as_of}
-            event="block_line_shared"
+          <BlockStatusChooser
+            block={block}
+            asOf={mixRows.as_of}
+            every={coverage.every}
+            choices={choices}
+            lines={Object.fromEntries(choices.map((c) => [c.key, blockShareLine(block, mixRows.as_of, c.mix, coverage, c)]))}
           />
         </section>
       ) : null}

@@ -59,9 +59,9 @@ export default async function UscisReceiptBlocksPage() {
   const issued = issuedWeek(issuedRuns);
   // The blocks the census checked one number at a time, newest first: the ones people pass around as a picture.
   const whole = doc ? Object.keys(doc.by_block).filter((b) => blockCoverage(doc.by_block[b]).every).sort().reverse() : [];
-  const mixes = whole.length ? await getBlockMixes(whole).catch(softFail<Record<string, { grp: string; status: string; n: number }[]>>("getBlockMixes", {})) : {};
+  const mixes = whole.length ? await getBlockMixes(whole).catch(softFail<Awaited<ReturnType<typeof getBlockMixes>>>("getBlockMixes", {})) : {};
   const counted = whole
-    .map((block) => ({ block, mix: blockStatusMix(mixes[block] ?? []) }))
+    .map((block) => ({ block, mix: blockStatusMix(Object.values(mixes[block] ?? {}).flat()) }))
     .filter((b) => b.mix.total > 0);
   const forms = doc ? topForms(doc, 5) : [];
   const series = doc ? chartSeries(doc, forms) : [];

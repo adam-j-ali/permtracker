@@ -137,15 +137,30 @@ export async function getCasesAround(receipt: string, span = 500): Promise<Sampl
   return got.map(caseRow);
 }
 
+export type MixRow = { grp: string; status: string; n: number };
+
 export interface BlockMixRows {
   as_of: string;
-  /** Each group's count, and each waiting step's by USCIS's words (status "" for an outcome, or the rarer steps). */
-  rows: { grp: string; status: string; n: number }[];
+  /** Each form's group counts, and its waiting steps by USCIS's words (status "" for an outcome or the rarer steps). */
+  byForm: Record<string, MixRow[]>;
 }
 
+const mixRows = (raw: unknown): MixRow[] =>
+  (Array.isArray(raw) ? (raw as [string, string, number | string][]) : []).map(([grp, status, n]) => ({
+    grp: String(grp),
+    status: String(status),
+    n: Number(n) || 0,
+  }));
+
+/** A block's part of the document: {form: rows} since Nov 26 2026, or one list for every form before (read as ""). */
+const byFormOf = (raw: unknown): Record<string, MixRow[]> =>
+  Array.isArray(raw)
+    ? { "": mixRows(raw) }
+    : Object.fromEntries(Object.entries((raw ?? {}) as Record<string, unknown>).map(([form, rows]) => [form, mixRows(rows)]));
+
 /**
- * One block's counts for its card ('uscis_sample_block_mix', counted by the nightly load): only that block's part of
- * the document is read. Null before the first load; a block the sample holds no case in reads as no rows.
+ * One block's counts for its card ('uscis_sample_block_mix', counted by the nightly load), form by form: only that
+ * block's part of the document is read. Null before the first load; a block the sample holds no case in reads as none.
  */
 export const getBlockMix = cache(async (block: string): Promise<BlockMixRows | null> => {
   if (!/^IOE\d{5}$/.test(block)) return null;
@@ -154,12 +169,11 @@ export const getBlockMix = cache(async (block: string): Promise<BlockMixRows | n
     [`$.by_block.${block}`],
   );
   if (!row || !row.as_of) return null;
-  const got = row.mix ? (JSON.parse(String(row.mix)) as [string, string, number | string][]) : [];
-  return { as_of: String(row.as_of), rows: got.map(([grp, status, n]) => ({ grp: String(grp), status: String(status), n: Number(n) || 0 })) };
+  return { as_of: String(row.as_of), byForm: row.mix ? byFormOf(JSON.parse(String(row.mix))) : {} };
 });
 
 /** Several blocks' counts in one read (the list of blocks counted in full): each block's part of the document only. */
-export const getBlockMixes = cache(async (blocks: readonly string[]): Promise<Record<string, BlockMixRows["rows"]>> => {
+export const getBlockMixes = cache(async (blocks: readonly string[]): Promise<Record<string, Record<string, MixRow[]>>> => {
   const wanted = blocks.filter((b) => /^IOE\d{5}$/.test(b));
   if (!wanted.length) return {};
   const got = await rows<{ block: string; mix: string }>(
@@ -167,10 +181,5 @@ export const getBlockMixes = cache(async (blocks: readonly string[]): Promise<Re
       WHERE perm_docs.key = 'uscis_sample_block_mix' AND j.key IN (${wanted.map(() => "?").join(", ")})`,
     [...wanted],
   );
-  return Object.fromEntries(
-    got.map((r) => [
-      String(r.block),
-      (JSON.parse(String(r.mix)) as [string, string, number | string][]).map(([grp, status, n]) => ({ grp: String(grp), status: String(status), n: Number(n) || 0 })),
-    ]),
-  );
+  return Object.fromEntries(got.map((r) => [String(r.block), byFormOf(JSON.parse(String(r.mix)))]));
 });

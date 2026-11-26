@@ -25,25 +25,28 @@ export function BlockStatusCard({
   asOf,
   mix,
   every,
+  form,
 }: {
   block: string;
   asOf: string;
   mix: BlockMix;
   /** The census checked every number in the block. */
   every: boolean;
+  /** One form's cases ("I-765"), or every form's when left out. */
+  form?: string;
 }) {
   const when = formatAsOf(asOf) ?? asOf;
   const waitingTotal = mix.waiting.reduce((s, w) => s + w.n, 0);
   return (
     <FigurePlate
-      title={`Every case's status in ${block}`}
+      title={form ? `Every ${form} case's status in ${block}` : `Every case's status in ${block}`}
       subject={every ? `Every number checked, ${when}` : `The cases checked so far, ${when}`}
       caption={
         every
-          ? `Each of the block's 100,000 receipt numbers was checked on USCIS's case status page; ${formatInt(mix.total)} of them hold a case. Each case is counted once, at its newest status.`
+          ? `Each of the block's 100,000 receipt numbers was checked on USCIS's case status page; ${formatInt(mix.total)} of them hold ${form ? `a ${form} case` : "a case"}. Each case is counted once, at its newest status.`
           : `The cases checked in this block so far, each counted once at its newest status. Not every number in the block has been checked yet, so the share approved for each form below is an estimate with its margin.`
       }
-      source={`PERM Tracker's check of USCIS's case status page. permtracker.app/uscis-receipt-blocks/${block}`}
+      source={`PERM Tracker's check of USCIS's case status page. permtracker.app/uscis-receipt-blocks/${block}${form ? `#form=${form}` : ""}`}
     >
       <p className="font-heading text-5xl font-bold leading-none tabular-nums sm:text-6xl">
         {formatInt(mix.total)}

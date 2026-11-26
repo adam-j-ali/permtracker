@@ -64,32 +64,34 @@ def block_of(receipt: str) -> str | None:
     return receipt[:8] if receipt.startswith("IOE") else None
 
 
-# A block's commonest waiting steps keep their words; the rest are counted together (status ""), so the document stays
-# small (the card names four).
+# A block's commonest waiting steps keep their words, form by form; the rest are counted together (status ""), so the
+# document stays small (the card names four).
 MIX_STEPS = 12
 
 
-def block_mix(cases: dict[str, dict]) -> dict[str, list[list]]:
-    """Each online block's cases counted for its page's card (Nov 26 2026): [group, status, count] rows, an outcome
-    counted by its group alone (status ""), a waiting case by USCIS's own words, so the card can name the steps. Counted
-    here once a night, so a page reads one document instead of grouping some 100,000 rows a block. No receipt number
-    goes in a row."""
-    counts: dict[str, dict[tuple[str, str], int]] = {}
+def block_mix(cases) -> dict[str, dict[str, list[list]]]:
+    """Each online block's cases counted for its page's card, form by form (Nov 26 2026: people pass around one form's
+    picture, a block's work permits): {block: {form: [[group, status, count], ...]}}, an outcome counted by its group
+    alone (status ""), a waiting case by USCIS's own words, so the card can name the steps. Counted here once a night,
+    so a page reads one document instead of grouping some 100,000 rows a block. No receipt number goes in a row."""
+    counts: dict[str, dict[str, dict[tuple[str, str], int]]] = {}
     for r, row in cases.items():
         block = block_of(r)
         if block is None:
             continue
         key = (row["grp"], row["status"] if row["grp"] == "waiting" else "")
-        b = counts.setdefault(block, {})
-        b[key] = b.get(key, 0) + 1
-    out: dict[str, list[list]] = {}
-    for block, b in sorted(counts.items()):
-        rows = sorted(b.items(), key=lambda kv: (-kv[1], kv[0]))
-        named = [kv for kv in rows if kv[0][0] == "waiting" and kv[0][1]]
-        rest = sum(n for _, n in named[MIX_STEPS:])
-        keep = [kv for kv in rows if not (kv[0][0] == "waiting" and kv[0][1])] + named[:MIX_STEPS]
-        keep.sort(key=lambda kv: (-kv[1], kv[0]))
-        out[block] = [[g, st, n] for (g, st), n in keep] + ([["waiting", "", rest]] if rest else [])
+        f = counts.setdefault(block, {}).setdefault(row["form"] or "", {})
+        f[key] = f.get(key, 0) + 1
+    out: dict[str, dict[str, list[list]]] = {}
+    for block, forms in sorted(counts.items()):
+        out[block] = {}
+        for form, b in sorted(forms.items()):
+            rows = sorted(b.items(), key=lambda kv: (-kv[1], kv[0]))
+            named = [kv for kv in rows if kv[0][0] == "waiting" and kv[0][1]]
+            rest = sum(n for _, n in named[MIX_STEPS:])
+            keep = [kv for kv in rows if not (kv[0][0] == "waiting" and kv[0][1])] + named[:MIX_STEPS]
+            keep.sort(key=lambda kv: (-kv[1], kv[0]))
+            out[block][form] = [[g, st, n] for (g, st), n in keep] + ([["waiting", "", rest]] if rest else [])
     return out
 
 

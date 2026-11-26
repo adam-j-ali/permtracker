@@ -15,7 +15,7 @@ vi.mock("@/components/uscis/BlockSearch", () => ({ BlockSearch: () => null }));
 vi.mock("@/components/uscis/BlockApprovalChart", () => ({ BlockApprovalChart: () => null }));
 const getSampleIssued = vi.fn(async () => [] as IssuedRun[]);
 const getSampleBlocks = vi.fn(async () => ({ as_of: "2026-11-29", groups: [] as string[], by_block: {} as Record<string, Record<string, number>> }));
-const getBlockMixes = vi.fn(async () => ({}) as Record<string, { grp: string; status: string; n: number }[]>);
+const getBlockMixes = vi.fn(async () => ({}) as Record<string, Record<string, { grp: string; status: string; n: number }[]>>);
 vi.mock("@/lib/db/uscisSample", () => ({
   getSampleMeta: async () => ({ as_of: "2026-11-29", cases: 52_000 }),
   getSampleBlocks,
@@ -65,8 +65,11 @@ describe("/uscis-receipt-blocks: blocks with every number checked", () => {
       by_block: { IOE09376: { _walked_share: 1 }, IOE09377: { _walked_share: 1 }, IOE09360: { _walked_share: 0 } },
     });
     getBlockMixes.mockResolvedValue({
-      IOE09376: [{ grp: "approved", status: "", n: 30 }, { grp: "waiting", status: "", n: 70 }],
-      IOE09377: [{ grp: "approved", status: "", n: 34 }, { grp: "waiting", status: "", n: 62 }, { grp: "denied", status: "", n: 4 }],
+      IOE09376: { "I-765": [{ grp: "approved", status: "", n: 30 }, { grp: "waiting", status: "", n: 70 }] },
+      IOE09377: {
+        "I-765": [{ grp: "approved", status: "", n: 20 }, { grp: "waiting", status: "", n: 40 }],
+        "I-485": [{ grp: "approved", status: "", n: 14 }, { grp: "waiting", status: "", n: 22 }, { grp: "denied", status: "", n: 4 }],
+      },
     });
     const { container } = render(await UscisReceiptBlocksPage());
     expect(getBlockMixes).toHaveBeenCalledWith(["IOE09377", "IOE09376"]);

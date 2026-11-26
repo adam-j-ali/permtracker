@@ -5,7 +5,7 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { blockCoverage, blockShareLine, blockStatusMix } from "../uscisSample";
+import { blockCoverage, blockFormChoices, blockShareLine, blockStatusMix } from "../uscisSample";
 
 const ROWS = [
   { grp: "approved", status: "Case Was Approved", n: 27054 },
@@ -105,5 +105,44 @@ describe("blockShareLine", () => {
   it("says the cases were checked so far when the block isn't walked whole", () => {
     const line = blockShareLine("IOE09360", "2026-11-26", blockStatusMix(ROWS.slice(0, 2)), { every: false, walkedShare: 0 });
     expect(line.startsWith("IOE09360, the cases checked by November 26, 2026: 39,587 cases. Approved 68%, waiting 32%.")).toBe(true);
+  });
+});
+
+describe("blockFormChoices", () => {
+  const byForm = {
+    "I-765": [{ grp: "approved", status: "", n: 5885 }, { grp: "waiting", status: "Case Was Received and A Receipt Notice Was Sent", n: 1440 }],
+    "I-485": [{ grp: "approved", status: "", n: 2000 }, { grp: "waiting", status: "", n: 9557 }],
+    "I-131": [{ grp: "waiting", status: "", n: 12 }],
+    "": [{ grp: "approved", status: "", n: 3 }],
+  };
+  const choices = blockFormChoices(byForm);
+
+  it("starts with every form together, then each form with enough cases, most first", () => {
+    expect(choices.map((c) => c.key)).toEqual(["all", "I-485", "I-765"]);
+    expect(choices[0]?.mix.total).toBe(5885 + 1440 + 2000 + 9557 + 12 + 3);
+    expect(choices[0]?.label).toBe("All forms");
+  });
+
+  it("names each form in plain words beside its number", () => {
+    expect(choices.find((c) => c.key === "I-765")?.label).toBe("I-765, work permit");
+    expect(choices.find((c) => c.key === "I-485")?.label).toBe("I-485, green card");
+  });
+
+  it("leaves a form with only a few cases inside every form together", () => {
+    expect(choices.some((c) => c.key === "I-131")).toBe(false);
+  });
+
+  it("reads the older one-list document as every form together", () => {
+    const old = blockFormChoices({ "": [{ grp: "approved", status: "", n: 40 }] });
+    expect(old.map((c) => c.key)).toEqual(["all"]);
+  });
+});
+
+describe("blockShareLine for one form", () => {
+  it("names the form and opens the page on it", () => {
+    const mix = blockStatusMix([{ grp: "approved", status: "", n: 30 }, { grp: "waiting", status: "", n: 70 }]);
+    expect(blockShareLine("IOE09358", "2026-11-27", mix, { every: true }, { key: "I-765", label: "I-765, work permit" })).toBe(
+      "IOE09358, I-765 (work permit) cases, every number checked by November 27, 2026: 100 cases. Approved 30%, waiting 70%. permtracker.app/uscis-receipt-blocks/IOE09358#form=I-765",
+    );
   });
 });

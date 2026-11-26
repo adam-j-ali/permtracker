@@ -343,10 +343,66 @@ export function blockCoverage(figures: BlockFigures | undefined): { every: boole
   return { every: w >= 0.9995, walkedShare: w };
 }
 
-/** The block in one line to paste into a chat: its cases, each group's share, and the page's address typed out. */
-export function blockShareLine(block: string, asOf: string, mix: BlockMix, coverage: { every: boolean }): string {
+/**
+ * The block in one line to paste into a chat: its cases (one form's, when one is chosen), each group's share, and the
+ * page's address typed out, opening on that form.
+ */
+export function blockShareLine(
+  block: string,
+  asOf: string,
+  mix: BlockMix,
+  coverage: { every: boolean },
+  form?: { key: string; label: string },
+): string {
   const when = formatAsOf(asOf) ?? asOf;
   const head = coverage.every ? `every number checked by ${when}` : `the cases checked by ${when}`;
+  const words = form ? BLOCK_FORM_WORDS[form.key] : undefined;
+  const which = form && form.key !== "all" ? `${form.key}${words ? ` (${words})` : ""} cases, ` : "";
   const parts = mix.groups.map((g, i) => `${i === 0 ? g.label : g.label.toLowerCase()} ${formatShareOf(g.n, mix.total)}`);
-  return `${block}, ${head}: ${mix.total.toLocaleString("en-US")} cases. ${parts.join(", ")}. permtracker.app/uscis-receipt-blocks/${block}`;
+  const hash = form && form.key !== "all" ? `#form=${form.key}` : "";
+  return `${block}, ${which}${head}: ${mix.total.toLocaleString("en-US")} cases. ${parts.join(", ")}. permtracker.app/uscis-receipt-blocks/${block}${hash}`;
+}
+
+/** Each form as people know it, beside its number on a block's card (the forms a block holds most). */
+export const BLOCK_FORM_WORDS: Record<string, string> = {
+  "I-765": "work permit",
+  "I-485": "green card",
+  "I-131": "travel document",
+  "I-130": "family petition",
+  "I-140": "worker petition",
+  "I-129": "work visa petition",
+  "I-90": "green card renewal",
+  "N-400": "citizenship",
+  "I-751": "removing conditions",
+  "I-539": "extending a stay",
+  "I-129F": "fiancé petition",
+  "I-821D": "DACA",
+  "I-131A": "travel document abroad",
+  "I-601A": "waiver",
+  "I-526E": "investor petition",
+  "I-589": "asylum",
+  "I-360": "special immigrant petition",
+  "N-600": "citizenship certificate",
+  "I-824": "action on an approval",
+};
+
+/** A form needs this many cases in a block for its own choice; fewer stay inside every form together. */
+export const BLOCK_FORM_MIN = 30;
+
+export interface BlockFormChoice {
+  /** "all", or the form's number ("I-765"). */
+  key: string;
+  label: string;
+  mix: BlockMix;
+}
+
+/** A block's choices for its card: every form together first, then each form with BLOCK_FORM_MIN cases, most first. */
+export function blockFormChoices(byForm: Record<string, readonly { grp: string; status: string; n: number }[]>): BlockFormChoice[] {
+  const all = blockStatusMix(Object.values(byForm).flat());
+  const forms = Object.entries(byForm)
+    .filter(([form]) => form !== "")
+    .map(([form, rows]) => ({ key: form, label: BLOCK_FORM_WORDS[form] ? `${form}, ${BLOCK_FORM_WORDS[form]}` : form, mix: blockStatusMix(rows) }))
+    .filter((c) => c.mix.total >= BLOCK_FORM_MIN)
+    .sort((a, b) => b.mix.total - a.mix.total || a.key.localeCompare(b.key));
+  return [{ key: "all", label: "All forms", mix: all }, ...forms];
 }
