@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { dolDayBounds } from "@/lib/dolDay";
 
@@ -130,8 +130,17 @@ function mockDb(opts: {
   });
 }
 
+// The fixture is the production roll-up of 2026-09-03, and the calendar shows the last 90 days from now: on the real
+// clock its oldest day (Aug 27) left the window on Nov 26 2026 and two tests failed on every run. So every test reads
+// the calendar the day after the roll-up, unless it sets a moment of its own.
 beforeEach(() => {
   rows.mockReset();
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-09-04T16:00:00Z"));
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("the change feed's two filters", () => {
