@@ -450,8 +450,22 @@ case "$job" in
   # last good load and records why.
   #   sudo -u permtracker permtracker-uscis uscis-sample [/srv/permtracker/inbox/uscis-sample]
   uscis-sample)
-    timeout 30m nice -n 10 python3 scripts/ingest_uscis_sample.py load "${2:-/srv/permtracker/inbox/uscis-sample}" \
-      || { rc=1; fail ingest_uscis_sample.py "the sample's files were refused or didn't load; the last good load stands"; } ;;
+    # After a load, the pages that print the sample are expired (Nov 26 2026: a block checked in the day otherwise waited
+    # for its page's hour, and a page pre-rendered by a build before the load kept the morning's figures).
+    if timeout 30m nice -n 10 python3 scripts/ingest_uscis_sample.py load "${2:-/srv/permtracker/inbox/uscis-sample}"; then
+      REVALIDATE_SECRET="$(sed -n 's/^REVALIDATE_SECRET=//p' /srv/permtracker/app/env/production.env | head -1)"
+      [ -n "$REVALIDATE_SECRET" ] && curl -s -m 60 -o /dev/null -w "refresh %{http_code}\n" -X POST \
+        -H "Host: permtracker.app" -H "x-revalidate-secret: $REVALIDATE_SECRET" \
+        http://127.0.0.1:8081/api/revalidate-uscis-sample || true
+      # Then Cloudflare drops its copies of those pages (purge_edge.py, by each page's tag), or it serves the last
+      # load's figures for up to 10 more minutes. A refused purge only delays the pages.
+      pages="$(mktemp)"
+      python3 scripts/sample_pages.py "${2:-/srv/permtracker/inbox/uscis-sample}/sample-figures.json" > "$pages" \
+        && timeout 2m python3 scripts/purge_edge.py "$pages" || echo "edge purge of the sample pages skipped or refused"
+      rm -f "$pages"
+    else
+      rc=1; fail ingest_uscis_sample.py "the sample's files were refused or didn't load; the last good load stands"
+    fi ;;
   *) echo "unknown job $job"; exit 2 ;;
 esac
 exit $rc
