@@ -53,9 +53,6 @@ HAND_ONLY = {
     "with no pass or fail; run again when the queue estimate's model changes",
     "scripts/backtest_wage_links.ts": "asks about every decided case, so it reads a local copy of the database only; "
     "run again when src/lib/wageLink.ts's rules change, since it sets MOST_LIKELY",
-    "scripts/cross_check_wage_stats.py": "fails on a real divergence, but its 25 percentile reads of perm_cases haven't "
-    "been timed on the live database, which comes before any timer runs them; its place is after "
-    "db_migrate_public.py in perm-disclosure-ingest.yml",
 }
 
 

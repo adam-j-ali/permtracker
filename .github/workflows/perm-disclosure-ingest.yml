@@ -162,6 +162,9 @@ jobs:
           # Every PERM salary-explorer selection of 5,000+ filings, precomputed
           # (src/lib/db/wageViews.ts).
           python3 scripts/build_wage_views.py --program perm
+          # The materialised wage rows against live reads of the same cases: 25 reads, each under 5 s on the live
+          # database (timed Nov 26 2026); a real divergence fails the run, and a read past 15 s stops it.
+          python3 scripts/cross_check_wage_stats.py --max-seconds 15
           # Each decided PERM joined to its wage request: the employer, firm and job
           # pages' timing figures (perm_pwd_stats).
           python3 scripts/build_pwd_links.py
