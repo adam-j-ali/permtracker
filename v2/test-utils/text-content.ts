@@ -12,7 +12,13 @@
  * assertion written against the markup's escaping still holds.
  */
 export function htmlText(html: string): string {
-  return html.replace(/<[^>]*>/g, "");
+  // Taken out until none is left, so a tag a removal would have joined (`<<b>p>`) goes too.
+  let out = html;
+  for (let before = ""; before !== out; ) {
+    before = out;
+    out = out.replace(/<[^>]*>/g, "");
+  }
+  return out;
 }
 
 const normal = (s: string | null) => (s ?? "").replace(/\s+/g, " ").trim();
