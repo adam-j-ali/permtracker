@@ -20,9 +20,9 @@ import { BLOCK_NUMBERS_PER, groupCounts, SAMPLE_GROUP_WORD } from "@/lib/uscisSa
 
 const BLOCK = /^IOE\d{5}$/;
 
-export async function generateStaticParams(): Promise<{ block: string }[]> {
-  return [];
-}
+// Rendered per request: its pager reads ?page= and ?per=. Declaring static params as well failed every request with
+// DYNAMIC_SERVER_USAGE in production (query-pages-render-per-request.test.ts). Kept out of search engines, so a fresh
+// render each visit costs little.
 
 type Params = { block: string };
 type Search = { page?: string; per?: string; at?: string };
