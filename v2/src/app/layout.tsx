@@ -58,6 +58,15 @@ export const metadata: Metadata = {
     "ETA 9089",
     "I-140",
   ],
+  // Every page names the site's search for AI agents (/.well-known/search), the agent:* convention Cloudflare's Search
+  // for Agents uses, so an agent can search the site instead of crawling it.
+  other: {
+    "agent:instructions":
+      "Use this search API to find PERM Tracker's pages, employers, law firms and articles with keywords or a question, instead of crawling individual pages. Results are returned in Markdown, each with its address.",
+    "agent:endpoint": `${SITE_URL}/.well-known/search?q={query}`,
+    "agent:method": "GET",
+    "agent:documentation": `${SITE_URL}/developers`,
+  },
   authors: [{ name: "PERM Tracker" }],
   creator: "PERM Tracker",
   publisher: "PERM Tracker",
