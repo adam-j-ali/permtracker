@@ -78,5 +78,29 @@ def main() -> int:
     return 1 if failed else 0
 
 
+def test_fetch_reads_a_gzipped_page():
+    """schema.org sends its type pages gzipped even when asked for identity (Nov 26 2026)."""
+    import gzip as _gzip
+    import io
+    import urllib.request as _ur
+
+    class Resp(io.BytesIO):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    page = "<html>NewsArticle \u2014 schema.org</html>"
+    real = _ur.urlopen
+    try:
+        _ur.urlopen = lambda req, timeout=30: Resp(_gzip.compress(page.encode("utf-8")))
+        assert sv.fetch("NewsArticle") == page
+        _ur.urlopen = lambda req, timeout=30: Resp(page.encode("utf-8"))
+        assert sv.fetch("NewsArticle") == page
+    finally:
+        _ur.urlopen = real
+
+
 if __name__ == "__main__":
     sys.exit(main())

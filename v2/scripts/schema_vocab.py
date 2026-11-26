@@ -16,6 +16,7 @@ A type we start emitting needs its line here first: the gates fail a node whose 
 from __future__ import annotations
 
 import argparse
+import gzip
 import html as html_mod
 import json
 import re
@@ -45,7 +46,9 @@ def fetch(type_name: str) -> str:
         headers={"User-Agent": "permtracker-schema-vocab/1.0", "Accept-Encoding": "identity"},
     )
     with urllib.request.urlopen(req, timeout=30) as resp:  # noqa: S310 (a fixed https host)
-        return resp.read().decode("utf-8")
+        body = resp.read()
+    # schema.org sends its pages gzipped whether or not it was asked to (Nov 26 2026: 0x1f 0x8b where HTML should be).
+    return (gzip.decompress(body) if body[:2] == b"\x1f\x8b" else body).decode("utf-8")
 
 
 def main() -> int:

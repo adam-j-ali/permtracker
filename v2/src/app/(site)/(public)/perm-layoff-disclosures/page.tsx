@@ -14,6 +14,8 @@ import { LayoffOutcomes } from "@/components/layoffs/LayoffOutcomes";
 import { LayoffShareGrid } from "@/components/layoffs/LayoffShareGrid";
 import { LayoffYears } from "@/components/layoffs/LayoffYears";
 import { JsonLdScript } from "@/components/seo/JsonLdScript";
+import { CitedBy } from "@/components/press/CitedBy";
+import { coverageOf, coverageSchema } from "@/lib/press/coverage";
 import { FaqList } from "@/components/tools/FaqList";
 import { SITE_URL } from "@/lib/constants/site";
 import { getLayoffDisclosures } from "@/lib/db/layoffDisclosures";
@@ -123,15 +125,19 @@ function employerLabel(r: LayoffEmployer) {
 export default async function Page() {
   const doc = await getLayoffDisclosures();
   const qa = faqs(doc);
+  const stories = coverageOf(PATH).map(coverageSchema);
   const schemas: object[] = [
-    datasetSchemaFor(SITE_URL, DATASETS, {
+    {
+      ...datasetSchemaFor(SITE_URL, DATASETS, {
       name: "Layoffs reported on PERM applications",
       description:
         "Each employer's answer to Form 9089's layoff question (Section G, Item 12) on its decided PERM applications, by fiscal year, employer and occupation, from DOL's PERM disclosure files.",
       url: `${SITE_URL}${PATH}`,
       temporalCoverage: doc ? `${doc.years[0]!.from ?? `${doc.years[0]!.fy - 1}-10-01`}/${doc.newestThrough ?? ".."}` : "2015-10-01/..",
       variableMeasured: ["Applications reporting a layoff", "Applications answering the layoff question", "Outcomes"],
-    }),
+      }),
+      ...(stories.length ? { subjectOf: stories } : {}),
+    },
     getFAQPageSchema(qa),
   ];
   const y = doc ? newestYear(doc) : null;
@@ -326,6 +332,7 @@ export default async function Page() {
           listed as DOL printed it, without a link.
         </p>
       </FinePrint>{" "}
+      <CitedBy path={PATH} />{" "}
       <nav aria-label="Related" className="mt-8 flex flex-wrap gap-x-6 text-base">
         <Link href="/layoffs" className="link inline-flex min-h-11 items-center">
           Layoff notices (WARN)

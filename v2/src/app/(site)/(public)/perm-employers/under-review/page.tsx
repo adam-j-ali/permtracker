@@ -4,6 +4,7 @@ import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
 
 import { DataProvenance } from "@/components/data/DataProvenance";
+import { CitedBy } from "@/components/press/CitedBy";
 import { EmployerStagesTable } from "@/components/employers/EmployerStagesTable";
 import { ChartTips } from "@/components/data/ChartTips";
 import { StatusRibbon, ribbonLegend, ribbonParts } from "@/components/employers/StatusRibbon";
@@ -482,6 +483,8 @@ export default async function EmployersUnderReviewPage() {
           </details>
         </>
       )}{" "}
+
+      <CitedBy path="/perm-employers/under-review" />{" "}
 
       <DataProvenance datasets={["perm-case-status"]} />
 
