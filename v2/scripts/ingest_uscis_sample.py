@@ -189,7 +189,9 @@ def load(folder: str, dry_run: bool, figures_only: bool = False) -> int:
                         "to_status, form) VALUES (?, ?, ?, ?, ?, ?, ?)",
                         [e["receipt"], e["on_day"], e["from_grp"], e["to_grp"], e["from_status"], e["to_status"],
                          e["form"] or None]) for e in events]
-    run_stmts(db, statements, per_request=500)
+    # One transaction a request: each case committed alone ran about 150 a second on the server, so the first full load
+    # (1.47 million cases) stopped at its 30 minutes with 275,000 written (Nov 26 2026); in one, about 5,000 a second.
+    run_stmts(db, statements, per_request=500, one_commit=True)
     write_figures(db, figures, len(new))
     write_doc(db, "uscis_sample_load", {"as_of": figures["as_of"], "cases": len(new), "loaded_at": int(time.time() * 1000)})
     os.makedirs(os.path.join(folder, LOADED), exist_ok=True)

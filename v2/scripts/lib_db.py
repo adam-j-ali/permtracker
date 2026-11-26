@@ -192,18 +192,29 @@ def stmt(sql: str, args: list | tuple = ()) -> dict:
     return {"type": "execute", "stmt": {"sql": sql, "args": [lit(a) for a in args]}}
 
 
-def run_stmts(db: "Database", stmts: Iterable[dict], per_request: int = 200) -> list[int]:
+def run_stmts(db: "Database", stmts: Iterable[dict], per_request: int = 200, one_commit: bool = False) -> list[int]:
     """Send `stmts` in closed pipelines of `per_request`, in order.
 
     Statements are drawn as they're sent, so a generator never sits in memory
     whole. Returns each statement's affected-row count, aligned with `stmts`
     (0 when the far end reports none), so a caller can tell which writes applied.
+
+    `one_commit`: each request is one transaction (BEGIN before its statements, COMMIT after). Each statement committed
+    alone cost about 6 ms on the server, 1,000 rows in 6.13 s against 0.19 s in one transaction (Nov 26 2026). A
+    statement that fails raises after its request; the server still commits the rest of that request, so use it for
+    writes that can be run again (INSERT OR REPLACE, INSERT OR IGNORE).
     """
     counts: list[int] = []
     it = iter(stmts)
     while chunk := list(islice(it, per_request)):
-        res = db.pipeline(chunk + [{"type": "close"}])
+        reqs = [stmt("BEGIN")] + chunk + [stmt("COMMIT")] if one_commit else chunk
+        res = db.pipeline(reqs + [{"type": "close"}])
         results = (res.get("results") or []) if isinstance(res, dict) else []
+        if one_commit:
+            bad = [r for r in results if isinstance(r, dict) and r.get("type") == "error"]
+            if bad:
+                raise RuntimeError(f"a statement failed in a one-commit request: {(bad[0].get('error') or {}).get('message', '')[:200]}")
+            results = results[1:]
         for j in range(len(chunk)):
             r = results[j] if j < len(results) else {}
             got = ((r.get("response") or {}).get("result") or {}).get("affected_row_count")

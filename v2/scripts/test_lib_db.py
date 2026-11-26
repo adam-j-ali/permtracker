@@ -98,6 +98,34 @@ def main() -> int:
     check("run_stmts draws from a generator",
           run_stmts(w, (stmt("SELECT 1") for _ in range(3)), per_request=2), [0, 0, 0])
 
+    # one_commit: each request is one transaction. Each statement committed alone cost about 6 ms on the server
+    # (1,000 rows in 6.13 s, against 0.19 s in one transaction, Nov 26 2026), so the first full USCIS sample load ran
+    # past its 30 minutes at 275,000 of 1.47 million rows.
+    sent: list[list[str]] = []
+    real_pipeline = w.pipeline
+
+    def spy(reqs, **kw):
+        sent.append([r["stmt"]["sql"] if r.get("type") == "execute" else r.get("type") for r in reqs])
+        return real_pipeline(reqs, **kw)
+
+    w.pipeline = spy
+    w.execute("CREATE TABLE t1 (k TEXT PRIMARY KEY, v INTEGER)")
+    put = "INSERT OR REPLACE INTO t1 (k, v) VALUES (?, ?)"
+    counts = run_stmts(w, (stmt(put, [f"k{i}", i]) for i in range(7)), per_request=3, one_commit=True)
+    check("one_commit: each request opens with BEGIN and ends with COMMIT before its close",
+          [(r[0], r[-2], r[-1], len(r) - 3) for r in sent], [("BEGIN", "COMMIT", "close", 3), ("BEGIN", "COMMIT", "close", 3),
+                                                            ("BEGIN", "COMMIT", "close", 1)])
+    check("and each statement's count still lines up with it", counts, [1] * 7)
+    check("every row is written", query_rows(w, "SELECT count(*) FROM t1"), [["7"]])
+    w.pipeline = lambda reqs, **kw: {"results": [{"type": "ok"}, {"type": "error", "error": {"message": "UNIQUE failed"}},
+                                                 {"type": "ok"}, {"type": "ok"}]}
+    try:
+        run_stmts(w, [stmt(put, ["x", 1])], per_request=5, one_commit=True)
+        check("a statement that fails in a one-commit request raises", False, True)
+    except RuntimeError as e:
+        check("a statement that fails in a one-commit request raises", "UNIQUE failed" in str(e), True)
+    w.pipeline = real_pipeline
+
     # A source loaded by hand, only when there's something to load, has no maximum age: NULL, which no reader calls
     # stale (check_ingest_health.py, src/lib/freshnessBudget.ts), and a later note keeps it NULL.
     # Names through variables: src/lib/__tests__/dataset-coverage.test.ts reads a literal name here as a real dataset.

@@ -108,8 +108,45 @@ def test_diff_cases():
     check(len(up2) == 1 and ev2 == [], "a re-check with the same status updates its day and makes no move")
 
 
+def test_load_one_commit():
+    """A load writes in one transaction a request (Nov 26 2026): each case committed alone ran about 150 a second on the
+    server, and the first full load (1.47 million cases) stopped at its 30 minutes with 275,000 written."""
+    import json
+    import lib_db
+    import ingest_uscis_sample
+    from lib_sqlite_shim import SqliteTurso
+    with tempfile.TemporaryDirectory() as folder:
+        rows = "".join(f"IOE00000{i:05d},I-765,waiting,Case Was Received,2026-11-25,2026-11-20,2026-10,daily\n" for i in range(1200))
+        with open(os.path.join(folder, "sample-cases.csv"), "w") as f:
+            f.write(HEAD + rows)
+        with open(os.path.join(folder, "sample-figures.json"), "w") as f:
+            json.dump({"as_of": "2026-11-25", "cases": 1200, "by_month": {}, "by_block": {"IOE00000": {}}}, f)
+        db = SqliteTurso()
+        db.execute("CREATE TABLE IF NOT EXISTS perm_docs (key TEXT PRIMARY KEY, json TEXT NOT NULL, computed_at INTEGER)")
+        sent = []
+        real = db.pipeline
+
+        def spy(reqs, **kw):
+            sent.append([r["stmt"]["sql"].split()[0] if r.get("type") == "execute" else r.get("type") for r in reqs])
+            return real(reqs, **kw)
+
+        db.pipeline = spy
+        was = lib_db.Database
+        lib_db.Database = lambda: db
+        try:
+            code = ingest_uscis_sample.load(folder, dry_run=False)
+            writes = [r for r in sent if "INSERT" in r]
+            check(code == 0 and len(writes) >= 3 and all(r[0] == "BEGIN" and r[-2] == "COMMIT" for r in writes),
+                  f"a load writes its cases in one transaction a request ({len(writes)} requests)")
+            check(int(db.scalar("SELECT count(*) FROM uscis_sample_cases")) == 1200, "every case is written")
+            again = ingest_uscis_sample.load(folder, dry_run=False)
+            check(again == 0, "the same day again is a repeat, nothing written")
+        finally:
+            lib_db.Database = was
+
+
 def main() -> int:
-    for fn in (test_read_cases, test_block_of, test_check_figures, test_diff_cases):
+    for fn in (test_read_cases, test_block_of, test_check_figures, test_diff_cases, test_load_one_commit):
         fn()
     print(f"\n{len(fails)} failure(s)")
     return 1 if fails else 0
