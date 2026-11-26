@@ -55,7 +55,7 @@ export async function generateMetadata({ params }: { params: Promise<{ block: st
   const doc = BLOCK.test(block) ? await getSampleBlocks() : null;
   const held = doc ? blockForms(doc.by_block[block] ?? {}).length > 0 : false;
   const title = `USCIS Receipt Block ${block}: Case Statuses`;
-  const description = `Every case's status in USCIS receipt block ${block}: how many are approved, denied, waiting or sent an evidence request, the share approved for each form with its margin, and the newest moves.`;
+  const description = `Every case's status in USCIS receipt block ${block}: how many are approved, denied or waiting, and the share approved for each form.`;
   const path = `/uscis-receipt-blocks/${block}`;
   return withSocialCard(
     {

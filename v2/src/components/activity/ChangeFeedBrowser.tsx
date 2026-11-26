@@ -27,6 +27,7 @@ import type { ChangeCalendar, ChangeDayFeed } from "@/lib/db/changes";
 import type { DecidedFeed } from "@/lib/db/decidedDays";
 import { RequestFailed } from "@/components/tools/RequestFailed";
 import { useUrlSearchParams } from "@/hooks/useUrlSearchParams";
+import { cn } from "@/lib/utils";
 import { choiceVariants } from "@/components/ui/choice";
 import { ChoiceRow } from "@/components/ui/choice-row";
 import { useListSize } from "@/components/ui/pagination";
@@ -907,7 +908,9 @@ export function ChangeFeedBrowser({
               const on = fromStatus === t.fromStatus && toStatus === t.toStatus;
               return (
                 <Fragment key={`${t.fromStatus}>${t.toStatus}`}>
-                  <li>
+                  {/* A chip's parts wrap inside it: two of DOL's long statuses side by side ("ACCEPTED - PENDING
+                      RECRUITMENT FULL CERT") came to about 300px, wider than a 320px phone leaves (Nov 26 2026). */}
+                  <li className="min-w-0 max-w-full">
                     <button
                       type="button"
                       disabled={!ready}
@@ -917,7 +920,7 @@ export function ChangeFeedBrowser({
                         setToStatus(on ? "" : t.toStatus);
                         reset();
                       }}
-                      className={choiceVariants({ on })}
+                      className={cn(choiceVariants({ on }), "max-w-full flex-wrap justify-start py-1.5 text-left")}
                     >
                       <span className="text-muted-foreground">
                         {t.fromStatus}
