@@ -24,6 +24,7 @@ export type FieldReason =
   | "INVALID_FORMAT"
   | "TOO_SHORT"
   | "MISMATCH"
+  | "BLANK"
   | NameValidationFailure;
 
 /**
@@ -96,6 +97,10 @@ export function validatePasswordValue(value: string, touched: boolean): FieldVal
   }
   if (value.length < 8) {
     return { state: "invalid", message: "Password must be at least 8 characters", reason: "TOO_SHORT" };
+  }
+  // Spaces inside a passphrase stay; a password of nothing but spaces made an account until Nov 26 2026.
+  if (!value.trim()) {
+    return { state: "invalid", message: "A password can't be only spaces", reason: "BLANK" };
   }
   return { state: "valid" };
 }

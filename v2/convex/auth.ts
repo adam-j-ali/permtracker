@@ -223,6 +223,10 @@ const password = Password<DataModel>({
       // A ConvexError, so production shows this message instead of masking it as "Server Error".
       throw new ConvexError("Password must be at least 8 characters");
     }
+    // Spaces inside a passphrase stay; nothing but spaces made an account until Nov 26 2026.
+    if (!password.trim()) {
+      throw new ConvexError("A password can't be only spaces");
+    }
   },
 });
 

@@ -52,6 +52,9 @@ describe("the sign-up form's server checks", () => {
 
   it("refuses a short password with a ConvexError too", () => {
     expect(() => passwordRules("short")).toThrow(ConvexError);
+    // Eight spaces made an account until Nov 26 2026; a passphrase keeps its spaces.
+    expect(() => passwordRules("        ")).toThrow(ConvexError);
+    expect(() => passwordRules("correct horse battery")).not.toThrow();
     expect(() => passwordRules(undefined)).not.toThrow();
   });
 });

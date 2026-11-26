@@ -97,6 +97,14 @@ describe("validatePasswordValue", () => {
     expect(r.reason).toBe("TOO_SHORT");
   });
 
+  it("refuses a password of nothing but spaces, and keeps spaces inside a passphrase", () => {
+    const v = validatePasswordValue("        ", true);
+    expect(v.state).toBe("invalid");
+    expect(v.state === "invalid" && v.reason).toBe("BLANK");
+    expect(validatePasswordValue("correct horse battery", true).state).toBe("valid");
+    expect(validatePasswordValue(" \t \n    ", true).state).toBe("invalid");
+  });
+
   it("accepts password exactly 8 characters", () => {
     expect(validatePasswordValue("12345678", true).state).toBe("valid");
   });
