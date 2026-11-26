@@ -92,21 +92,63 @@ def block_mix(cases: dict[str, dict]) -> dict[str, list[list]]:
     return out
 
 
-def read_cases(path: str) -> dict[str, dict]:
+_AT = {f: i for i, f in enumerate(CASE_FIELDS)}
+
+
+class Case(tuple):
+    """One case's row: a tuple in CASE_FIELDS order, read by field name (row["status"]) as the dict it replaced was.
+    A night's file holds about 1.75 million cases (Nov 26 2026); as dicts, with every statement built in one list, the
+    load reached 2.97 GB under its unit's 3 GB ceiling and crawled until its 30 minutes ran out."""
+
+    __slots__ = ()
+
+    def __getitem__(self, key):
+        return tuple.__getitem__(self, _AT[key] if isinstance(key, str) else key)
+
+    def get(self, key, default=None):
+        return self[key] if key in _AT else default
+
+
+def read_cases(path: str) -> dict[str, Case]:
+    """Every case in the file, keyed by receipt, each field but the receipt one shared string (sys.intern): a
+    status, a form or a day repeats across hundreds of thousands of rows."""
     with open(path, newline="", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        if tuple(reader.fieldnames or ()) != CASE_FIELDS:
-            raise SampleError(f"sample-cases.csv has the columns {reader.fieldnames}, not {list(CASE_FIELDS)}")
-        out: dict[str, dict] = {}
-        for i, row in enumerate(reader, start=2):
-            if not RECEIPT.match(row["receipt"] or ""):
+        reader = csv.reader(f)
+        head = tuple(next(reader, ()))
+        if head != CASE_FIELDS:
+            raise SampleError(f"sample-cases.csv has the columns {list(head)}, not {list(CASE_FIELDS)}")
+        out: dict[str, Case] = {}
+        intern = sys.intern
+        for i, cells in enumerate(reader, start=2):
+            if len(cells) != len(CASE_FIELDS):
+                raise SampleError(f"line {i}: {len(cells)} columns, not {len(CASE_FIELDS)}")
+            receipt, form, grp, status, checked_on, since_on, month, kind = cells
+            if not RECEIPT.match(receipt or ""):
                 raise SampleError(f"line {i}: a malformed receipt")
-            if row["grp"] not in GROUPS:
-                raise SampleError(f"line {i}: the group '{row['grp']}' isn't one the site knows")
-            if not (DAY.match(row["checked_on"] or "") and DAY.match(row["since_on"] or "")):
+            if grp not in GROUPS:
+                raise SampleError(f"line {i}: the group '{grp}' isn't one the site knows")
+            if not (DAY.match(checked_on or "") and DAY.match(since_on or "")):
                 raise SampleError(f"line {i}: a day that isn't YYYY-MM-DD")
-            out[row["receipt"]] = dict(row)
+            out[receipt] = Case((receipt, intern(form), intern(grp), intern(status), intern(checked_on),
+                                 intern(since_on), intern(month), intern(kind)))
         return out
+
+
+def case_statements(upserts, deletes, events):
+    """The load's writes, made one at a time as run_stmts sends them, so the night's statements never sit in memory."""
+    from lib_db import stmt
+    put = ("INSERT OR REPLACE INTO uscis_sample_cases (receipt, prefix, block, form, grp, status, checked_on, since_on, "
+           "month, kind) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+    for r in upserts:
+        yield stmt(put, [r["receipt"], r["receipt"][:3], block_of(r["receipt"]), r["form"] or None, r["grp"],
+                         r["status"], r["checked_on"], r["since_on"], r["month"] or None, r["kind"] or None])
+    for r in deletes:
+        yield stmt("DELETE FROM uscis_sample_cases WHERE receipt = ?", [r])
+    for e in events:
+        yield stmt("INSERT OR IGNORE INTO uscis_sample_events (receipt, on_day, from_grp, to_grp, from_status, "
+                   "to_status, form) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                   [e["receipt"], e["on_day"], e["from_grp"], e["to_grp"], e["from_status"], e["to_status"],
+                    e["form"] or None])
 
 
 def check_figures(figures: dict, *, last: dict | None, cases_read: int) -> str:
@@ -185,7 +227,7 @@ def write_figures(db, figures: dict, cases: int, mix: dict[str, list[list]] | No
 
 
 def load(folder: str, dry_run: bool, figures_only: bool = False) -> int:
-    from lib_db import Database, read_doc, record_run, run_stmts, stmt, write_doc
+    from lib_db import Database, read_doc, record_run, run_stmts, write_doc
 
     started = time.time()
     db = Database()
@@ -211,19 +253,9 @@ def load(folder: str, dry_run: bool, figures_only: bool = False) -> int:
     if dry_run:
         return 0
     db.script(DDL)
-    put = ("INSERT OR REPLACE INTO uscis_sample_cases (receipt, prefix, block, form, grp, status, checked_on, since_on, "
-           "month, kind) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-    statements = [stmt(put, [r["receipt"], r["receipt"][:3], block_of(r["receipt"]), r["form"] or None, r["grp"],
-                             r["status"], r["checked_on"], r["since_on"], r["month"] or None, r["kind"] or None])
-                  for r in upserts]
-    statements += [stmt("DELETE FROM uscis_sample_cases WHERE receipt = ?", [r]) for r in deletes]
-    statements += [stmt("INSERT OR IGNORE INTO uscis_sample_events (receipt, on_day, from_grp, to_grp, from_status, "
-                        "to_status, form) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                        [e["receipt"], e["on_day"], e["from_grp"], e["to_grp"], e["from_status"], e["to_status"],
-                         e["form"] or None]) for e in events]
     # One transaction a request: each case committed alone ran about 150 a second on the server, so the first full load
     # (1.47 million cases) stopped at its 30 minutes with 275,000 written (Nov 26 2026); in one, about 5,000 a second.
-    run_stmts(db, statements, per_request=500, one_commit=True)
+    run_stmts(db, case_statements(upserts, deletes, events), per_request=500, one_commit=True)
     write_figures(db, figures, len(new), block_mix(new))
     write_doc(db, "uscis_sample_load", {"as_of": figures["as_of"], "cases": len(new), "loaded_at": int(time.time() * 1000)})
     os.makedirs(os.path.join(folder, LOADED), exist_ok=True)

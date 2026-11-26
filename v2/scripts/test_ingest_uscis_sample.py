@@ -148,6 +148,24 @@ def test_load_one_commit():
             lib_db.Database = was
 
 
+def test_rows_stay_small():
+    """A night's file holds about 1.75 million cases (Nov 26 2026): read as dicts with their statements built in one
+    list, the load reached 2.97 GB under its unit's 3 GB ceiling and crawled. Each row is a small tuple read by field
+    name, its repeated words shared, and the statements are made as they're sent."""
+    import sys as _sys
+    rows = read_cases(cases_file(HEAD + A + B))
+    row = rows["IOE0000000000"]
+    check(isinstance(row, tuple) and row["grp"] == "rfe" and row["status"] == "Request for Evidence Was Sent",
+          "a row is a tuple read by field name")
+    check(_sys.getsizeof(row) <= 140, f"a row costs no more than a tuple of its eight fields: {_sys.getsizeof(row)} bytes")
+    twice = read_cases(cases_file(HEAD + A + A.replace("EAC3512345678", "EAC3512345670")))
+    a, b = twice["EAC3512345678"], twice["EAC3512345670"]
+    check(a["status"] is b["status"] and a["form"] is b["form"], "a repeated status or form is one shared string")
+    import ingest_uscis_sample
+    gen = ingest_uscis_sample.case_statements(rows.values(), [], [])
+    check(not isinstance(gen, (list, tuple)) and len(list(gen)) == 2, "the statements are made one at a time")
+
+
 def test_block_mix():
     """Each online block's cases counted once a night for its page's card (Nov 26 2026): the outcome groups by group, the
     waiting cases by USCIS's own words, a paper filing's number in no block, and no receipt number in the counts. Every
@@ -179,7 +197,7 @@ def test_block_mix():
 
 
 def main() -> int:
-    for fn in (test_read_cases, test_block_of, test_check_figures, test_diff_cases, test_block_mix, test_load_one_commit):
+    for fn in (test_read_cases, test_block_of, test_check_figures, test_diff_cases, test_rows_stay_small, test_block_mix, test_load_one_commit):
         fn()
     print(f"\n{len(fails)} failure(s)")
     return 1 if fails else 0
