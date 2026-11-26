@@ -46,6 +46,13 @@ describe("BlockStatusCard", () => {
     expect(container.textContent).not.toContain("Every number checked");
   });
 
+  it("says a form's numbers hold an I-765 or a G-28 case, the article read the way the form's letter is said", () => {
+    const { container, rerender } = render(<BlockStatusCard block="IOE09373" asOf="2026-11-26" mix={MIX} every form="I-765" />);
+    expect(container.textContent).toContain("of them hold an I-765 case");
+    rerender(<BlockStatusCard block="IOE09373" asOf="2026-11-26" mix={MIX} every form="G-28" />);
+    expect(container.textContent).toContain("of them hold a G-28 case");
+  });
+
   it("gives the bar one name that reads every group, so it never relies on colour alone", () => {
     render(<BlockStatusCard block="IOE09377" asOf="2026-11-26" mix={MIX} every />);
     const bar = screen.getByRole("img", { name: /The cases in IOE09377 by status/ });

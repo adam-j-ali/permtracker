@@ -20,6 +20,11 @@ import type { BlockMix } from "@/lib/uscisSample";
  * ask about, so the steps get their own rows under the bar, each a share of the block's cases like the groups above.
  */
 
+/** "an" before a form whose first letter is said with a vowel sound (an I-765, an N-400), "a" otherwise (a G-28). */
+function articleFor(form: string): string {
+  return /^[AEFHILMNORSX]/i.test(form) ? "an" : "a";
+}
+
 export function BlockStatusCard({
   block,
   asOf,
@@ -43,7 +48,7 @@ export function BlockStatusCard({
       subject={every ? `Every number checked, ${when}` : `The cases checked so far, ${when}`}
       caption={
         every
-          ? `Each of the block's 100,000 receipt numbers was checked on USCIS's case status page; ${formatInt(mix.total)} of them hold ${form ? `a ${form} case` : "a case"}. Each case is counted once, at its newest status.`
+          ? `Each of the block's 100,000 receipt numbers was checked on USCIS's case status page; ${formatInt(mix.total)} of them hold ${form ? `${articleFor(form)} ${form} case` : "a case"}. Each case is counted once, at its newest status.`
           : `The cases checked in this block so far, each counted once at its newest status. Not every number in the block has been checked yet, so the share approved for each form below is an estimate with its margin.`
       }
       source={`PERM Tracker's check of USCIS's case status page. permtracker.app/uscis-receipt-blocks/${block}${form ? `#form=${form}` : ""}`}
