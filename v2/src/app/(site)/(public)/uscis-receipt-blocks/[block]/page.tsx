@@ -11,17 +11,27 @@ import { notFound } from "next/navigation";
 import { DataProvenance } from "@/components/data/DataProvenance";
 import { FigurePlate } from "@/components/tools/FigurePlate";
 import { BlockApprovalChart } from "@/components/uscis/BlockApprovalChart";
+import { BlockNeighbours } from "@/components/uscis/BlockNeighbours";
 import { BlockSearch } from "@/components/uscis/BlockSearch";
 import { BlockStatusChooser } from "@/components/uscis/BlockStatusChooser";
 import { keepWhole } from "@/components/ui/keep-whole";
 import { CaveatBox } from "@/components/ui/note";
 import { ScrollBox } from "@/components/ui/scroll-box";
-import { getBlockMix, getBlockMoves, getSampleBlocks, getSampleMeta } from "@/lib/db/uscisSample";
+import { getBlockMix, getBlockMixes, getBlockMoves, getSampleBlocks, getSampleMeta } from "@/lib/db/uscisSample";
 import { formatAsOf } from "@/lib/dolFormat";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { softFail } from "@/lib/softRead";
 import { withSocialCard } from "@/lib/socialCard";
-import { blockCoverage, blockFormChoices, blockForms, blockShareLine, chartSeries, neighbours, topForms } from "@/lib/uscisSample";
+import {
+  blockCoverage,
+  blockFormChoices,
+  blockForms,
+  blockRange,
+  blockShareLine,
+  chartSeries,
+  neighbours,
+  topForms,
+} from "@/lib/uscisSample";
 
 export const revalidate = 3600;
 
@@ -71,17 +81,24 @@ export async function generateMetadata({ params }: { params: Promise<{ block: st
 export default async function UscisReceiptBlockPage({ params }: { params: Promise<{ block: string }> }) {
   const { block } = await params;
   if (!BLOCK.test(block)) notFound();
-  const [meta, doc, moves, mixRows] = await Promise.all([
+  const around = blockRange(block, 2);
+  const [meta, doc, moves, mixRows, aroundMixes] = await Promise.all([
     getSampleMeta(),
     getSampleBlocks(),
     getBlockMoves(block).catch(softFail("getBlockMoves", [])),
     getBlockMix(block).catch(softFail("getBlockMix", null)),
+    getBlockMixes(around).catch(softFail("getBlockMixes", {} as Awaited<ReturnType<typeof getBlockMixes>>)),
   ]);
   const choices = mixRows ? blockFormChoices(mixRows.byForm) : [];
   const mix = choices[0]?.mix ?? null;
   const coverage = blockCoverage(doc?.by_block[block]);
   const forms = doc ? blockForms(doc.by_block[block] ?? {}) : [];
   const near = doc ? neighbours(doc, block) : { before: null, after: null };
+  // This block and the two either side, each as its status bar (the blocks the sample holds cases in).
+  const besideRows = around
+    .filter((b) => aroundMixes[b])
+    .map((b) => ({ block: b, every: blockCoverage(doc?.by_block[b]).every, choices: blockFormChoices(aroundMixes[b] ?? {}) }))
+    .filter((r) => r.choices.length > 0);
   const lead = forms.find((f) => f.form === "I-485") ?? forms[0];
   const total = forms.reduce((n, f) => n + f.counted, 0);
   const series = doc && forms.length ? chartSeries(doc, topForms(doc, 5)) : [];
@@ -118,6 +135,8 @@ export default async function UscisReceiptBlockPage({ params }: { params: Promis
             every={coverage.every}
             choices={choices}
             lines={Object.fromEntries(choices.map((c) => [c.key, blockShareLine(block, mixRows.as_of, c.mix, coverage, c)]))}
+            received={coverage.received}
+            blockCases={coverage.every ? mix.total : undefined}
           />
         </section>
       ) : null}
@@ -237,7 +256,7 @@ export default async function UscisReceiptBlockPage({ params }: { params: Promis
             <h2 id="near-title" className="font-heading text-2xl font-bold">
               The blocks either side
             </h2>{" "}
-            <NeighbourLinks near={near} />
+            {besideRows.length > 1 ? <BlockNeighbours block={block} rows={besideRows} /> : <NeighbourLinks near={near} />}
           </section>
         </>
       )}
@@ -245,8 +264,10 @@ export default async function UscisReceiptBlockPage({ params }: { params: Promis
       <section className="mt-10 max-w-3xl" aria-label="About these figures">
         <CaveatBox>
           <p className="text-base leading-relaxed">
-            These are samples, so a share from few cases can be well off: its margin says how far. USCIS doesn&apos;t
-            decide strictly in receipt order. For your own case, use{" "}
+            {coverage.every
+              ? "Every number in this block was checked, so these are counts of its cases, not estimates from a sample. "
+              : "These are samples, so a share from few cases can be well off: its margin says how far. "}
+            USCIS doesn&apos;t decide strictly in receipt order. For your own case, use{" "}
             <Link href="/uscis-case-status" className="link">
               the USCIS case status page
             </Link>

@@ -41,7 +41,9 @@ export type DateSource =
   /** State's newest IV Scheduling Status Tool update held (its own "Last Updated" day). */
   | "consular"
   /** The Eastern day State's refusals-by-ground table last changed here (a new year, or a corrected one). */
-  | "refusals";
+  | "refusals"
+  /** The day the USCIS sample's newest load is for (its `as_of`). */
+  | "uscisSample";
 
 export type DateSources = { readonly [K in DateSource]?: string | null };
 
@@ -185,6 +187,9 @@ export const DATE_SOURCE: Readonly<Record<string, DateSource>> = {
   "/reviews": "reviews",
 
   "/consular-posts": "consular",
+  // Nov 26 2026: a block page said "Updated November 25" over figures loaded on the 26th.
+  "/uscis-receipt-blocks": "uscisSample",
+  "/uscis-receipt-blocks/[block]": "uscisSample",
   "/consular-posts/[post]": "consular",
 
   "/visa-refusals": "refusals",

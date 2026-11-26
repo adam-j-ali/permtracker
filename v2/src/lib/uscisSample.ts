@@ -1,3 +1,4 @@
+import { MONTH_NAMES } from "@convex/lib/months";
 import { formatAsOf } from "@/lib/dolFormat";
 import { formatShareOf } from "@/lib/format";
 import { normaliseReceipt } from "@/lib/uscis/receipt";
@@ -32,7 +33,7 @@ export interface FormFigure {
 }
 
 /** One block's figures: a FormFigure per form, and the estimate's own counts under keys that start with "_". */
-export type BlockFigures = Record<string, FormFigure | number>;
+export type BlockFigures = Record<string, FormFigure | number | string>;
 
 export interface SampleBlocksDoc {
   as_of: string;
@@ -50,7 +51,7 @@ export function blockFromInput(input: string): string | null {
   return receipt && receipt.startsWith("IOE") && !receipt.includes("*") ? receipt.slice(0, 8) : null;
 }
 
-const isForm = (key: string, v: FormFigure | number | undefined): v is FormFigure =>
+const isForm = (key: string, v: FormFigure | number | string | undefined): v is FormFigure =>
   !key.startsWith("_") && typeof v === "object" && v !== null;
 
 export interface BlockForm {
@@ -344,11 +345,47 @@ const BLOCK_NUMBERS = 100_000;
  * Whether every number in a block was checked, or how much of it: the larger of the census's walked share (from the
  * estimate) and the block's own count of numbers with an answer, so a block walked out of the census's order counts.
  */
-export function blockCoverage(figures: BlockFigures | undefined): { every: boolean; walkedShare: number } {
+export interface BlockCoverage {
+  every: boolean;
+  walkedShare: number;
+  /** Numbers of the block with an answer, when the kit counted them. */
+  checked?: number;
+  /** The days its cases were received, from USCIS's own words (the middle 90% of the dated ones). */
+  received?: { from: string; to: string };
+}
+
+export function blockCoverage(figures: BlockFigures | undefined): BlockCoverage {
   const walked = figures && typeof figures._walked_share === "number" ? figures._walked_share : 0;
-  const checked = figures && typeof figures._checked === "number" ? Math.min(1, figures._checked / BLOCK_NUMBERS) : 0;
+  const count = figures && typeof figures._checked === "number" ? figures._checked : undefined;
+  const checked = count !== undefined ? Math.min(1, count / BLOCK_NUMBERS) : 0;
   const w = Math.max(walked, checked);
-  return { every: w >= 0.9995, walkedShare: w };
+  const from = figures?._received_from;
+  const to = figures?._received_to;
+  return {
+    every: w >= 0.9995,
+    walkedShare: w,
+    ...(count !== undefined ? { checked: count } : {}),
+    ...(typeof from === "string" && typeof to === "string" ? { received: { from, to } } : {}),
+  };
+}
+
+/** A received range in words: "April 3 to 10, 2026", "February 26 to March 5, 2026", or across years in full. */
+export function receivedSpan(r: { from: string; to: string }): string {
+  const [fy, fm, fd] = r.from.split("-").map(Number) as [number, number, number];
+  const [ty, tm, td] = r.to.split("-").map(Number) as [number, number, number];
+  const month = (m: number) => MONTH_NAMES[m - 1] ?? "";
+  if (r.from === r.to) return `${month(fm)} ${fd}, ${fy}`;
+  if (fy !== ty) return `${month(fm)} ${fd}, ${fy} to ${month(tm)} ${td}, ${ty}`;
+  if (fm !== tm) return `${month(fm)} ${fd} to ${month(tm)} ${td}, ${ty}`;
+  return `${month(fm)} ${fd} to ${td}, ${ty}`;
+}
+
+/** A block and the n blocks either side of it, in order (none below IOE00000). */
+export function blockRange(block: string, n: number): string[] {
+  const k = Number(block.slice(3));
+  const out: string[] = [];
+  for (let i = Math.max(0, k - n); i <= k + n; i++) out.push(`${block.slice(0, 3)}${String(i).padStart(5, "0")}`);
+  return out;
 }
 
 /**
@@ -359,11 +396,12 @@ export function blockShareLine(
   block: string,
   asOf: string,
   mix: BlockMix,
-  coverage: { every: boolean },
+  coverage: { every: boolean; received?: { from: string; to: string } },
   form?: { key: string; label: string },
 ): string {
   const when = formatAsOf(asOf) ?? asOf;
-  const head = coverage.every ? `every number checked by ${when}` : `the cases checked by ${when}`;
+  const got = coverage.received ? `received about ${receivedSpan(coverage.received)}, ` : "";
+  const head = `${got}${coverage.every ? `every number checked by ${when}` : `the cases checked by ${when}`}`;
   const words = form ? BLOCK_FORM_WORDS[form.key] : undefined;
   const which = form && form.key !== "all" ? `${form.key}${words ? ` (${words})` : ""} cases, ` : "";
   const parts = mix.groups.map((g, i) => `${i === 0 ? g.label : g.label.toLowerCase()} ${formatShareOf(g.n, mix.total)}`);

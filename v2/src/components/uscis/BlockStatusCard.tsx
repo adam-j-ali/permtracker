@@ -6,7 +6,7 @@ import { BlockMixBar } from "@/components/uscis/BlockMixBar";
 import { keepWhole } from "@/components/ui/keep-whole";
 import { formatAsOf } from "@/lib/dolFormat";
 import { formatInt, formatShareOf } from "@/lib/format";
-import type { BlockMix } from "@/lib/uscisSample";
+import { receivedSpan, type BlockMix } from "@/lib/uscisSample";
 
 /**
  * One receipt block's cases by status, as one bar: what people pass around in group chats as a picture, drawn from
@@ -31,6 +31,8 @@ export function BlockStatusCard({
   mix,
   every,
   form,
+  received,
+  blockCases,
 }: {
   block: string;
   asOf: string;
@@ -39,6 +41,10 @@ export function BlockStatusCard({
   every: boolean;
   /** One form's cases ("I-765"), or every form's when left out. */
   form?: string;
+  /** When the block's cases were received (`blockCoverage`). */
+  received?: { from: string; to: string };
+  /** The block's cases of every form, for the numbers that hold none. */
+  blockCases?: number;
 }) {
   const when = formatAsOf(asOf) ?? asOf;
   const waitingTotal = mix.waiting.reduce((s, w) => s + w.n, 0);
@@ -48,7 +54,7 @@ export function BlockStatusCard({
       subject={every ? `Every number checked, ${when}` : `The cases checked so far, ${when}`}
       caption={
         every
-          ? `Each of the block's 100,000 receipt numbers was checked on USCIS's case status page; ${formatInt(mix.total)} of them hold ${form ? `${articleFor(form)} ${form} case` : "a case"}. Each case is counted once, at its newest status.`
+          ? `Each of the block's 100,000 receipt numbers was checked on USCIS's case status page; ${formatInt(mix.total)} of them hold ${form ? `${articleFor(form)} ${form} case` : "a case"}${form && blockCases ? ` and ${formatInt(blockCases)} hold a case of any form` : ""}.${blockCases && blockCases < 100_000 ? ` For nearly all of the other ${formatInt(100_000 - blockCases)}, USCIS's page answers "Invalid number", and it doesn't say why.` : ""} Each case is counted once, at its newest status.`
           : `The cases checked in this block so far, each counted once at its newest status. Not every number in the block has been checked yet, so the share approved for each form below is an estimate with its margin.`
       }
       source={`PERM Tracker's check of USCIS's case status page. permtracker.app/uscis-receipt-blocks/${block}${form ? `#form=${form}` : ""}`}
@@ -57,6 +63,7 @@ export function BlockStatusCard({
         {formatInt(mix.total)}
         <span className="ml-3 font-sans text-xl font-bold">cases</span>
       </p>{" "}
+      {received ? <p className="mt-2 text-base text-muted-foreground">Received about {receivedSpan(received)}</p> : null}{" "}
       <ChartTips label={`The ${formatInt(mix.total)} cases in ${block} by status`} className="mt-5">
         <BlockMixBar mix={mix} label={`The cases in ${block} by status`} />
       </ChartTips>{" "}

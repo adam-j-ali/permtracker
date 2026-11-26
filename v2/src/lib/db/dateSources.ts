@@ -68,14 +68,21 @@ async function refusalsDay(): Promise<string | null> {
   return r?.d ? String(r.d) : null;
 }
 
+/** The day the USCIS sample's newest load is for, from its figures doc (a point read). */
+async function uscisSampleDay(): Promise<string | null> {
+  const r = await one<{ d: string | null }>("SELECT json_extract(json, '$.as_of') AS d FROM perm_docs WHERE key = 'uscis_sample_blocks'");
+  return r?.d ? String(r.d) : null;
+}
+
 export const getDateSources = cache(async (): Promise<DateSources> => {
-  const [dol, sweep, corpus, bulletin, consular, refusals] = await Promise.all([
+  const [dol, sweep, corpus, bulletin, consular, refusals, uscisSample] = await Promise.all([
     safely("dol", dolAsOf),
     safely("sweep", async () => (await getSweepCoverage())?.finishedOn ?? null),
     safely("corpus", async () => (await getFreshness())["perm-cases"]?.asOf ?? null),
     safely("bulletin", bulletinDay),
     safely("consular", async () => (await getFreshness())["iv-scheduling"]?.asOf ?? null),
     safely("refusals", refusalsDay),
+    safely("uscisSample", uscisSampleDay),
   ]);
-  return { dol, sweep, corpus, bulletin, consular, refusals, posts: postsDay() };
+  return { dol, sweep, corpus, bulletin, consular, refusals, uscisSample, posts: postsDay() };
 });

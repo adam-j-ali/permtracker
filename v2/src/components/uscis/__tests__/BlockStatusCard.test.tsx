@@ -53,6 +53,19 @@ describe("BlockStatusCard", () => {
     expect(container.textContent).toContain("of them hold a G-28 case");
   });
 
+  it("says when the block's cases were received, and what the numbers without a case answer", () => {
+    const { container, rerender } = render(
+      <BlockStatusCard block="IOE09363" asOf="2026-11-26" mix={MIX} every received={{ from: "2026-04-03", to: "2026-04-10" }} blockCases={800} />,
+    );
+    const text = container.textContent?.replace(/\s+/g, " ") ?? "";
+    expect(text).toContain("Received about April 3 to 10, 2026");
+    expect(text).toContain("800 of them hold a case. For nearly all of the other 99,200, USCIS's page answers \"Invalid number\", and it doesn't say why.");
+    rerender(<BlockStatusCard block="IOE09363" asOf="2026-11-26" mix={MIX} every form="I-765" blockCases={80000} />);
+    expect(container.textContent?.replace(/\s+/g, " ")).toContain("800 of them hold an I-765 case and 80,000 hold a case of any form. For nearly all of the other 20,000");
+    rerender(<BlockStatusCard block="IOE09363" asOf="2026-11-26" mix={MIX} every={false} received={{ from: "2026-04-03", to: "2026-04-10" }} blockCases={800} />);
+    expect(container.textContent).not.toContain("Invalid number");
+  });
+
   it("gives the bar one name that reads every group, so it never relies on colour alone", () => {
     render(<BlockStatusCard block="IOE09377" asOf="2026-11-26" mix={MIX} every />);
     const bar = screen.getByRole("img", { name: /The cases in IOE09377 by status/ });

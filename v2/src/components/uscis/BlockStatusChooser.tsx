@@ -7,6 +7,9 @@ import { ShareLine } from "@/components/updates/ShareLine";
 import { BlockStatusCard } from "@/components/uscis/BlockStatusCard";
 import { BLOCK_FORM_WORDS, type BlockFormChoice } from "@/lib/uscisSample";
 
+/** The event a form choice sends, so other parts of the page follow it. */
+export const BLOCK_FORM_EVENT = "pt-block-form";
+
 /** The commonest forms that get a button of their own beside every form together. */
 const QUICK = 5;
 
@@ -21,6 +24,8 @@ export function BlockStatusChooser({
   every,
   choices,
   lines,
+  received,
+  blockCases,
 }: {
   block: string;
   asOf: string;
@@ -28,6 +33,9 @@ export function BlockStatusChooser({
   choices: BlockFormChoice[];
   /** Each choice's line to paste into a chat, by its key. */
   lines: Record<string, string>;
+  received?: { from: string; to: string };
+  /** The block's cases of every form. */
+  blockCases?: number;
 }) {
   const [key, setKey] = useState("all");
   useEffect(() => {
@@ -39,6 +47,8 @@ export function BlockStatusChooser({
     setKey(k);
     const url = `${window.location.pathname}${window.location.search}${k === "all" ? "" : `#form=${k}`}`;
     window.history.replaceState(window.history.state, "", url);
+    // The blocks-either-side chart lower on the page follows the same form.
+    window.dispatchEvent(new CustomEvent(BLOCK_FORM_EVENT, { detail: k }));
   };
   const shown = choices.find((c) => c.key === key) ?? choices[0];
   if (!shown) return null;
@@ -90,7 +100,7 @@ export function BlockStatusChooser({
           ) : null}
         </div>
       ) : null}{" "}
-      <BlockStatusCard block={block} asOf={asOf} mix={shown.mix} every={every} form={shown.key === "all" ? undefined : shown.key} />{" "}
+      <BlockStatusCard block={block} asOf={asOf} mix={shown.mix} every={every} form={shown.key === "all" ? undefined : shown.key} received={received} blockCases={blockCases} />{" "}
       <ShareLine className="mt-5" line={lines[shown.key] ?? ""} day={asOf} event="block_line_shared" />
     </div>
   );

@@ -5,7 +5,7 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { blockCoverage, blockFormChoices, blockShareLine, blockStatusMix } from "../uscisSample";
+import { blockCoverage, blockFormChoices, blockRange, blockShareLine, blockStatusMix, receivedSpan } from "../uscisSample";
 
 const ROWS = [
   { grp: "approved", status: "Case Was Approved", n: 27054 },
@@ -94,10 +94,10 @@ describe("blockCoverage", () => {
     expect(blockCoverage({})).toEqual({ every: false, walkedShare: 0 });
   });
   it("says every number was checked from the block's own count, for a block walked out of the census's order", () => {
-    expect(blockCoverage({ _checked: 100000 })).toEqual({ every: true, walkedShare: 1 });
-    expect(blockCoverage({ _walked_share: 0.1, _checked: 99960 })).toEqual({ every: true, walkedShare: 0.9996 });
-    expect(blockCoverage({ _walked_share: 0.2, _checked: 60000 })).toEqual({ every: false, walkedShare: 0.6 });
-    expect(blockCoverage({ _walked_share: 1, _checked: 40 })).toEqual({ every: true, walkedShare: 1 });
+    expect(blockCoverage({ _checked: 100000 })).toEqual({ every: true, walkedShare: 1, checked: 100000 });
+    expect(blockCoverage({ _walked_share: 0.1, _checked: 99960 })).toEqual({ every: true, walkedShare: 0.9996, checked: 99960 });
+    expect(blockCoverage({ _walked_share: 0.2, _checked: 60000 })).toEqual({ every: false, walkedShare: 0.6, checked: 60000 });
+    expect(blockCoverage({ _walked_share: 1, _checked: 40 })).toEqual({ every: true, walkedShare: 1, checked: 40 });
   });
 });
 
@@ -150,5 +150,33 @@ describe("blockShareLine for one form", () => {
     expect(blockShareLine("IOE09358", "2026-11-27", mix, { every: true }, { key: "I-765", label: "I-765, work permit" })).toBe(
       "IOE09358, I-765 (work permit) cases, every number checked by November 27, 2026: 100 cases. Approved 30%, waiting 70%. permtracker.app/uscis-receipt-blocks/IOE09358#form=I-765",
     );
+  });
+});
+
+describe("a block's received dates", () => {
+  it("carries the range the kit sends, and the count of numbers checked", () => {
+    expect(blockCoverage({ _checked: 100000, _received_from: "2026-04-03", _received_to: "2026-04-10" })).toEqual({
+      every: true, walkedShare: 1, checked: 100000, received: { from: "2026-04-03", to: "2026-04-10" },
+    });
+    expect(blockCoverage({ _received_from: "2026-04-03" }).received).toBeUndefined();
+  });
+  it("names the span the short way within a month, the long way across months and years", () => {
+    expect(receivedSpan({ from: "2026-04-03", to: "2026-04-10" })).toBe("April 3 to 10, 2026");
+    expect(receivedSpan({ from: "2026-02-26", to: "2026-03-05" })).toBe("February 26 to March 5, 2026");
+    expect(receivedSpan({ from: "2025-12-29", to: "2026-01-04" })).toBe("December 29, 2025 to January 4, 2026");
+    expect(receivedSpan({ from: "2026-04-08", to: "2026-04-08" })).toBe("April 8, 2026");
+  });
+  it("puts them in the share line people paste", () => {
+    const mix = blockStatusMix([{ grp: "approved", status: "", n: 30 }, { grp: "waiting", status: "", n: 70 }]);
+    expect(blockShareLine("IOE09363", "2026-11-26", mix, { every: true, received: { from: "2026-04-03", to: "2026-04-10" } })).toBe(
+      "IOE09363, received about April 3 to 10, 2026, every number checked by November 26, 2026: 100 cases. Approved 30%, waiting 70%. permtracker.app/uscis-receipt-blocks/IOE09363",
+    );
+  });
+});
+
+describe("blockRange", () => {
+  it("is the block and the n blocks either side, in order", () => {
+    expect(blockRange("IOE09375", 2)).toEqual(["IOE09373", "IOE09374", "IOE09375", "IOE09376", "IOE09377"]);
+    expect(blockRange("IOE00001", 2)).toEqual(["IOE00000", "IOE00001", "IOE00002", "IOE00003"]);
   });
 });
