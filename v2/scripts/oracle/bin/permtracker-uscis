@@ -293,16 +293,11 @@ case "$job" in
   i140)
     t=$(mktemp -d)
     # The ingest writes the quarter to the database (perm_docs['uscis_i140']),
-    # which the two I-140 tool pages read first since Sep 29 2026, so success
-    # here needs no Convex key. With one, Convex's copy (the fallback) is kept
-    # current too; without one it is simply left as it was.
+    # which the two I-140 tool pages read. (Convex's copy was retired on
+    # Nov 26 2026: nothing read it, and only GitHub held a key to write it.)
     if python3 scripts/ingest_uscis_i140.py --out "$t/uscis-payload.json" && [ -s "$t/uscis-payload.json" ]; then
       file=$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1])).get("sourceFile", ""))' "$t/uscis-payload.json")
       note="stored $file in the database"
-      if [ -n "${CONVEX_DEPLOY_KEY:-}" ]; then
-        if npx --yes convex run uscisI140:storeStats "$(cat "$t/uscis-payload.json")" --prod; then note="$note and Convex"
-        else note="$note; the Convex fallback copy failed"; fi
-      fi
       ok ingest_uscis_i140.py "$note"
     else rc=1; fail ingest_uscis_i140.py "fetch, reduce or database write failed"; fi
     rm -rf "$t"

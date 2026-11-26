@@ -20,12 +20,11 @@ bad trade, and one ingest pattern is easier to keep working than two.
 
 Usage:
     python3 scripts/ingest_uscis_i140.py --out /tmp/uscis.json
-    npx convex run uscisI140:storeStats "$(cat /tmp/uscis.json)" --prod   # retired: the site no longer reads it
 
 THE PAGES READ THE DATABASE COPY FIRST (Sep 29 2026). Every run that parses
 a complete quarter writes it to `perm_docs['uscis_i140']`, which
-/tools/i140-calculator and /tools/green-card-timeline read, with the Convex
-table only as the fallback for a database that has never held one. Until
+/tools/i140-calculator and /tools/green-card-timeline read (the Convex table
+that was their fallback was retired on Nov 26 2026). Until
 then a new quarter reached the pages only through `storeStats`, which needs a
 Convex deploy key: GitHub holds one and www.uscis.gov refuses GitHub's runners
 (four 403s on Sep 29), while the server reaches USCIS and holds no key, so a

@@ -1360,46 +1360,6 @@ export default defineSchema({
     .index("by_content_hash", ["contentHash"]),
 
   /**
-   * USCIS I-140 counts, per petition subtype, for the newest published quarter.
-   *
-   * Separate from `i140ProcessingTimes` in the frontend, and the two answer
-   * different questions on purpose. That table holds what USCIS says a case
-   * takes, measured over petitions already decided. This one holds how many are
-   * stacked up and how fast they are clearing, which on real figures disagrees:
-   * the national interest waiver shows 89,215 pending against 6,325 completed
-   * in a quarter, while USCIS says 80% finish within 30 months (Sep 2026).
-   * Both are true, because NIW intake is outrunning its output.
-   *
-   * Ingested by `scripts/ingest_uscis_i140.py` from www.uscis.gov, which serves
-   * scripts. The processing-time figures live on egov.uscis.gov behind a bot
-   * challenge and are deliberately not fetched by anything.
-   */
-  uscisI140Stats: defineTable({
-    /** The workbook this came from, e.g. `i140_fy2026_q2_v1.xlsx`. */
-    sourceFile: v.string(),
-    /** USCIS's own quarter label, e.g. `FY2026 Q2`. */
-    asOfQuarter: v.string(),
-    subtypes: v.array(
-      v.object({
-        /** USCIS subtype code, e.g. `NIW`. */
-        code: v.string(),
-        label: v.string(),
-        received: v.number(),
-        approved: v.number(),
-        denied: v.number(),
-        /** Awaiting a decision at quarter end. Never by receipt month: USCIS
-         *  does not publish that, so "how many are ahead of me" is unanswerable. */
-        pending: v.number(),
-      }),
-    ),
-    computedAt: v.number(),
-    /** Insert-only-on-change, matching the other ingested tables. */
-    contentHash: v.string(),
-  })
-    .index("by_computed", ["computedAt"])
-    .index("by_content_hash", ["contentHash"]),
-
-  /**
    * Queue-reached alerts
    *
    * A visitor tells us the month their case was filed and we email them once,

@@ -45,7 +45,6 @@ export const TABLE_RETENTION: Record<string, { kind: RetentionKind; rule: string
   systemErrors: { kind: "pruned", rule: "deleted after 180 days (RETENTION_DAYS)" },
   marketingEvents: { kind: "pruned", rule: "deleted after 365 days (RETENTION_DAYS)" },
   dolProcessingTimes: { kind: "record", rule: "kept: one row per DOL publication, the queue's history" },
-  uscisI140Stats: { kind: "retired", rule: "no longer read since Nov 25 2026: the site reads the database's copy" },
   dolQueueAlerts: { kind: "subscription", rule: "deleted when stopped or unconfirmed after 30 days (convex/retention.ts)" },
   alertRatings: { kind: "record", rule: "kept: one rating per alert, a deleted account's too (owner, Nov 4 2026)" },
   caseStatusAlerts: { kind: "subscription", rule: "deleted when stopped or unconfirmed after 30 days; a watch ends a year after DOL decides" },

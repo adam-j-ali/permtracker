@@ -3,9 +3,8 @@
  * database copy (`perm_docs['uscis_i140']`, written by
  * scripts/ingest_uscis_i140.py).
  *
- * A plain module so the check runs without a database. The shape matches
- * Convex's `uscisI140:getLatest` exactly, because that query stays the
- * fallback and both have to feed the same components.
+ * A plain module so the check runs without a database. (It once matched a
+ * Convex fallback copy, retired on Nov 26 2026.)
  */
 
 export interface I140Subtype {
