@@ -69,6 +69,15 @@ def test_check_figures():
     check(check_figures(good, last=None, cases_read=1000) == "load", "the first load loads")
     check(check_figures(good, last={"as_of": "2026-11-25", "cases": 1000}, cases_read=1000) == "repeat",
           "the same day again is a repeat, skipped")
+    # A second export the same day, made after the last load, loads (Nov 26 2026: the morning's export missed a block
+    # the census walked an hour later); the same export again is still a repeat.
+    loaded = {"as_of": "2026-11-25", "cases": 1000, "loaded_at": 1795701600000}  # Nov 26 2026, 9:00 AM EST
+    later = {**good, "made_at": "2026-11-26T09:10:00-05:00"}
+    earlier = {**good, "made_at": "2026-11-20T06:37:00-05:00"}
+    check(check_figures(later, last=loaded, cases_read=1000) == "load", "a same-day export made after the last load loads")
+    check(check_figures(earlier, last=loaded, cases_read=1000) == "repeat", "one made before the last load is a repeat")
+    check(check_figures({**good, "made_at": "not a time"}, last=loaded, cases_read=1000) == "repeat",
+          "one with no readable time is a repeat")
     check(refused(lambda: check_figures(good, last={"as_of": "2026-11-26", "cases": 1000}, cases_read=1000), "order"),
           "an older day than the last load is refused")
     check(refused(lambda: check_figures(good, last={"as_of": "2026-11-24", "cases": 1100}, cases_read=1000), "shrink"),

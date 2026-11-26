@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import datetime as dt
 import json
 import os
 import re
@@ -151,6 +152,16 @@ def case_statements(upserts, deletes, events):
                     e["form"] or None])
 
 
+def made_after(made_at, loaded_at) -> bool:
+    """Whether an export was made after the last load finished: a later export of the same day is new data (Nov 26
+    2026: the morning's export missed a block the census walked an hour later). Unreadable either way, it isn't."""
+    try:
+        made = dt.datetime.fromisoformat(str(made_at))
+        return made.tzinfo is not None and made.timestamp() * 1000 > int(loaded_at)
+    except (TypeError, ValueError):
+        return False
+
+
 def check_figures(figures: dict, *, last: dict | None, cases_read: int) -> str:
     """'load' or 'repeat'; raises SampleError for anything the site mustn't show."""
     as_of = figures.get("as_of")
@@ -165,7 +176,7 @@ def check_figures(figures: dict, *, last: dict | None, cases_read: int) -> str:
         raise SampleError("sample-figures.json holds a receipt number; only a number's own lookup may show one")
     if last:
         if as_of == last.get("as_of"):
-            return "repeat"
+            return "load" if made_after(figures.get("made_at"), last.get("loaded_at")) else "repeat"
         if as_of < str(last.get("as_of")):
             raise SampleError(f"the files are for {as_of}, older than the last load's {last.get('as_of')} (out of order)")
         if cases_read < SHRINK_FLOOR * int(last.get("cases") or 0):
