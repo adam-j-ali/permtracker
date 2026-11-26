@@ -93,6 +93,12 @@ describe("blockCoverage", () => {
     expect(blockCoverage(undefined)).toEqual({ every: false, walkedShare: 0 });
     expect(blockCoverage({})).toEqual({ every: false, walkedShare: 0 });
   });
+  it("says every number was checked from the block's own count, for a block walked out of the census's order", () => {
+    expect(blockCoverage({ _checked: 100000 })).toEqual({ every: true, walkedShare: 1 });
+    expect(blockCoverage({ _walked_share: 0.1, _checked: 99960 })).toEqual({ every: true, walkedShare: 0.9996 });
+    expect(blockCoverage({ _walked_share: 0.2, _checked: 60000 })).toEqual({ every: false, walkedShare: 0.6 });
+    expect(blockCoverage({ _walked_share: 1, _checked: 40 })).toEqual({ every: true, walkedShare: 1 });
+  });
 });
 
 describe("blockShareLine", () => {

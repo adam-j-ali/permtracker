@@ -337,9 +337,17 @@ export function blockStatusMix(rows: readonly { grp: string; status: string; n: 
   return { total, groups, waiting };
 }
 
-/** Whether the census checked every number in a block (its walked share, from the estimate), or how much of it. */
+/** A receipt block's numbers, 00000 to 99999. */
+const BLOCK_NUMBERS = 100_000;
+
+/**
+ * Whether every number in a block was checked, or how much of it: the larger of the census's walked share (from the
+ * estimate) and the block's own count of numbers with an answer, so a block walked out of the census's order counts.
+ */
 export function blockCoverage(figures: BlockFigures | undefined): { every: boolean; walkedShare: number } {
-  const w = figures && typeof figures._walked_share === "number" ? figures._walked_share : 0;
+  const walked = figures && typeof figures._walked_share === "number" ? figures._walked_share : 0;
+  const checked = figures && typeof figures._checked === "number" ? Math.min(1, figures._checked / BLOCK_NUMBERS) : 0;
+  const w = Math.max(walked, checked);
   return { every: w >= 0.9995, walkedShare: w };
 }
 

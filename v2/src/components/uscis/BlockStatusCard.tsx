@@ -30,7 +30,7 @@ export function BlockStatusCard({
   block: string;
   asOf: string;
   mix: BlockMix;
-  /** The census checked every number in the block. */
+  /** Every number in the block was checked (`blockCoverage`). */
   every: boolean;
   /** One form's cases ("I-765"), or every form's when left out. */
   form?: string;
