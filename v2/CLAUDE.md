@@ -74,6 +74,7 @@ One line each. The reasons, and the incident behind each, are in the notes file 
 - Run the suite under nvm's Node 24.22.1, the Mac's default (`PATH="$HOME/.nvm/versions/node/v24.22.1/bin:$PATH"` in a script): jsdom 30 needs it, and the server and CI run Node 24 too (the server 24.22.3).
 - Check a rendered change on the dev server against production data, never by bulk-capturing production (795 page loads set off Under Attack Mode, Oct 11). The tunnel, both databases: `ssh -o ExitOnForwardFailure=yes -o ServerAliveInterval=30 -o ServerAliveCountMax=4 -fN -L 127.0.0.1:18081:127.0.0.1:8080 -L 127.0.0.1:18082:127.0.0.1:8082 permtracker`, then `DATABASE_URL=http://127.0.0.1:18081 DATABASE_LCA_URL=http://127.0.0.1:18082` and the server's read-only token as `DATABASE_AUTH_TOKEN`, read into a variable and never printed ([testing](docs/notes/testing.md)).
 - A dev server can serve old modules: restart it before believing a render that contradicts the source. Its Turbopack cache fills the disk: stop it and `rm -rf .next/dev/cache` between long runs.
+- A change under `scripts/oracle/` (nginx, `bin/`) reaches the server only by hand after the push: install the repo copy, `nginx -t` before a reload, sha1 equal to the repo ([ops](docs/notes/ops.md)).
 
 **Data**
 - A failed read is never "no record": throw so the page keeps its last good render, or name what couldn't be read (`softFail` in `src/lib/softRead.ts` for reads a page can live without) ([ops](docs/notes/ops.md)).
@@ -110,6 +111,7 @@ One line each. The reasons, and the incident behind each, are in the notes file 
 - Charge a budget before the side effect it guards: a refusal leaves no trace of a success.
 - Mail to the owner's inboxes goes through the Cloudflare mail Worker; sign-in codes stay on Resend.
 - Every email has its way out (one-click and `/prefs` for subscriber mail, Settings for account mail). Times in emails are Eastern; `email-voice.test.ts` holds the words.
+- A new alert kind: the typecheck names most surfaces, but not the emailed-link relay in nginx, next.config's rewrite or permtracker-defend's SECTION_NEVER ([email](docs/notes/email.md), Nov 26).
 
 **Words**
 - Other trackers are named only on `/compare`; everywhere else they're "a third party" ([business](docs/notes/business.md)).
