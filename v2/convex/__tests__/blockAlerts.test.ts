@@ -79,11 +79,13 @@ describe("what counts as news", () => {
   });
 
   it("sums a week only against the Monday's own baseline", () => {
-    const week = { ...snap, weekOf: "2026-11-30", weekByForm: { "I-765": counts(1000, 400) } };
+    const week = { ...snap, summaryOf: "2026-11-30", summaryFrom: "2026-11-23", summaryByForm: { "I-765": counts(1000, 400) } };
     expect(dueKeys(week, "I-765", ["every", "m25:I-765", "m50:I-765"], "2026-11-30")).toEqual(["week:2026-11-30"]);
     expect(dueKeys(week, "I-765", ["every", "m25:I-765", "m50:I-765"], "2026-12-07")).toEqual([]);
     const news = blockNews("IOE09366", "I-765", ["week:2026-11-30"], week);
     expect(news.subject).toBe("IOE09366 this week: 120 more approved");
+    const missed = blockNews("IOE09366", "I-765", ["week:2026-11-30"], { ...week, summaryFrom: "2026-11-16" });
+    expect(missed.subject).toBe("IOE09366 since November 16, 2026: 120 more approved");
   });
 
   it("leads with the biggest news, and the highest milestone", () => {
@@ -191,6 +193,34 @@ describe("the server's update", () => {
     await update(t, [{ block: "IOE09366", every: true, checked: 100000, byForm: { "I-765": counts(20000, 9000) } }]);
     await finishScheduledNow(t);
     expect(sends.filter((s) => !s.subject.startsWith("Confirm:"))).toHaveLength(0);
+  });
+});
+
+describe("the Monday summary", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("counts from the Monday before, however many loads came between", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    // Set before the test database exists: set after it, the first load read the real date.
+    vi.setSystemTime(new Date("2026-11-23T13:00:00Z"));
+    const t = createTestContext();
+    const { sends } = stub();
+    await follow(t, "g@example.com", "IOE09366", { toldKeys: ["every", "m25:I-765", "m50:I-765"] });
+    const load = async (iso: string, approved: number) => {
+      vi.setSystemTime(new Date(iso));
+      await update(t, [{ block: "IOE09366", every: true, checked: 100000, byForm: { "I-765": counts(20000, approved) } }]);
+      await finishScheduledNow(t);
+    };
+    await load("2026-11-23T14:00:00Z", 10000); // Monday Nov 23: the week's starting point
+    await load("2026-11-27T14:00:00Z", 10500); // Friday
+    await load("2026-11-29T23:00:00Z", 10900); // Sunday evening
+    await load("2026-11-30T14:00:00Z", 11000); // Monday Nov 30: the summary
+    await load("2026-11-30T20:00:00Z", 11100); // a second Monday load sends nothing more
+    const told = sends.filter((s) => !s.subject.startsWith("Confirm:"));
+    expect(told).toHaveLength(1);
+    expect(told[0]!.subject).toBe("IOE09366 this week: 1,000 more approved");
   });
 });
 

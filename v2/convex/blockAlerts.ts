@@ -34,7 +34,8 @@ import { deliverAlert } from "./lib/alertDelivery";
 import { dropQueued } from "./lib/alertOutboxStore";
 import { connectionThrottleReply } from "./lib/throttleReply";
 import { admitConfirmation, queueConfirmation, replayArgs } from "./confirmationQueue";
-import { MS_PER_HOUR, easternDay } from "./lib/time";
+import { MS_PER_HOUR, daysBetween, easternDay } from "./lib/time";
+import { longDate } from "./lib/months";
 import { isPlausibleEmail } from "./lib/emailShape";
 import { TEXT_LEGAL_LINE } from "./lib/textFooter";
 import { BLOCK_RE, FORM_RE, type BlockCounts } from "./lib/blockUpdate";
@@ -85,10 +86,10 @@ const share = (c: BlockCounts) => (c.total > 0 ? (100 * c.approved) / c.total : 
 
 /**
  * The news one follow has earned from a block's snapshot and hasn't been told: its keys, newest state only. A week's
- * summary is due only when the snapshot carries a baseline from the Monday before.
+ * summary is due on the Monday it was made for, and only when an earlier Monday's counts are there to compare with.
  */
 export function dueKeys(
-  snap: { every: boolean; byForm: Record<string, BlockCounts>; weekOf?: string; weekByForm?: Record<string, BlockCounts> },
+  snap: { every: boolean; byForm: Record<string, BlockCounts>; summaryOf?: string; summaryFrom?: string; summaryByForm?: Record<string, BlockCounts> },
   form: string | undefined,
   told: readonly string[],
   monday: string | null,
@@ -101,7 +102,7 @@ export function dueKeys(
   if (now && now.total > 0) {
     for (const m of MILESTONES) if (share(now) >= m && !has.has(`m${m}:${key}`)) out.push(`m${m}:${key}`);
   }
-  if (monday && snap.weekOf === monday && snap.weekByForm && !has.has(`week:${monday}`)) out.push(`week:${monday}`);
+  if (monday && snap.summaryOf === monday && snap.summaryByForm && !has.has(`week:${monday}`)) out.push(`week:${monday}`);
   return out;
 }
 
@@ -116,7 +117,7 @@ export function blockNews(
   block: string,
   form: string | undefined,
   keys: readonly string[],
-  snap: { byForm: Record<string, BlockCounts>; weekByForm?: Record<string, BlockCounts> },
+  snap: { byForm: Record<string, BlockCounts>; summaryOf?: string; summaryFrom?: string; summaryByForm?: Record<string, BlockCounts> },
 ): { subject: string; lines: string[] } {
   const now = countsFor(snap.byForm, form);
   const cases = form ? `${form} cases` : "cases";
@@ -135,12 +136,17 @@ export function blockNews(
     lines.push(`${pct(now)} of the block's ${cases} are approved now (${n(now.approved)} of ${n(now.total)}), past ${m}%.`);
   }
   const week = keys.find((k) => k.startsWith("week:"));
-  const base = week && snap.weekByForm ? countsFor(snap.weekByForm, form) : null;
+  const base = week && snap.summaryByForm ? countsFor(snap.summaryByForm, form) : null;
   if (week && now && base) {
     const more = Math.max(0, now.approved - base.approved);
-    if (!keys.includes("every") && !top) subject = `${block} this week: ${n(more)} more approved`;
+    // "This week" only when the counts compared are a week apart; a missed Monday says the day it counts from.
+    const span =
+      snap.summaryFrom && snap.summaryOf && daysBetween(snap.summaryFrom, snap.summaryOf) === 7
+        ? "this week"
+        : `since ${longDate(snap.summaryFrom) ?? "the last summary"}`;
+    if (!keys.includes("every") && !top) subject = `${block} ${span}: ${n(more)} more approved`;
     lines.push(
-      `This week: ${n(more)} more approved, ${n(Math.max(0, now.denied - base.denied))} more denied, ${n(now.rfe)} evidence requests open, ${n(now.waiting)} still waiting.`,
+      `${span.charAt(0).toUpperCase()}${span.slice(1)}: ${n(more)} more approved, ${n(Math.max(0, now.denied - base.denied))} more denied, ${n(now.rfe)} evidence requests open, ${n(now.waiting)} still waiting.`,
     );
   }
   return { subject: subject.slice(0, 78), lines };
@@ -406,8 +412,11 @@ export const unsubscribeByToken = internalMutation({
 const isLive = (r: Doc<"blockAlerts">) => r.confirmedAt !== undefined && r.unsubscribedAt === undefined && r.pendingBlock === undefined;
 
 /**
- * Every block's counts after a USCIS sample load (POST /block-update): the newest kept, the Monday's kept as the week's
- * baseline, and a send scheduled for each block someone follows.
+ * Every block's counts after a USCIS sample load (POST /block-update): the newest kept, and a send scheduled for each
+ * block someone follows. The week's starting point (`weekOf`, `weekByForm`) is the first load of a Monday, or the first
+ * load ever. On a Monday's first load the summary compares with the starting point saved BEFORE it (`summaryFrom`,
+ * `summaryByForm`), and only then does that load become the next week's: overwriting first compared a Monday with the
+ * load a few hours before it.
  */
 export const recordUpdate = internalMutation({
   args: {
@@ -423,10 +432,18 @@ export const recordUpdate = internalMutation({
     for (const b of args.blocks) {
       if (!BLOCK_RE.test(b.block)) continue;
       const snap = await ctx.db.query("blockSnapshots").withIndex("by_block", (q) => q.eq("block", b.block)).first();
-      const week =
-        monday && snap?.weekOf !== monday
-          ? { weekOf: monday, weekByForm: snap?.byForm ?? b.byForm }
-          : { weekOf: snap?.weekOf, weekByForm: snap?.weekByForm };
+      const kept = {
+        weekOf: snap?.weekOf,
+        weekByForm: snap?.weekByForm,
+        summaryOf: snap?.summaryOf,
+        summaryFrom: snap?.summaryFrom,
+        summaryByForm: snap?.summaryByForm,
+      };
+      const week = !snap?.weekOf || !snap.weekByForm
+        ? { ...kept, weekOf: today, weekByForm: b.byForm }
+        : monday && snap.weekOf !== monday
+          ? { weekOf: monday, weekByForm: b.byForm, summaryOf: monday, summaryFrom: snap.weekOf, summaryByForm: snap.weekByForm }
+          : kept;
       const row = { block: b.block, asOf: args.asOf, every: b.every, checked: b.checked, byForm: b.byForm, ...week };
       if (snap) await ctx.db.patch(snap._id, row);
       else await ctx.db.insert("blockSnapshots", row);
@@ -449,8 +466,9 @@ export const followsForBlock = internalQuery({
       v.object({
         every: v.boolean(),
         byForm: v.record(v.string(), countsValidator),
-        weekOf: v.optional(v.string()),
-        weekByForm: v.optional(v.record(v.string(), countsValidator)),
+        summaryOf: v.optional(v.string()),
+        summaryFrom: v.optional(v.string()),
+        summaryByForm: v.optional(v.record(v.string(), countsValidator)),
       }),
     ),
     follows: v.array(v.object({ id: v.id("blockAlerts"), email: v.string(), form: v.optional(v.string()), told: v.array(v.string()) })),
@@ -459,7 +477,9 @@ export const followsForBlock = internalQuery({
     const s = await ctx.db.query("blockSnapshots").withIndex("by_block", (q) => q.eq("block", args.block)).first();
     const rows = await ctx.db.query("blockAlerts").withIndex("by_block", (q) => q.eq("block", args.block)).take(FOLLOWS_PER_BLOCK);
     return {
-      snap: s ? { every: s.every, byForm: s.byForm, weekOf: s.weekOf, weekByForm: s.weekByForm } : null,
+      snap: s
+        ? { every: s.every, byForm: s.byForm, summaryOf: s.summaryOf, summaryFrom: s.summaryFrom, summaryByForm: s.summaryByForm }
+        : null,
       follows: rows.filter(isLive).map((r) => ({ id: r._id, email: r.email, form: r.form, told: r.toldKeys ?? [] })),
     };
   },

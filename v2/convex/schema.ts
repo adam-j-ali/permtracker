@@ -2393,10 +2393,13 @@ export default defineSchema({
     every: v.boolean(),
     checked: v.number(),
     byForm: v.record(v.string(), v.object({ total: v.number(), approved: v.number(), denied: v.number(), rfe: v.number(), waiting: v.number() })),
+    /** The week's starting point: the first load of a Monday, or the first load ever. */
     weekOf: v.optional(v.string()),
-    weekByForm: v.optional(
-      v.record(v.string(), v.object({ total: v.number(), approved: v.number(), denied: v.number(), rfe: v.number(), waiting: v.number() })),
-    ),
+    weekByForm: v.optional(v.record(v.string(), v.object({ total: v.number(), approved: v.number(), denied: v.number(), rfe: v.number(), waiting: v.number() }))),
+    /** The Monday summary: the Monday it's for, and the starting point it compares with. */
+    summaryOf: v.optional(v.string()),
+    summaryFrom: v.optional(v.string()),
+    summaryByForm: v.optional(v.record(v.string(), v.object({ total: v.number(), approved: v.number(), denied: v.number(), rfe: v.number(), waiting: v.number() }))),
   }).index("by_block", ["block"]),
 
   employerAlerts: defineTable({
