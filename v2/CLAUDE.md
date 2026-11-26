@@ -96,7 +96,8 @@ One line each. The reasons, and the incident behind each, are in the notes file 
 - Never `fetchQuery` from `convex/nextjs` on a public page: use `queryStatic` (`src/lib/convexStatic.ts`), or the route turns dynamic.
 - No `AbortSignal.any` in browser code (Chrome 109).
 - Motion's `initial` is written into the server's HTML: nothing above the fold may start hidden (the `ssr` vitest project and `audit_ssr_visibility.py` check it).
-- A `loading.tsx` renders the page's own loading component, and prerendered pages have none. A public `[param]` route needs `generateStaticParams`.
+- A `loading.tsx` renders the page's own loading component, and prerendered pages have none. A public `[param]` route needs `generateStaticParams`,
+  except a page that reads `searchParams`: it declares nothing static (a 500 on every request in production; `query-pages-render-per-request.test.ts`).
 - A `route.ts` exports handler names only. `robots: undefined` drops the root's robots tag.
 - WCAG 2.1 AA, public text 14px or more, 44px tap targets, sentence case. Lime is the action and the picked option; a figure card's lime fill marks only where DOL is now or the reader's own figure, a total takes the ink card (`lime-figures-mark-now-or-you.test.ts`); text on paper uses the `-ink` tokens ([DESIGN_SYSTEM](docs/DESIGN_SYSTEM.md)).
 - A grid holding form controls needs `grid-cols-1 [&>*]:min-w-0`; `sr-only` goes on a wrapper, never a `<table>`; a table that scrolls sideways is a `ScrollBox`.
