@@ -2197,9 +2197,19 @@ def site_audit_verdict(doc: dict | None, now_ms: int) -> dict:
             f" (last week {int(before.get(fam) or 0):,})" if before else "")
         lines.append(f"{label}: {counts[fam]:,}{change}.{examples_text(fam, week)}")
     if not week.get("complete"):
-        warns.insert(0, f"The week ending {when} read only {float(week.get('coverage') or 0):.0%} of the sitemap "
-                        f"({int(week.get('read') or 0):,} of {int(week.get('sitemap') or 0):,} pages), so it wasn't "
-                        "compared with the week before.")
+        from site_audit import LONG_EPOCH, LONG_NIGHTS  # noqa: PLC0415
+        first_pass = LONG_EPOCH + dt.timedelta(days=LONG_NIGHTS - 1)
+        if dt.datetime.fromtimestamp(now_ms / 1000, ET).date() <= first_pass:
+            # Employer pages are read over five weeks since Nov 26 2026; until the first pass ends, a short week is
+            # the cycle filling, which nobody can hurry, so it's a line and not a warning.
+            lines.insert(0, f"The week ending {when} read {int(week.get('read') or 0):,} of "
+                            f"{int(week.get('sitemap') or 0):,} sitemap pages: employer pages are read over five weeks, "
+                            f"and the first full pass ends {first_pass.strftime('%A, %b %-d')}, so the week isn't "
+                            "compared yet.")
+        else:
+            warns.insert(0, f"The week ending {when} read only {float(week.get('coverage') or 0):.0%} of the sitemap "
+                            f"({int(week.get('read') or 0):,} of {int(week.get('sitemap') or 0):,} pages), so it "
+                            "wasn't compared with the week before.")
     if grew:
         # The week's growth is the routing list's audit.weekly: the morning report carries it (the audit's own email
         # goes only when the list sends it by email).

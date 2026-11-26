@@ -909,6 +909,12 @@ def site_audit_says_what_grew() -> None:
     short = dict(calm, latestWeek=dict(week, complete=False, read=150000, unread=32729, coverage=150000 / 182729))
     v = dm.site_audit_verdict(short, now)
     check(v["status"] == "warn" and "82%" in v["summary"], "site audit: a week that read too little warns", str(v))
+    # While the first five-week pass over the employer pages runs (to Dec 27 2026), a short week is a line, not a warning:
+    # nobody can make the cycle finish sooner (Nov 26 2026).
+    early = int(dt.datetime(2026, 12, 6, 12, tzinfo=dt.timezone.utc).timestamp() * 1000)
+    v_early = dm.site_audit_verdict(dict(short, at=early), early)
+    check(v_early["status"] != "warn" and any("Dec 27" in ln for ln in v_early.get("lines", []) + [v_early["summary"]]),
+          "site audit: a short week during the first employer pass is a line with its end date", str(v_early))
     stopped = dict(calm, night=dict(night, finishedAt=now - 60 * hour))
     v = dm.site_audit_verdict(stopped, now)
     check(v["status"] == "fail" and "permtracker-site-audit" in v["summary"], "site audit: a job that stopped fails",

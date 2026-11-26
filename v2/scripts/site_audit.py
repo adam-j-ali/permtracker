@@ -5,7 +5,8 @@ WHY. Ahrefs' free Site Audit reads at most 5,000 pages a crawl, and the sitemap 
 Its crawl of that night saw under 3% of the site, met the front door's limits and counted the gaps its own cap left
 as problems. This reads every sitemap page through nginx on the server (127.0.0.1:8081, the same front door
 cloudflared talks to, so no Cloudflare and no network), a seventh of the sitemap each night, so the whole site is
-read every week with no outside limit.
+read every week with no outside limit; employer pages (about 535,000 of 556,000, Nov 26 2026) a 35th a night, so each
+is read every five weeks.
 
 FOR EACH PAGE it records the HTTP status (a redirect's target too, followed on the site only), the time to the last
 byte, the HTML's size, the title and description and their lengths, the canonical, the robots rules (meta tags and
@@ -117,8 +118,14 @@ NIGHTS = 7
 DAY_MS = 86_400_000
 RESULT_DAYS = 8                      # a page's read counts in the report this long; a full pass is 7 nights
 STRAGGLER_AFTER_MS = 7 * DAY_MS + 6 * 3_600_000  # older than a week and a night's window: its own night was missed
+# Employer pages are read over five weeks (Nov 26 2026): about 535,000 of the sitemap's 556,000, so a seventh of them a
+# night was more than a night can read at four a second, and a week's report read a sliver. A 35th of them and a
+# seventh of the rest is about 18,000 pages a night. Their reads count for their own cycle, which closes on a Sunday.
+LONG_NIGHTS = 35
+LONG_FAMILY = re.compile(r"^/perm-employers/[^/]+$")
+LONG_EPOCH = dt.date(2026, 11, 23)   # a Monday: the long cycle's first night, so its last is a Sunday
 COMPLETE_SHARE = 0.95                # a week that read less of the sitemap is reported without a comparison
-KEEP_DAYS = 30                       # rows unread this long are removed
+KEEP_DAYS = 45                       # rows unread this long are removed (past the long cycle and its night)
 WEEKS_KEPT = 8
 EXAMPLES = 10
 
@@ -167,26 +174,39 @@ def norm_path(href: str | None, base: str = "/") -> str | None:
     return path.rstrip("/") or "/"
 
 
+def cycle_of(path: str) -> int:
+    """How many nights a page's cycle runs: an employer's page LONG_NIGHTS, every other page NIGHTS."""
+    return LONG_NIGHTS if LONG_FAMILY.match(path) else NIGHTS
+
+
+def result_days(path: str) -> int:
+    """How long a page's read counts in the report: its cycle and the night after."""
+    return cycle_of(path) + 1
+
+
 def slice_of(path: str) -> int:
-    """The night of the week a page is read on, from its path alone, so it never moves when other pages come and go."""
-    return int.from_bytes(hashlib.sha1(path.encode()).digest()[:4], "big") % NIGHTS
+    """The night of its cycle a page is read on, from its path alone, so it never moves when other pages come and go."""
+    return int.from_bytes(hashlib.sha1(path.encode()).digest()[:4], "big") % cycle_of(path)
 
 
-def night_of(day: dt.date) -> int:
-    """Tonight's slice: Monday 0 to Sunday 6, so Sunday's night closes the week."""
-    return day.weekday()
+def night_of(day: dt.date, cycle: int = NIGHTS) -> int:
+    """Tonight's slice of a cycle: for the week, Monday 0 to Sunday 6, so Sunday's night closes it; for the long cycle,
+    the nights since LONG_EPOCH, which also closes on a Sunday."""
+    return day.weekday() if cycle == NIGHTS else (day - LONG_EPOCH).days % cycle
 
 
 def plan_night(sitemap: list[str], last_read: dict[str, int], day: dt.date, now_ms: int, *,
                stragglers: bool = True) -> tuple[list[str], list[str]]:
-    """Tonight's seventh in sitemap order, then the pages a missed night left behind, the never-read and oldest first."""
-    k = night_of(day)
-    slices = {p: slice_of(p) for p in sitemap}
-    tonight = [p for p in sitemap if slices[p] == k]
+    """Tonight's slice of each cycle in sitemap order, then the pages a missed night left behind, the never-read and
+    oldest first: a page is behind once its read is older than its own cycle and a night's window."""
+    nights = {c: night_of(day, c) for c in (NIGHTS, LONG_NIGHTS)}
+    cycles = {p: cycle_of(p) for p in sitemap}
+    on = {p: slice_of(p) == nights[cycles[p]] for p in sitemap}
+    tonight = [p for p in sitemap if on[p]]
     if not stragglers:
         return tonight, []
-    cutoff = now_ms - STRAGGLER_AFTER_MS
-    behind = [p for p in sitemap if slices[p] != k and (last_read.get(p) or 0) < cutoff]
+    late = {c: now_ms - (c * DAY_MS + 6 * 3_600_000) for c in (NIGHTS, LONG_NIGHTS)}
+    behind = [p for p in sitemap if not on[p] and (last_read.get(p) or 0) < late[cycles[p]]]
     behind.sort(key=lambda p: last_read.get(p) or 0)
     return tonight, behind
 
@@ -722,14 +742,14 @@ def prune(db, before_ms: int, *, step: int = 2000) -> dict[str, int]:
 
 
 def build_report(sitemap: list[str], reads: dict[str, tuple[int, list[str]]], linked: set[str], now_ms: int) -> dict:
-    """Each family's count and first examples over the sitemap's pages, from reads in the last RESULT_DAYS."""
-    cutoff = now_ms - RESULT_DAYS * DAY_MS
+    """Each family's count and first examples over the sitemap's pages, from each page's reads within its cycle."""
+    cutoffs = {c: now_ms - (c + 1) * DAY_MS for c in (NIGHTS, LONG_NIGHTS)}
     counts: Counter = Counter()
     examples: dict[str, list[dict]] = {}
     read = 0
     for p in sitemap:
         got = reads.get(p)
-        if got is None or got[0] < cutoff:
+        if got is None or got[0] < cutoffs[cycle_of(p)]:
             fams = ["unread"]
         else:
             read += 1
@@ -1029,7 +1049,7 @@ def run_night(db, up: Upstream, *, day: dt.date, seconds: float, workers: int = 
     stats = crawl(todo, fetch, deadline=deadline, workers=workers, rate=rate, quiet=quiet, on_result=on_result)
     flush()
     now_ms = clock_ms()
-    linked = load_linked(db, now_ms - RESULT_DAYS * DAY_MS)
+    linked = load_linked(db, now_ms - (LONG_NIGHTS + 1) * DAY_MS)
     report = add_details(db, build_report(sitemap, reads, linked, now_ms))
     night = {"day": day.isoformat(), "weekday": day.strftime("%A"), "slice": night_of(day), "startedAt": started_ms,
              "finishedAt": now_ms, "sitemap": len(sitemap), "planned": len(tonight), "behind": len(behind),
@@ -1043,7 +1063,8 @@ def run_night(db, up: Upstream, *, day: dt.date, seconds: float, workers: int = 
     doc = read_doc(db, DOC_KEY) or {}
     doc.update(version=1, updatedAt=now_ms, night=night, current=report,
                rules={"titleMin": TITLE_MIN, "titleMax": TITLE_MAX, "descMin": DESC_MIN, "descMax": DESC_MAX,
-                      "bigBytes": BIG_BYTES, "slowMs": SLOW_MS, "resultDays": RESULT_DAYS})
+                      "bigBytes": BIG_BYTES, "slowMs": SLOW_MS, "resultDays": RESULT_DAYS,
+                      "longDays": LONG_NIGHTS + 1})
     mail = None
     if weekly if weekly is not None else night_of(day) == NIGHTS - 1:
         doc, mail = finish_week(doc, report, day.isoformat(), now_ms)
@@ -1091,12 +1112,11 @@ def _upstream(args) -> Upstream:
 
 def _families_of(db, sitemap: list[str], fam: str, now_ms: int) -> list[str]:
     reads = load_reads(db)
-    linked = load_linked(db, now_ms - RESULT_DAYS * DAY_MS) if fam == "orphan" else set()
-    cutoff = now_ms - RESULT_DAYS * DAY_MS
+    linked = load_linked(db, now_ms - (LONG_NIGHTS + 1) * DAY_MS) if fam == "orphan" else set()
     out = []
     for p in sitemap:
         got = reads.get(p)
-        fresh = got is not None and got[0] >= cutoff
+        fresh = got is not None and got[0] >= now_ms - result_days(p) * DAY_MS
         if (fam == "unread" and not fresh) or (fam == "orphan" and p not in linked) or (fresh and fam in got[1]):
             out.append(p)
     return out
@@ -1148,8 +1168,9 @@ def main() -> int:
             for p in _families_of(db, sitemap, args.list, now_ms):
                 print(p)
             return 0
-        report = add_details(db, build_report(sitemap, load_reads(db), load_linked(db, now_ms - RESULT_DAYS * DAY_MS), now_ms))
-        print(f"{report['read']:,} of {report['sitemap']:,} sitemap pages read in the last {RESULT_DAYS} days")
+        report = add_details(db, build_report(sitemap, load_reads(db), load_linked(db, now_ms - (LONG_NIGHTS + 1) * DAY_MS), now_ms))
+        print(f"{report['read']:,} of {report['sitemap']:,} sitemap pages read within their cycle "
+              f"(the last {RESULT_DAYS} days, an employer page's last {LONG_NIGHTS + 1})")
         for fam, n in report["counts"].items():
             print(f"  {FAMILIES[fam]}: {n:,}.{examples_text(fam, report)}")
         return 0

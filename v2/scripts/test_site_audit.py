@@ -294,29 +294,55 @@ def sitemap(n: int = 7000) -> list[str]:
 
 def test_a_slice_is_stable_and_seven_nights_cover_the_sitemap() -> None:
     paths = sitemap()
+    weekly = [p for p in paths if sa.cycle_of(p) == sa.NIGHTS]
     first = {p: sa.slice_of(p) for p in paths}
-    assert all(0 <= s < sa.NIGHTS for s in first.values())
+    assert all(0 <= first[p] < sa.cycle_of(p) for p in paths)
     # Stable: the same path lands on the same night whatever else the sitemap holds, run after run.
     bigger = paths + [f"/perm-employers/new-{i}" for i in range(500)]
     assert all(sa.slice_of(p) == first[p] for p in paths[:500])
     assert {p: sa.slice_of(p) for p in bigger}.items() >= first.items()
     assert sa.slice_of("/") == 1, "the rule is pinned: changing it moves every page's night"
-    # Seven consecutive nights, whatever day they start on, read every page exactly once.
+    # Seven consecutive nights, whatever day they start on, read every weekly page exactly once.
     for start in (dt.date(2026, 11, 16), dt.date(2026, 11, 19), dt.date(2027, 3, 4)):
         seen: list[str] = []
         for i in range(7):
             tonight, _ = sa.plan_night(paths, {}, start + dt.timedelta(days=i), NOW, stragglers=False)
-            seen.extend(tonight)
-        assert sorted(seen) == sorted(paths), "every page once in a week"
+            seen.extend(p for p in tonight if sa.cycle_of(p) == sa.NIGHTS)
+        assert sorted(seen) == sorted(weekly), "every weekly page once in a week"
     # Each night is close to a seventh.
-    sizes = [sum(1 for s in first.values() if s == k) for k in range(sa.NIGHTS)]
-    assert all(abs(n - len(paths) / 7) < len(paths) / 7 * 0.1 for n in sizes), sizes
+    sizes = [sum(1 for p in weekly if first[p] == k) for k in range(sa.NIGHTS)]
+    assert all(abs(n - len(weekly) / 7) < len(weekly) / 7 * 0.15 for n in sizes), sizes
     # Sunday is the night that closes the week.
     assert sa.night_of(dt.date(2026, 11, 22)) == sa.NIGHTS - 1 == 6
 
 
+def test_employer_pages_are_read_over_five_weeks() -> None:
+    """About 535,000 employer pages of 556,000 (Nov 26 2026): a seventh of them a night was more than a night can read
+    at four a second, so a week's report read a sliver. They're read over 35 nights, the rest of the site each week."""
+    paths = sitemap()
+    employers = [p for p in paths if p.startswith("/perm-employers/")]
+    assert employers and all(sa.cycle_of(p) == sa.LONG_NIGHTS == 35 for p in employers)
+    assert sa.cycle_of("/perm-employers") == sa.NIGHTS, "the list page itself stays weekly"
+    for start in (dt.date(2026, 11, 23), dt.date(2026, 12, 9)):
+        seen: list[str] = []
+        for i in range(sa.LONG_NIGHTS):
+            tonight, _ = sa.plan_night(paths, {}, start + dt.timedelta(days=i), NOW, stragglers=False)
+            seen.extend(p for p in tonight if p.startswith("/perm-employers/"))
+        assert sorted(seen) == sorted(employers), "every employer page once in 35 nights"
+    # The long cycle closes on a Sunday, with the week.
+    assert sa.night_of(dt.date(2026, 12, 27), sa.LONG_NIGHTS) == sa.LONG_NIGHTS - 1
+    assert dt.date(2026, 12, 27).weekday() == 6
+    # A night holds about a seventh of the weekly pages and a 35th of the employer pages.
+    tonight, _ = sa.plan_night(paths, {}, dt.date(2026, 11, 25), NOW, stragglers=False)
+    n_emp = sum(1 for p in tonight if p.startswith("/perm-employers/"))
+    assert abs(n_emp - len(employers) / 35) < len(employers) / 35 * 0.5, n_emp
+    # Rows outlive the long cycle, and a page's read counts for its whole cycle.
+    assert sa.KEEP_DAYS > sa.LONG_NIGHTS + 1
+    assert sa.result_days("/perm-employers/x") == sa.LONG_NIGHTS + 1 and sa.result_days("/") == sa.RESULT_DAYS
+
+
 def test_pages_a_missed_night_left_behind_come_after_tonights() -> None:
-    paths = sitemap(700)
+    paths = [p for p in sitemap(700) if sa.cycle_of(p) == sa.NIGHTS]
     day = dt.date(2026, 11, 17)  # a Tuesday
     tonight_slice = sa.night_of(day)
     read = {}
@@ -325,12 +351,30 @@ def test_pages_a_missed_night_left_behind_come_after_tonights() -> None:
         # Tonight's slice was read a week ago; Monday's was missed (8 days); the rest are fresh.
         age_days = 7 if s == tonight_slice else 8 if s == tonight_slice - 1 else 2
         read[p] = NOW - age_days * DAY_MS
-    never = "/perm-employers/brand-new"
+    never = "/guides/brand-new"
     tonight, behind = sa.plan_night(paths + [never], read, day, NOW)
     assert set(tonight) == {p for p in paths + [never] if sa.slice_of(p) == tonight_slice}
     assert behind and behind[0] == never or sa.slice_of(never) == tonight_slice
     assert all(sa.slice_of(p) == tonight_slice - 1 for p in behind if p != never), "only the missed night's pages"
     assert not set(tonight) & set(behind)
+
+
+def test_an_employer_page_is_behind_only_past_its_own_cycle() -> None:
+    day = dt.date(2026, 11, 25)
+    emp = [f"/perm-employers/e-{i}" for i in range(400)]
+    others = [p for p in emp if sa.slice_of(p) != sa.night_of(day, sa.LONG_NIGHTS)]
+    ten, forty = others[0], others[1]
+    read = {p: NOW - 2 * DAY_MS for p in emp}
+    read[ten] = NOW - 10 * DAY_MS
+    read[forty] = NOW - 40 * DAY_MS
+    _, behind = sa.plan_night(emp, read, day, NOW)
+    assert forty in behind and ten not in behind, "ten days is inside its 35 nights; forty is past them"
+
+
+def test_the_report_counts_an_employer_page_read_within_its_cycle() -> None:
+    reads = {"/": (NOW - 20 * DAY_MS, []), "/perm-employers/acme": (NOW - 20 * DAY_MS, [])}
+    r = sa.build_report(["/", "/perm-employers/acme"], reads, {"/", "/perm-employers/acme"}, NOW)
+    assert r["read"] == 1 and r["counts"].get("unread") == 1, "the weekly page is stale at 20 days, the employer page isn't"
 
 
 # ── the crawl: fixed concurrency, a pace, a deadline, giving way ──────────
@@ -537,8 +581,8 @@ def test_a_batch_writes_one_row_per_page_and_link_target() -> None:
 
 def test_old_rows_are_pruned_in_bounded_steps() -> None:
     d = db()
-    sa.write_batch(d, [page(f"/old{i}", {"/gone"}, at=NOW - 40 * DAY_MS) for i in range(30)] + [page("/new", {"/"})], NOW)
-    d.execute("UPDATE site_audit_links SET seen_at = ? WHERE path = '/gone'", [NOW - 40 * DAY_MS])
+    sa.write_batch(d, [page(f"/old{i}", {"/gone"}, at=NOW - 50 * DAY_MS) for i in range(30)] + [page("/new", {"/"})], NOW)
+    d.execute("UPDATE site_audit_links SET seen_at = ? WHERE path = '/gone'", [NOW - 50 * DAY_MS])
     removed = sa.prune(d, NOW - sa.KEEP_DAYS * DAY_MS, step=7)
     assert removed == {"pages": 30, "links": 1}, removed
     assert set(sa.load_reads(d)) == {"/new"}
