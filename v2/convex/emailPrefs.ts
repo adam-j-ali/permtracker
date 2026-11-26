@@ -409,6 +409,15 @@ const stateValidator = v.object({
       active: v.boolean(),
     }),
   ),
+  blockAlerts: v.array(
+    v.object({
+      id: v.id("blockAlerts"),
+      block: v.string(),
+      form: v.optional(v.string()),
+      confirmed: v.boolean(),
+      active: v.boolean(),
+    }),
+  ),
   news: v.boolean(),
   newsletter: v.boolean(),
   /** Null when no account exists for the address. */
@@ -417,7 +426,7 @@ const stateValidator = v.object({
 
 /** Does any alert, digest, news or account row exist for this address? */
 async function holdsAnything(ctx: QueryCtx, email: string): Promise<boolean> {
-  for (const table of ["dolQueueAlerts", "caseStatusAlerts", "bulletinAlerts", "employerAlerts", "uscisWatches"] as const) {
+  for (const table of ["dolQueueAlerts", "caseStatusAlerts", "bulletinAlerts", "employerAlerts", "blockAlerts", "uscisWatches"] as const) {
     if (await ctx.db.query(table).withIndex("by_email", (q) => q.eq("email", email)).first()) return true;
   }
   for (const table of ["newsSubscribers", "newsletterSubscribers"] as const) {
@@ -442,6 +451,10 @@ async function stateForEmail(ctx: QueryCtx, email: string) {
     .collect();
   const employerRows = await ctx.db
     .query("employerAlerts")
+    .withIndex("by_email", (q) => q.eq("email", email))
+    .collect();
+  const blockRows = await ctx.db
+    .query("blockAlerts")
     .withIndex("by_email", (q) => q.eq("email", email))
     .collect();
   const news = await ctx.db
@@ -499,6 +512,13 @@ async function stateForEmail(ctx: QueryCtx, email: string) {
       confirmed: r.confirmedAt !== undefined,
       active: r.unsubscribedAt === undefined && r.confirmedAt !== undefined,
     })),
+    blockAlerts: blockRows.map((r) => ({
+      id: r._id,
+      block: r.block,
+      form: r.form,
+      confirmed: r.confirmedAt !== undefined,
+      active: r.unsubscribedAt === undefined && r.confirmedAt !== undefined,
+    })),
     news: news !== null && news.confirmedAt !== undefined && news.unsubscribedAt === undefined,
     newsletter:
       newsletter !== null && newsletter.confirmedAt !== undefined && newsletter.unsubscribedAt === undefined,
@@ -528,6 +548,7 @@ const disableKind = v.union(
   v.literal("uscis"),
   v.literal("bulletin"),
   v.literal("employer"),
+  v.literal("block"),
   v.literal("news"),
   v.literal("newsletter"),
   v.literal("digest"),
@@ -613,6 +634,13 @@ async function disableForEmail(
     if (row && row.email === email && row.unsubscribedAt === undefined) {
       await ctx.db.patch(row._id, { unsubscribedAt: now, pendingSeries: undefined });
       await dropQueued(ctx, email, `bulletin:${row._id}`);
+    }
+  } else if (kind === "block") {
+    const wanted = ctx.db.normalizeId("blockAlerts", id);
+    const row = wanted ? await ctx.db.get(wanted) : null;
+    if (row && row.email === email && row.unsubscribedAt === undefined) {
+      await ctx.db.patch(row._id, { unsubscribedAt: now, pendingBlock: undefined, pendingForm: undefined });
+      await dropQueued(ctx, email, `block:${row._id}`);
     }
   } else {
     const wanted = ctx.db.normalizeId("employerAlerts", id);

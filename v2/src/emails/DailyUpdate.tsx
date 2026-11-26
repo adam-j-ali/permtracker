@@ -43,6 +43,7 @@ const KIND_LABEL: Record<DailyUpdateItem["kind"], string> = {
   employer: "Employer you follow",
   match: "A PERM that may be yours",
   uscis: "USCIS receipt",
+  block: "Receipt block you follow",
 };
 
 export function DailyUpdate({ items, prefsUrl, stopUrl, moreWaiting = false }: DailyUpdateProps) {

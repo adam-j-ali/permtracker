@@ -53,7 +53,7 @@ export type AlertRef = `${AlertKind}:${string}`;
 /** Kinds that never wait for a bundle. */
 export const IMMEDIATE_KINDS: ReadonlySet<AlertKind> = new Set<AlertKind>(["case", "uscis"]);
 /** Kinds that never wait on a paid email plan, and wait on the free one. */
-export const IMMEDIATE_ON_PAID_PLAN: ReadonlySet<AlertKind> = new Set<AlertKind>(["employer", "queue", "bulletin"]);
+export const IMMEDIATE_ON_PAID_PLAN: ReadonlySet<AlertKind> = new Set<AlertKind>(["employer", "queue", "bulletin", "block"]);
 
 /** True when an alert of this kind leaves now instead of waiting for the address's one email of the day. */
 export function sendsAtOnce(kind: AlertKind): boolean {

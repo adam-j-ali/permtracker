@@ -123,6 +123,7 @@ export const getDelivery = query({
           employer: v.number(),
           match: v.number(),
           uscis: v.number(),
+          block: v.number(),
         }),
       }),
     }),
@@ -218,7 +219,7 @@ export const getDelivery = query({
       .withIndex("by_created", (q) => q.gte("createdAt", now - 7 * MS_PER_DAY))
       .order("desc")
       .take(OUTBOX_WEEK_READ);
-    const byKind: Record<AlertKind, number> = { case: 0, queue: 0, bulletin: 0, employer: 0, match: 0, uscis: 0 };
+    const byKind: Record<AlertKind, number> = { case: 0, queue: 0, bulletin: 0, employer: 0, match: 0, uscis: 0, block: 0 };
     let items = 0;
     let direct = 0;
     let failed = 0;

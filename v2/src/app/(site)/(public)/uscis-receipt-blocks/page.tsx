@@ -25,6 +25,7 @@ import { softFail } from "@/lib/softRead";
 import { formatAsOf, formatMonthDay } from "@/lib/dolFormat";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
+import { BlockFollowForm } from "@/components/uscis/BlockFollowForm";
 import { issuedWeek } from "@/lib/uscisIssued";
 import { blockCoverage, blockForms, blockStatusMix, chartSeries, monthRows, topForms } from "@/lib/uscisSample";
 
@@ -198,6 +199,15 @@ export default async function UscisReceiptBlocksPage() {
               </ul>
             </section>
           ) : null}
+
+          <section className="mt-12 max-w-2xl border-2 border-border bg-card p-5" aria-labelledby="follow-title">
+            <h2 id="follow-title" className="font-heading text-xl font-bold">
+              Email me when a block moves
+            </h2>{" "}
+            <div className="mt-2">
+              <BlockFollowForm source="uscis-receipt-blocks" />
+            </div>
+          </section>
           <section className="mt-12" aria-label="Approved share by block" data-embed="uscis-receipt-blocks">
             <FigurePlate
               title="Share approved in each receipt block"

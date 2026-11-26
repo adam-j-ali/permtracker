@@ -135,7 +135,7 @@ SECTION_PATH = re.compile(r"/[a-z0-9-]*")
 # iframe), and analytics and emailed links can't pass one either.
 SECTION_NEVER = {
     "/api", "/ingest", "/embed", "/v1", "/mcp", "/prefs", "/unsubscribe", "/case-alert", "/queue-alert",
-    "/bulletin-alert", "/employer-alert", "/uscis-alert", "/firm-claim", "/watched-cases", "/badge", "/open-data",
+    "/bulletin-alert", "/employer-alert", "/block-alert", "/uscis-alert", "/firm-claim", "/watched-cases", "/badge", "/open-data",
     "/sitemaps",
 }
 

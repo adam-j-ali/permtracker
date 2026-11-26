@@ -137,6 +137,9 @@ export const pruneOperationalLogs = internalMutation({
       ctx.db
         .query("bulletinAlerts")
         .withIndex("by_confirmed_created", (q) => q.eq("confirmedAt", undefined).lt("createdAt", staleBefore)),
+      ctx.db
+        .query("blockAlerts")
+        .withIndex("by_confirmed_created", (q) => q.eq("confirmedAt", undefined).lt("createdAt", staleBefore)),
       // The product-news and weekly-digest lists are sign-ups too, staged by a checkbox and confirmed by a
       // click (convex/lib/newsConsent.ts). They had no clean-up at all.
       ctx.db

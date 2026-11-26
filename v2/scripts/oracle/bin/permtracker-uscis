@@ -463,6 +463,10 @@ case "$job" in
       python3 scripts/sample_pages.py "${2:-/srv/permtracker/inbox/uscis-sample}/sample-figures.json" > "$pages" \
         && timeout 2m python3 scripts/purge_edge.py "$pages" || echo "edge purge of the sample pages skipped or refused"
       rm -f "$pages"
+      # Then each block's counts go to Convex, which emails the people following a block that moved
+      # (scripts/block_update.py). Counts only; a refused send only delays the news to the next load.
+      ( convex_export_env && timeout 3m python3 scripts/block_update.py "${2:-/srv/permtracker/inbox/uscis-sample}/sample-figures.json" ) \
+        || echo "block update skipped or refused"
     else
       rc=1; fail ingest_uscis_sample.py "the sample's files were refused or didn't load; the last good load stands"
     fi ;;

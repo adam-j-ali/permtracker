@@ -22,7 +22,7 @@ import { checkedLabel } from "./time";
  */
 
 /** Kinds anyone can subscribe to, no account needed. Ids are in emailed links. */
-export const SUBSCRIBER_KINDS = ["case", "uscis", "queue", "bulletin", "employer", "newsletter", "news"] as const;
+export const SUBSCRIBER_KINDS = ["case", "uscis", "block", "queue", "bulletin", "employer", "newsletter", "news"] as const;
 
 /** Kinds that come with a PERM Tracker account, controlled in Settings. */
 export const ACCOUNT_KINDS = ["reminders", "updates", "digest"] as const;
@@ -73,6 +73,13 @@ export const MAIL_KINDS: Record<MailKindId, MailKind> = {
     what: "When USCIS changes the status of a receipt you watch. A beta: we check every 4 hours and after USCIS's overnight updates.",
     when: "When it changes",
     start: { label: "Check a receipt", href: "/uscis-case-status" },
+  },
+  block: {
+    name: "Receipt block alerts",
+    one: "Receipt block you follow",
+    what: "When every number in a USCIS receipt block you follow is checked, when its share approved passes a quarter, a half and three quarters, and a summary each Monday.",
+    when: "When it moves, and Mondays",
+    start: { label: "Any receipt block's page", href: "/uscis-receipt-blocks" },
   },
   queue: {
     name: "Queue alerts",
@@ -188,6 +195,8 @@ export interface SubscriptionState {
   }[];
   bulletinAlerts: { id: string; category: string; country: string; active: boolean }[];
   employerAlerts: { id: string; employerName: string; active: boolean; scope?: "group" | "each" }[];
+  /** USCIS receipt blocks followed; absent from callers built before block follows. */
+  blockAlerts?: { id: string; block: string; form?: string; active: boolean }[];
   news: boolean;
   newsletter: boolean;
   /** Null when no account exists for the address. */
@@ -251,6 +260,9 @@ export function subscriptionRows(state: SubscriptionState): {
         id: a.id,
         detail: a.scope === "each" ? `${a.employerName}, every case` : `${a.employerName}, group moves`,
       })),
+    ...(state.blockAlerts ?? [])
+      .filter((a) => a.active)
+      .map((a) => ({ kind: "block" as const, id: a.id, detail: `${a.block}, ${a.form ? `${a.form} cases` : "every form"}` })),
   ];
   const digests: SubscriptionRow[] = [];
   if (state.newsletter) digests.push({ kind: "newsletter", detail: `${MAIL_KINDS.newsletter.when}: ${MAIL_KINDS.newsletter.what}` });

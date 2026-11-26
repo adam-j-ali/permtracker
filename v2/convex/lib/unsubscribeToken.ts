@@ -78,6 +78,8 @@ function safeEqual(a: string, b: string): boolean {
  * digest links already in the wild. Do not use it for new callers.
  */
 export type TokenPurpose =
+  | "block-confirm"
+  | "block-unsubscribe"
   | "queue-confirm"
   | "queue-unsubscribe"
   | "case-confirm"

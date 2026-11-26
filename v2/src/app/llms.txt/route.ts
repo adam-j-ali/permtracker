@@ -63,7 +63,7 @@ const DATA_PAGES: { path: string; label: string; blurb: string }[] = [
     path: "/uscis-receipt-blocks",
     label: "USCIS receipt blocks: where approvals are now",
     blurb:
-      "Type an online (IOE) receipt or block to see how cases filed near it are moving: the share of each block's sampled cases USCIS shows as approved, per form, with a 95% margin, and the newest block where approvals appear. From receipt numbers checked daily on USCIS's own Case Status page; the numbers themselves are never shown.",
+      "Type an online (IOE) receipt or block to see how cases filed near it are moving: the share of each block's sampled cases USCIS shows as approved, per form, with a 95% margin, and the newest block where approvals appear. From receipt numbers checked daily on USCIS's own Case Status page, and each block's page lists the numbers checked. Anyone can follow a block by email: when every number is checked, when its approved share passes a quarter, a half and three quarters, and each Monday.",
   },
   {
     path: "/uscis-case-status",

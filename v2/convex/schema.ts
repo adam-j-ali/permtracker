@@ -2356,6 +2356,49 @@ export default defineSchema({
    * employer's cases, read from the event log, with `caseToldThrough` as its
    * change detector (src/lib/employerCaseMoves.ts).
    */
+  /**
+   * Someone following one USCIS receipt block by email (convex/blockAlerts.ts, Nov 26 2026): double opt-in like an
+   * employer follow; `toldKeys` is the change detector (each piece of news told once).
+   */
+  blockAlerts: defineTable({
+    email: v.string(),
+    /** The block, IOE09366. */
+    block: v.string(),
+    /** One form's cases ("I-765"), or every form's when absent. */
+    form: v.optional(v.string()),
+    confirmedAt: v.optional(v.number()),
+    /** Staged by an unauthenticated POST; made live only by a confirm click. */
+    pendingBlock: v.optional(v.string()),
+    pendingForm: v.optional(v.string()),
+    lastConfirmationSentAt: v.optional(v.number()),
+    confirmationOwed: v.optional(v.boolean()),
+    /** The news already told: "every", "m50:I-765", "week:2026-11-30", newest last and capped. */
+    toldKeys: v.optional(v.array(v.string())),
+    followingFrom: v.optional(v.string()),
+    lastAlertSentAt: v.optional(v.number()),
+    alertCount: v.optional(v.number()),
+    unsubscribedAt: v.optional(v.number()),
+    createdAt: v.number(),
+    source: v.optional(v.string()),
+  })
+    .index("by_email", ["email"])
+    .index("by_email_block", ["email", "block"])
+    .index("by_block", ["block"])
+    .index("by_confirmed_created", ["confirmedAt", "createdAt"]),
+
+  /** Each block's newest counts from the server's sample load, and the Monday's for the week's summary (blockAlerts.ts). */
+  blockSnapshots: defineTable({
+    block: v.string(),
+    asOf: v.string(),
+    every: v.boolean(),
+    checked: v.number(),
+    byForm: v.record(v.string(), v.object({ total: v.number(), approved: v.number(), denied: v.number(), rfe: v.number(), waiting: v.number() })),
+    weekOf: v.optional(v.string()),
+    weekByForm: v.optional(
+      v.record(v.string(), v.object({ total: v.number(), approved: v.number(), denied: v.number(), rfe: v.number(), waiting: v.number() })),
+    ),
+  }).index("by_block", ["block"]),
+
   employerAlerts: defineTable({
     email: v.string(),
     /** The `/perm-employers/<slug>` slug. */
@@ -2702,6 +2745,8 @@ export default defineSchema({
       v.literal("caseList"),
       /** A USCIS receipt watch (convex/uscisAlerts.ts). */
       v.literal("uscis"),
+      /** A USCIS receipt block follow (convex/blockAlerts.ts). */
+      v.literal("block"),
     ),
     pool: v.string(),
     email: v.string(),

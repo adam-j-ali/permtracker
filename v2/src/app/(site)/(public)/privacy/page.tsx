@@ -336,10 +336,11 @@ export default function PrivacyPage() {
               <li>
                 You can ask for an email when DOL changes a case’s status, when
                 DOL’s queue reaches your filing month, when a visa bulletin
-                cutoff moves, or when the cases of an employer you follow change status.
+                cutoff moves, when the cases of an employer you follow change status,
+                or when the cases in a USCIS receipt block you follow move.
                 No account is needed. For each, we keep your email address, what
                 you asked to follow (a case number, a filing month, a bulletin
-                category and country, or an employer’s page), the page you signed
+                category and country, an employer’s page, or a receipt block), the page you signed
                 up on, and when we confirmed, checked and emailed. The queue alert also asks, if you choose to say, whether you’re an
                 attorney, an applicant or an employer
               </li>{" "}

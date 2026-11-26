@@ -49,6 +49,7 @@ const KIND_LABEL = {
   employer: "Employer",
   match: "Possible PERM",
   uscis: "USCIS receipt",
+  block: "Receipt block",
 } as const;
 
 const STATUS_CLASS: Record<string, string> = {

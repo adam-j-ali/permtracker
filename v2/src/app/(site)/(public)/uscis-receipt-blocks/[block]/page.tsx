@@ -11,6 +11,7 @@ import { notFound } from "next/navigation";
 import { DataProvenance } from "@/components/data/DataProvenance";
 import { FigurePlate } from "@/components/tools/FigurePlate";
 import { BlockApprovalChart } from "@/components/uscis/BlockApprovalChart";
+import { BlockFollowForm } from "@/components/uscis/BlockFollowForm";
 import { BlockNeighbours } from "@/components/uscis/BlockNeighbours";
 import { BlockSearch } from "@/components/uscis/BlockSearch";
 import { BlockStatusChooser } from "@/components/uscis/BlockStatusChooser";
@@ -137,7 +138,13 @@ export default async function UscisReceiptBlockPage({ params }: { params: Promis
             lines={Object.fromEntries(choices.map((c) => [c.key, blockShareLine(block, mixRows.as_of, c.mix, coverage, c)]))}
             received={coverage.received}
             blockCases={coverage.every ? mix.total : undefined}
-          />
+          />{" "}
+          <div className="mt-6 max-w-2xl border-2 border-border bg-card p-5">
+            <h2 className="font-heading text-xl font-bold">{`Email me when ${block} moves`}</h2>{" "}
+            <div className="mt-2">
+              <BlockFollowForm block={block} source="uscis-block-page" />
+            </div>
+          </div>
         </section>
       ) : null}
 

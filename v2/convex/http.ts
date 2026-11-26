@@ -29,6 +29,7 @@ import { reviewLinkFor, THANKS as SITE_REVIEW_THANKS } from "./siteReviews";
 import { normaliseFlagCaseNumber, programOf } from "../src/lib/flagCaseNumber";
 import { LIST_ENTRIES_MAX } from "../src/lib/caseList";
 import { confirmOffers, isPermWageRequest, PWD_MATCH_SENTENCE } from "./lib/alertNextSteps";
+import { BLOCK_RE, FORM_RE, parseBlockUpdate } from "./lib/blockUpdate";
 import { MAIL_KINDS, PREFS_KINDS, type PrefsKind } from "./lib/mailKinds";
 import { REMINDER_CONFIRM_PATH, REMINDER_DECLINE_PATH, REMINDER_STOP_PATH } from "./lib/reminderRecipients";
 
@@ -1683,6 +1684,140 @@ http.route({
 });
 
 // ============================================================================
+// Following a USCIS receipt block (convex/blockAlerts.ts)
+//
+// The same posture as the employer follow: the form sends an address, a block and, if chosen, one form; the block
+// must look like a block and the form like a form, so nothing the caller types reaches an inbox. GET pages only
+// render; every change is a POST. /block-update is the server's, after each sample load, behind the checker's secret.
+// ============================================================================
+
+http.route({
+  path: "/block-alert/subscribe",
+  method: "OPTIONS",
+  handler: httpAction(async (_ctx, req) => {
+    return new Response(null, { status: 204, headers: corsHeaders(req.headers.get("Origin")) });
+  }),
+});
+
+http.route({
+  path: "/block-alert/subscribe",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    const cors = corsHeaders(req.headers.get("Origin"));
+    const json = (body: unknown, status = 200) =>
+      new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
+    const raw = await req.text();
+    if (raw.length > 2000) return json({ ok: false, message: "Malformed request." }, 413);
+    let body: unknown;
+    try {
+      body = JSON.parse(raw);
+    } catch {
+      return json({ ok: false, message: "Malformed request." }, 400);
+    }
+    if (typeof body !== "object" || body === null) return json({ ok: false, message: "Malformed request." }, 400);
+    const { email, block, form, source } = body as Record<string, unknown>;
+    if (typeof email !== "string" || typeof block !== "string") {
+      return json({ ok: false, message: "An email address and a receipt block are both required." }, 400);
+    }
+    const cleanBlock = block.slice(0, 12).toUpperCase();
+    if (!BLOCK_RE.test(cleanBlock)) return json({ ok: false, message: "That isn't a receipt block." }, 400);
+    const cleanForm = typeof form === "string" && FORM_RE.test(form.slice(0, 10)) ? form.slice(0, 10) : undefined;
+    const result = await ctx.runMutation(internal.blockAlerts.subscribe, {
+      email: email.slice(0, 320),
+      block: cleanBlock,
+      form: cleanForm,
+      source: typeof source === "string" ? source.slice(0, 64) : undefined,
+      ip: callerIp(req),
+    });
+    return json(result, result.ok ? 200 : result.throttled ? 429 : 400);
+  }),
+});
+
+http.route({
+  path: "/block-alert/confirm",
+  method: "GET",
+  handler: httpAction(async (ctx, req) => {
+    const token = new URL(req.url).searchParams.get("token");
+    if (!token) return badLinkPage();
+    const staged = await ctx.runQuery(internal.blockAlerts.pendingForToken, { token });
+    const which = staged.length > 0 ? staged.join(", ") : "this receipt block";
+    return messagePage(
+      "Follow this receipt block?",
+      `We'll email you when every number in ${escapeHtml(which)} has been checked, when its share approved passes a quarter, a half and three quarters, and each Monday with what moved.`,
+      { post: `/block-alert/confirm?token=${encodeURIComponent(token)}`, label: "Confirm" },
+    );
+  }),
+});
+
+http.route({
+  path: "/block-alert/confirm",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    const token = new URL(req.url).searchParams.get("token");
+    if (!token) return badLinkPage();
+    const result = await ctx.runMutation(internal.blockAlerts.confirmByToken, { token });
+    if (!result) return badLinkPage("This confirmation link is no longer valid.");
+    const list = escapeHtml(result.blocks.join(", "));
+    return messagePage(
+      result.already ? "You're already following" : "You're following",
+      result.already
+        ? `Nothing more to do: you follow ${list}.`
+        : `You follow ${list}. Every figure is on permtracker.app/uscis-receipt-blocks.`,
+      undefined,
+      confirmOffers("block"),
+    );
+  }),
+});
+
+http.route({
+  path: "/block-alert/unsubscribe",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    const token = new URL(req.url).searchParams.get("token");
+    if (!token) return badLinkPage();
+    const ok = await ctx.runMutation(internal.blockAlerts.unsubscribeByToken, { token });
+    if (!ok) return badLinkPage("This link has expired or was changed.");
+    return messagePage("You're unsubscribed", "You won't receive receipt block alerts from us. That covers every block this address followed.");
+  }),
+});
+
+http.route({
+  path: "/block-alert/unsubscribe",
+  method: "GET",
+  handler: httpAction(async (_ctx, req) => {
+    const token = new URL(req.url).searchParams.get("token");
+    if (!token) return badLinkPage();
+    return messagePage(
+      "Stop your receipt block alerts?",
+      "You'll stop receiving alerts for every receipt block this address follows.",
+      { post: `/block-alert/unsubscribe?token=${encodeURIComponent(token)}` },
+    );
+  }),
+});
+
+/** Every block's counts after a sample load, from the server (convex/blockAlerts.ts recordUpdate). */
+http.route({
+  path: "/block-update",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    const gate = await uscisCheckerGate(req);
+    if (gate) return gate;
+    const raw = await req.text();
+    if (raw.length > 2_000_000) return serverJson({ ok: false, message: "Too large." }, 413);
+    let body: unknown;
+    try {
+      body = JSON.parse(raw);
+    } catch {
+      return serverJson({ ok: false, message: "Malformed request." }, 400);
+    }
+    const parsed = parseBlockUpdate(body);
+    if (!parsed) return serverJson({ ok: false, message: "Malformed request." }, 400);
+    const got = await ctx.runMutation(internal.blockAlerts.recordUpdate, parsed);
+    return serverJson({ ok: true, ...got }, 200);
+  }),
+});
+
+// ============================================================================
 // Claim a law firm's page (convex/firmClaims.ts)
 //
 // The request and edit-link forms POST JSON from the site to this .convex.site
@@ -2070,14 +2205,15 @@ const KIND_WORDS: Record<OneClickKind, string> = {
   queue: `this ${MAIL_KINDS.queue.one.toLowerCase()}`,
   bulletin: `this ${MAIL_KINDS.bulletin.one.toLowerCase()}`,
   employer: "alerts for this employer",
-  alerts: "every alert this address gets (case, USCIS receipt, queue, bulletin and employer)",
+  block: "alerts for this receipt block",
+  alerts: "every alert this address gets (case, USCIS receipt, receipt block, queue, bulletin and employer)",
   newsletter: `the ${MAIL_KINDS.newsletter.name.toLowerCase()}`,
   news: MAIL_KINDS.news.name.toLowerCase(),
   digest: `your ${MAIL_KINDS.digest.name.toLowerCase()}`,
 };
 
 /** The kinds whose link names one alert by its id. The others turn off a whole list for the address. */
-const ONE_ROW_KINDS: ReadonlySet<string> = new Set(["case", "uscis", "queue", "bulletin", "employer"]);
+const ONE_ROW_KINDS: ReadonlySet<string> = new Set(["case", "uscis", "block", "queue", "bulletin", "employer"]);
 
 function oneClickParams(req: Request): { token: string; kind: OneClickKind; id?: string } | null {
   const url = new URL(req.url);

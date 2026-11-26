@@ -16,6 +16,8 @@ export const alertKindValidator = v.union(
   v.literal("match"),
   // A watched USCIS receipt's status change (convex/uscisAlerts.ts).
   v.literal("uscis"),
+  // News about a followed USCIS receipt block (convex/blockAlerts.ts).
+  v.literal("block"),
 );
 
 export type AlertKind = Infer<typeof alertKindValidator>;

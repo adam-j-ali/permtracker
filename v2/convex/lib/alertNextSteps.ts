@@ -617,7 +617,7 @@ const RECEIPT_OFFER: ConfirmOffer = {
  * goes through its own form and its own confirmation email.
  */
 export function confirmOffers(
-  kind: "case" | "queue" | "bulletin" | "employer" | "uscis",
+  kind: "case" | "queue" | "bulletin" | "employer" | "uscis" | "block",
   caseNumbers: readonly string[] = [],
   programOf?: (caseNumber: string) => FlagProgram,
 ): ConfirmOffer[] {
@@ -627,6 +627,8 @@ export function confirmOffers(
   if (kind === "bulletin") return [{ ...RECEIPT_OFFER, label: "An email when USCIS changes the status of your I-140 or I-485" }];
   // A receipt is watched after the PERM too: what's left is the bulletin reaching the priority date.
   if (kind === "uscis") return [{ ...BULLETIN_OFFER, label: "An email when the visa bulletin moves for your category and country" }];
+  // A block is followed by someone whose case is already at USCIS: their own receipt is next, never the PERM.
+  if (kind === "block") return [{ ...RECEIPT_OFFER, label: "An email when USCIS changes the status of your own case" }];
   const programs = new Set(caseNumbers.map((n) => (programOf ? programOf(n) : "perm")));
   const offers: ConfirmOffer[] = [];
   if (programs.has("perm")) offers.push(QUEUE_OFFER, RECEIPT_OFFER);
