@@ -1,10 +1,12 @@
 [Unit]
 Description=Schedule for permtracker-uscis@uscis-sample
-# The USCIS case-status sample, loaded nightly at 3:40 AM Eastern from the files that arrive each morning (Batch 3, Nov 25
-# 2026): night only, since its writes and index builds stall page reads in the day. Persistent: a missed night loads at
-# the next boot.
+# The USCIS case-status sample, loaded at 7:00 AM Eastern, after the files the kit sends at about 6:37 AM, so the site has
+# the morning's numbers that morning; 3:40 AM stays as a catch-up and is a repeat when nothing new arrived (Nov 26 2026).
+# Only the first load builds indexes; a day's load writes what changed (about 300,000 rows, two minutes) and the pages
+# held about 0.4 s through a full 1.47 million-row load at 8:50 AM. Persistent: a missed run loads at the next boot.
 [Timer]
 OnCalendar=*-*-* 03:40:00 America/New_York
+OnCalendar=*-*-* 07:00:00 America/New_York
 Persistent=true
 Unit=permtracker-uscis@uscis-sample.service
 
