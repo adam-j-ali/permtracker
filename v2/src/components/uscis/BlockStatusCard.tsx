@@ -1,3 +1,5 @@
+import { Fragment } from "react";
+
 import { FigurePlate } from "@/components/tools/FigurePlate";
 import { ChartTips } from "@/components/data/ChartTips";
 import { BlockMixBar } from "@/components/uscis/BlockMixBar";
@@ -52,12 +54,14 @@ export function BlockStatusCard({
       </ChartTips>{" "}
       <ul className="mt-5 grid grid-cols-1 gap-x-8 sm:grid-cols-2 [&>*]:min-w-0" aria-label={`The cases in ${block} by status`}>
         {mix.groups.map((g) => (
-          <li key={g.key} className="flex min-h-11 items-center gap-3 border-t-2 border-border py-2 text-base">
+          <Fragment key={g.key}>
+          <li className="flex min-h-11 items-center gap-3 border-t-2 border-border py-2 text-base">
             <span aria-hidden="true" className={`h-4 w-4 shrink-0 border-2 border-border ${g.fill}`} />{" "}
             <span className="font-bold">{keepWhole(g.label)}</span>{" "}
             <span className="ml-auto font-mono tabular-nums">{formatInt(g.n)}</span>{" "}
             <span className="w-20 text-right font-mono tabular-nums text-muted-foreground">{formatShareOf(g.n, mix.total)}</span>
-          </li>
+          </li>{" "}
+          </Fragment>
         ))}
       </ul>{" "}
       {mix.waiting.length > 1 ? (
@@ -67,8 +71,8 @@ export function BlockStatusCard({
               the bar takes its own line under the step's name. */}
           <ul className="mt-2 space-y-3 sm:space-y-2">
             {mix.waiting.map((w) => (
+              <Fragment key={w.label}>
               <li
-                key={w.label}
                 className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 text-base sm:grid-cols-[12rem_minmax(0,1fr)_10rem]"
               >
                 <span>{keepWhole(w.label)}</span>{" "}
@@ -78,7 +82,8 @@ export function BlockStatusCard({
                 <span className="whitespace-nowrap text-right font-mono tabular-nums sm:col-start-3 sm:row-start-1">
                   {formatInt(w.n)} <span className="inline-block w-12 text-muted-foreground">{formatShareOf(w.n, mix.total)}</span>
                 </span>
-              </li>
+              </li>{" "}
+              </Fragment>
             ))}
           </ul>
         </div>

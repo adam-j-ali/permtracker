@@ -7,6 +7,7 @@
 
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Fragment } from "react";
 
 import { DataProvenance } from "@/components/data/DataProvenance";
 import { FigurePlate } from "@/components/tools/FigurePlate";
@@ -172,7 +173,8 @@ export default async function UscisReceiptBlocksPage() {
                   const approved = mix.groups.find((g) => g.key === "approved");
                   const waiting = mix.groups.find((g) => g.key === "waiting");
                   return (
-                    <li key={block}>
+                    <Fragment key={block}>
+                    <li>
                       <Link
                         href={`/uscis-receipt-blocks/${block}`}
                         className="block border-2 border-border bg-card p-4 hover:bg-tint focus-visible:outline-offset-2"
@@ -189,7 +191,8 @@ export default async function UscisReceiptBlocksPage() {
                           {waiting ? `, ${formatShareOf(waiting.n, mix.total)} waiting` : ""}
                         </span>
                       </Link>
-                    </li>
+                    </li>{" "}
+                    </Fragment>
                   );
                 })}
               </ul>
