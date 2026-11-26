@@ -157,3 +157,20 @@ export const getBlockMix = cache(async (block: string): Promise<BlockMixRows | n
   const got = row.mix ? (JSON.parse(String(row.mix)) as [string, string, number | string][]) : [];
   return { as_of: String(row.as_of), rows: got.map(([grp, status, n]) => ({ grp: String(grp), status: String(status), n: Number(n) || 0 })) };
 });
+
+/** Several blocks' counts in one read (the list of blocks counted in full): each block's part of the document only. */
+export const getBlockMixes = cache(async (blocks: readonly string[]): Promise<Record<string, BlockMixRows["rows"]>> => {
+  const wanted = blocks.filter((b) => /^IOE\d{5}$/.test(b));
+  if (!wanted.length) return {};
+  const got = await rows<{ block: string; mix: string }>(
+    `SELECT j.key AS block, j.value AS mix FROM perm_docs, json_each(perm_docs.json, '$.by_block') AS j
+      WHERE perm_docs.key = 'uscis_sample_block_mix' AND j.key IN (${wanted.map(() => "?").join(", ")})`,
+    [...wanted],
+  );
+  return Object.fromEntries(
+    got.map((r) => [
+      String(r.block),
+      (JSON.parse(String(r.mix)) as [string, string, number | string][]).map(([grp, status, n]) => ({ grp: String(grp), status: String(status), n: Number(n) || 0 })),
+    ]),
+  );
+});

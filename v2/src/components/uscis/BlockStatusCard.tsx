@@ -1,5 +1,6 @@
 import { FigurePlate } from "@/components/tools/FigurePlate";
 import { ChartTips } from "@/components/data/ChartTips";
+import { BlockMixBar } from "@/components/uscis/BlockMixBar";
 import { keepWhole } from "@/components/ui/keep-whole";
 import { formatAsOf } from "@/lib/dolFormat";
 import { formatInt, formatShareOf } from "@/lib/format";
@@ -17,9 +18,6 @@ import type { BlockMix } from "@/lib/uscisSample";
  * ask about, so the steps get their own rows under the bar, each a share of the block's cases like the groups above.
  */
 
-// In-bar figures only where they fit; every figure is in the legend and the tooltip too.
-const LABEL_AT = 0.1;
-
 export function BlockStatusCard({
   block,
   asOf,
@@ -34,7 +32,6 @@ export function BlockStatusCard({
 }) {
   const when = formatAsOf(asOf) ?? asOf;
   const waitingTotal = mix.waiting.reduce((s, w) => s + w.n, 0);
-  const summary = mix.groups.map((g) => `${g.label} ${formatShareOf(g.n, mix.total)}`).join(", ");
   return (
     <FigurePlate
       title={`Every case's status in ${block}`}
@@ -51,24 +48,7 @@ export function BlockStatusCard({
         <span className="ml-3 font-sans text-xl font-bold">cases</span>
       </p>{" "}
       <ChartTips label={`The ${formatInt(mix.total)} cases in ${block} by status`} className="mt-5">
-        <div
-          role="img"
-          aria-label={`The cases in ${block} by status: ${summary}.`}
-          className="flex h-14 w-full gap-[2px] border-2 border-border bg-card p-[2px] sm:h-16"
-        >
-          {mix.groups.map((g) => (
-            <div
-              key={g.key}
-              data-tip={[`${g.label}: ${formatInt(g.n)} cases, ${formatShareOf(g.n, mix.total)}`, ...(g.parts.length > 1 ? g.parts.map(([w, n]) => `${w} ${formatInt(n)}`) : [])].join("\n")}
-              className={`flex min-w-[3px] items-center overflow-hidden ${g.fill}`}
-              style={{ flex: `${g.n} 1 0px` }}
-            >
-              {g.share >= LABEL_AT && g.key !== "other" ? (
-                <span className="whitespace-nowrap px-2 font-mono text-sm font-bold text-black">{formatShareOf(g.n, mix.total)}</span>
-              ) : null}
-            </div>
-          ))}
-        </div>
+        <BlockMixBar mix={mix} label={`The cases in ${block} by status`} />
       </ChartTips>{" "}
       <ul className="mt-5 grid grid-cols-1 gap-x-8 sm:grid-cols-2 [&>*]:min-w-0" aria-label={`The cases in ${block} by status`}>
         {mix.groups.map((g) => (

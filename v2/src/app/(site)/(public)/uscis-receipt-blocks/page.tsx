@@ -11,18 +11,21 @@ import Link from "next/link";
 import { DataProvenance } from "@/components/data/DataProvenance";
 import { FigurePlate } from "@/components/tools/FigurePlate";
 import { BlockApprovalChart } from "@/components/uscis/BlockApprovalChart";
+import { BlockMixBar } from "@/components/uscis/BlockMixBar";
 import { BlockSearch } from "@/components/uscis/BlockSearch";
 import { MonthTable } from "@/components/uscis/MonthTable";
 import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 import { ListPages } from "@/components/ui/list-pages";
 import { CaveatBox } from "@/components/ui/note";
 import { andList } from "@/lib/describe";
-import { getSampleBlocks, getSampleIssued, getSampleMeta, getSampleMonths } from "@/lib/db/uscisSample";
+import { getBlockMixes, getSampleBlocks, getSampleIssued, getSampleMeta, getSampleMonths } from "@/lib/db/uscisSample";
+import { formatShareOf } from "@/lib/format";
+import { softFail } from "@/lib/softRead";
 import { formatAsOf, formatMonthDay } from "@/lib/dolFormat";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
 import { issuedWeek } from "@/lib/uscisIssued";
-import { blockForms, chartSeries, monthRows, topForms } from "@/lib/uscisSample";
+import { blockCoverage, blockForms, blockStatusMix, chartSeries, monthRows, topForms } from "@/lib/uscisSample";
 
 const TITLE = "USCIS Receipt Blocks: Where Approvals Are Now";
 const DESCRIPTION =
@@ -53,6 +56,12 @@ export default async function UscisReceiptBlocksPage() {
     getSampleIssued(),
   ]);
   const issued = issuedWeek(issuedRuns);
+  // The blocks the census checked one number at a time, newest first: the ones people pass around as a picture.
+  const whole = doc ? Object.keys(doc.by_block).filter((b) => blockCoverage(doc.by_block[b]).every).sort().reverse() : [];
+  const mixes = whole.length ? await getBlockMixes(whole).catch(softFail<Record<string, { grp: string; status: string; n: number }[]>>("getBlockMixes", {})) : {};
+  const counted = whole
+    .map((block) => ({ block, mix: blockStatusMix(mixes[block] ?? []) }))
+    .filter((b) => b.mix.total > 0);
   const forms = doc ? topForms(doc, 5) : [];
   const series = doc ? chartSeries(doc, forms) : [];
   const held = doc
@@ -149,6 +158,43 @@ export default async function UscisReceiptBlocksPage() {
             </div>
           </section>
 
+          {counted.length ? (
+            <section className="mt-12" aria-labelledby="whole-title">
+              <h2 id="whole-title" className="font-heading text-2xl font-bold">
+                Blocks with every number checked
+              </h2>{" "}
+              <p className="mt-2 max-w-2xl text-base leading-relaxed text-muted-foreground">
+                Each of these blocks had all 100,000 receipt numbers checked, one at a time, so its figures count every
+                case in it. Open one for its full card.
+              </p>{" "}
+              <ul className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 [&>*]:min-w-0">
+                {counted.map(({ block, mix }) => {
+                  const approved = mix.groups.find((g) => g.key === "approved");
+                  const waiting = mix.groups.find((g) => g.key === "waiting");
+                  return (
+                    <li key={block}>
+                      <Link
+                        href={`/uscis-receipt-blocks/${block}`}
+                        className="block border-2 border-border bg-card p-4 hover:bg-tint focus-visible:outline-offset-2"
+                      >
+                        <span className="flex items-baseline justify-between gap-3">
+                          <span className="font-mono text-lg font-bold">{block}</span>{" "}
+                          <span className="font-mono text-sm tabular-nums text-muted-foreground">{int(mix.total)} cases</span>
+                        </span>{" "}
+                        <span className="mt-3 block">
+                          <BlockMixBar mix={mix} label={`The cases in ${block} by status`} size="sm" />
+                        </span>{" "}
+                        <span className="mt-2 block text-sm">
+                          {approved ? `${formatShareOf(approved.n, mix.total)} approved` : "None approved yet"}
+                          {waiting ? `, ${formatShareOf(waiting.n, mix.total)} waiting` : ""}
+                        </span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ) : null}
           <section className="mt-12" aria-label="Approved share by block" data-embed="uscis-receipt-blocks">
             <FigurePlate
               title="Share approved in each receipt block"
