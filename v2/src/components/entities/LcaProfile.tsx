@@ -56,7 +56,7 @@ function BarRow({
         </span>{" "}
         <span className="shrink-0 font-mono text-sm tabular-nums text-muted-foreground">
           {formatInt(n)}
-          {pct !== null ? ` · ${pct}%` : ""}
+          {pct !== null ? `, ${pct}%` : ""}
         </span>
       </span>{" "}
       <span className="mt-1 block h-2.5 w-full bg-sage" aria-hidden="true">
@@ -242,11 +242,11 @@ export function LcaProfile({
           <b className="font-bold">Visas these LCAs support:</b>{" "}
           {visas.map((v, i) => (
             <Fragment key={v.key}>
-              {i > 0 ? " · " : ""}
+              {i > 0 ? ", " : ""}
               <KeepWhole>{v.label}</KeepWhole> {formatInt(v.n)}
             </Fragment>
           ))}
-          {p.otherVisa > 0 ? ` · other ${formatInt(p.otherVisa)}` : ""}
+          {p.otherVisa > 0 ? `, other ${formatInt(p.otherVisa)}` : ""}
           <KeepWhole>{". E-3 and H-1B1 use the same LCA as the H-1B."}</KeepWhole>
         </p>
       ) : null}

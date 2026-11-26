@@ -8,7 +8,7 @@ import type { Metadata } from "next";
 import SecurityDashboardClient from "./SecurityDashboardClient";
 
 export const metadata: Metadata = {
-  title: "Security · Admin",
+  title: "Admin: security",
   robots: { index: false, follow: false },
 };
 

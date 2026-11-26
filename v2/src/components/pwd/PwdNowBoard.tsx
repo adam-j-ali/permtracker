@@ -166,7 +166,7 @@ export function PwdNowBoard({
                   </dt>{" "}
                   <dd className="tabular-nums">
                     {formatInt(r.n)}
-                    {mix.closed > 0 ? <span className="text-muted-foreground"> · {pct(r.n / mix.closed)}</span> : null}
+                    {mix.closed > 0 ? <span className="text-muted-foreground">, {pct(r.n / mix.closed)}</span> : null}
                   </dd>
                 </div>
               ))}

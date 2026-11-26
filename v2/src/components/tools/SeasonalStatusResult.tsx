@@ -54,7 +54,7 @@ import { KeepWhole } from "@/components/ui/keep-whole";
 /** The form, named from the one list every seasonal surface reads (src/lib/seasonalForms.ts). */
 function formOf(caseNumber: string): string {
   const f = seasonalForm(caseNumber);
-  return f ? `${f.label} · ${f.form}` : "H-2A, H-2B or CW-1 filing";
+  return f ? `${f.label}, ${f.form}` : "H-2A, H-2B or CW-1 filing";
 }
 
 
@@ -170,7 +170,7 @@ function SeasonalDetails({
                 {record.socCode ? (
                   <span className="font-mono text-sm font-normal text-muted-foreground">
                     {" "}
-                    · <SocCodeLink code={record.socCode} />
+                   , <SocCodeLink code={record.socCode} />
                   </span>
                 ) : null}
               </>

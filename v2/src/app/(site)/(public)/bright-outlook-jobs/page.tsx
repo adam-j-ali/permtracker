@@ -115,7 +115,7 @@ function subLine(j: BrightJob): string {
   const parts: string[] = [j.soc7, j.categories.join(", ")];
   if (j.growthPct !== null) parts.push(`${pct(j.growthPct)} jobs by 2035`);
   if (j.lcaCertified) parts.push(`${formatInt(j.lcaCertified)} H-1B LCAs`);
-  return parts.join(" · ");
+  return parts.join(", ");
 }
 
 export default async function Page() {
@@ -224,7 +224,7 @@ export default async function Page() {
                 rows={growing.map((j, i) => ({
                   key: j.soc7,
                   label: jobName(j),
-                  sub: `${formatInt(j.permDecided)} PERM cases · median pay ${money(j.blsMedian)}`,
+                  sub: `${formatInt(j.permDecided)} PERM cases, median pay ${money(j.blsMedian)}`,
                   value: j.growthPct,
                   text: pct(j.growthPct),
                   tone: i === 0 ? "primary" : "green",

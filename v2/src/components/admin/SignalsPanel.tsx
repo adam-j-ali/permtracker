@@ -56,7 +56,7 @@ function SubClock({ r }: { r: Sub }) {
   if (r.lastSeen) parts.push(`last seen ${r.lastSeen}`);
   if (r.unsubscribedAt) parts.push(`stopped ${when(r.unsubscribedAt)}`);
   if (r.source) parts.push(`from ${sourceWords(r.source)}`);
-  return <span className="basis-full text-sm tabular-nums text-muted-foreground">{parts.join(" · ")}</span>;
+  return <span className="basis-full text-sm tabular-nums text-muted-foreground">{parts.join(", ")}</span>;
 }
 
 function SubList({ title, rows, open, capped }: { title: string; rows: Sub[]; open: boolean; capped: boolean }) {

@@ -256,7 +256,7 @@ export function I485QueuePosition({
     filing?.kind === "date" &&
     `${year}-${String(clampedMonth).padStart(2, "0")}-01` > filing.iso;
 
-  const restated = `${country} · ${label(activeCategory)} · ${MONTH_NAMES[clampedMonth - 1]} ${year}`;
+  const restated = `${country}, ${label(activeCategory)}, ${MONTH_NAMES[clampedMonth - 1]} ${year}`;
 
   const setQuery = useCallback((next: Partial<{ country: string; category: string; year: number; month: number }>) => {
     if (next.country !== undefined) setCountry(next.country);

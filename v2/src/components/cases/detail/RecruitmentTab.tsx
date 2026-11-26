@@ -56,14 +56,14 @@ function NOFMiniCalendar({ start, end }: { start: string; end: string }) {
 
     // Business day within posting range — posted
     if (inRange && bizDay) {
-      return { cls: "nof-day posted", tooltip: `Posted · ${format(d, "MMM d")}` };
+      return { cls: "nof-day posted", tooltip: `Posted, ${format(d, "MMM d")}` };
     }
 
     // Weekend (may also be a holiday — combine both reasons)
     if (isWknd) {
       const reasons = [dayName];
       if (holName) reasons.push(holName);
-      return { cls: "nof-day weekend", tooltip: reasons.join(" · ") };
+      return { cls: "nof-day weekend", tooltip: reasons.join(", ") };
     }
 
     // Weekday holiday (in or out of range — not a business day)
@@ -311,7 +311,7 @@ export function RecruitmentTab({ caseData, onUpload }: RecruitmentTabProps) {
                 {hasNOF ? (
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                     <div className="recruit-posting-info" style={{ marginBottom: 10, textAlign: "center" }}>
-                      10 consecutive business days &middot; {fmtISOShort(caseData.noticeOfFilingStartDate)} to {fmtISODate(caseData.noticeOfFilingEndDate)}
+                      10 consecutive business days, {fmtISOShort(caseData.noticeOfFilingStartDate)} to {fmtISODate(caseData.noticeOfFilingEndDate)}
                     </div>
                     {caseData.noticeOfFilingStartDate && caseData.noticeOfFilingEndDate && (
                       <NOFMiniCalendar start={caseData.noticeOfFilingStartDate} end={caseData.noticeOfFilingEndDate} />

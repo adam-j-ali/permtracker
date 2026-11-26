@@ -113,13 +113,7 @@ export function ChatCompactionDivider({
             fontWeight: 500,
           }}
         >
-          <span>Earlier context archived</span>{" "}
-          <span
-            className="mx-1.5 opacity-50"
-            aria-hidden
-          >
-            ·
-          </span>{" "}
+          <span>Earlier context archived,</span>{" "}
           <span>
             {messageCount} {messageCount === 1 ? 'message' : 'messages'}
           </span>
@@ -200,7 +194,7 @@ export function ChatCompactionDivider({
                     {facts?.cases && facts.cases.length > 0 && (
                       <>
                         <span className="opacity-60">Cases</span>{" "}
-                        <span className="break-words">{facts.cases.map(formatCase).join(' · ')}</span>
+                        <span className="break-words">{facts.cases.map(formatCase).join(', ')}</span>
                       </>
                     )}
 
@@ -210,7 +204,7 @@ export function ChatCompactionDivider({
                         <span className="break-words">
                           {facts.people
                             .map((p) => (p.role ? `${p.name} (${p.role})` : p.name))
-                            .join(' · ')}
+                            .join(', ')}
                         </span>
                       </>
                     )}
@@ -221,7 +215,7 @@ export function ChatCompactionDivider({
                         <span className="break-words">
                           {Object.entries(facts.dates)
                             .map(([k, v]) => `${k} ${v}`)
-                            .join(' · ')}
+                            .join(', ')}
                         </span>
                       </>
                     )}
@@ -229,14 +223,14 @@ export function ChatCompactionDivider({
                     {facts?.preferences && facts.preferences.length > 0 && (
                       <>
                         <span className="opacity-60">Prefs</span>{" "}
-                        <span className="break-words">{facts.preferences.join(' · ')}</span>
+                        <span className="break-words">{facts.preferences.join(', ')}</span>
                       </>
                     )}
 
                     {facts?.openActions && facts.openActions.length > 0 && (
                       <>
                         <span className="opacity-60">Open</span>{" "}
-                        <span className="break-words">{facts.openActions.join(' · ')}</span>
+                        <span className="break-words">{facts.openActions.join(', ')}</span>
                       </>
                     )}
                   </div>

@@ -685,7 +685,7 @@ function CaseDetail({ caseId, caseData }: CaseDetailProps) {
       <footer className="space-y-3 border-t border-border pt-4">
         <NotLegalAdviceNotice variant="deadline" className="border-t-0 pt-0" />
         <p className="text-sm text-muted-foreground">
-          Created {formatCompactDate(new Date(caseData.createdAt).toISOString())} · Updated{" "}
+          Created {formatCompactDate(new Date(caseData.createdAt).toISOString())}, Updated{" "}
           {formatCompactDate(new Date(caseData.updatedAt).toISOString())}
         </p>
       </footer>

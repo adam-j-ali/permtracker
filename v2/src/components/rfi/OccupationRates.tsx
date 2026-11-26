@@ -100,7 +100,7 @@ export function OccupationRates({ cut }: { cut: RfiOccupationCut }) {
                 {r.ci ? (
                   <>
                     {" "}
-                    · 95% interval {r.ci.lo.toFixed(1)} to {r.ci.hi.toFixed(1)}%
+                   , 95% interval {r.ci.lo.toFixed(1)} to {r.ci.hi.toFixed(1)}%
                   </>
                 ) : null}
               </span>

@@ -410,7 +410,7 @@ export default function ApiKeysSection() {
             <Link href="/developers" className="link">
               Every endpoint, with examples
             </Link>
-            {" · "}
+            {", "}
             <Link href="/api-terms" className="link">
               API terms
             </Link>

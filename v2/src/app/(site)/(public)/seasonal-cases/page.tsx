@@ -149,7 +149,7 @@ export default async function SeasonalCasesPage() {
                 return (
                   <li key={p} className="bg-sage p-4 border-2 shadow-hard border-border">
                     <p className="font-mono text-sm font-bold">
-                      {p}- <span className="text-muted-foreground">· {f.form}</span>
+                      {p}- <span className="text-muted-foreground">{f.form}</span>
                     </p>{" "}
                     <p className="mt-1 font-heading text-lg font-bold">{keepWhole(f.label)}</p>{" "}
                     <p className="mt-2 font-heading text-3xl font-bold">{formatInt(n)}</p>{" "}

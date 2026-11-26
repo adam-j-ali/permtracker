@@ -148,7 +148,7 @@ export function UscisStatusResult({ receipt }: { receipt: string }) {
     <section aria-labelledby="uscis-result-heading" className="bg-tint">
       <div className="border-b-2 border-border p-5 sm:p-6">
         <p className="text-sm font-bold text-muted-foreground">
-          {status.formType ? `${status.formType} · ` : ""}
+          {status.formType ? `${status.formType}, ` : ""}
           {status.receipt}
         </p>{" "}
         <h2 id="uscis-result-heading" className="mt-2 font-heading text-2xl font-bold sm:text-3xl">

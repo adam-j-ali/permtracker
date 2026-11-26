@@ -148,7 +148,7 @@ export const stateFacet: Facet<EntityRow> = {
   value: (e) => e.state,
   // A middle dot, not an em-dash: house style bans the em-dash in copy and
   // an option label is copy. My own rendered audit caught this one.
-  format: (v) => `${v} · ${stateName(v)}`,
+  format: (v) => `${v}, ${stateName(v)}`,
 };
 
 /**

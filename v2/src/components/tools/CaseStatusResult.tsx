@@ -552,7 +552,7 @@ function Answer({
       verdict={verdict}
       direction={direction}
       label={<span translate="no">{caseNumber}</span>}
-      source={sourceBits.length > 0 ? sourceBits.join(" · ") : undefined}
+      source={sourceBits.length > 0 ? sourceBits.join(", ") : undefined}
       picture={tape}
       // A pending case's date and its email box come before the picture of the line: the email is what a
       // returning visitor can act on, and under the picture it was a screen down on a phone.
@@ -853,7 +853,7 @@ function Position({
           }
           source={
             publishedAsOf
-              ? `Per-case statuses from DOL's own case status system, checked daily · DOL queue position as of ${formatAsOf(publishedAsOf)}`
+              ? `Per-case statuses from DOL's own case status system, checked daily, DOL queue position as of ${formatAsOf(publishedAsOf)}`
               : "Per-case statuses from DOL's own case status system, checked daily"
           }
         >
@@ -1033,8 +1033,8 @@ function WageLadder({ wage }: { wage: CaseWageContext }) {
       }
       source={
         wage.fiscalYear
-          ? `DOL's FY${wage.fiscalYear} disclosure file · ${formatInt(row.n)} certified cases decided in FY${wage.fiscalYear}`
-          : `DOL quarterly disclosure files · ${formatInt(row.n)} certified cases`
+          ? `DOL's FY${wage.fiscalYear} disclosure file, ${formatInt(row.n)} certified cases decided in FY${wage.fiscalYear}`
+          : `DOL quarterly disclosure files, ${formatInt(row.n)} certified cases`
       }
     >
       <ChartTips label={`Where this wage sits among certified ${scope} wages`} className="pb-9 pt-9">

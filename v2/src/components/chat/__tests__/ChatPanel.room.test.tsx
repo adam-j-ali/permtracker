@@ -41,7 +41,7 @@ describe('ToolCallCard', () => {
     const details = container.querySelector('details');
     expect(details).not.toBeNull();
     expect(details?.open).toBe(false);
-    expect(container.querySelector('summary')?.textContent).toMatch(/·/);
+    expect(container.querySelector('summary')?.textContent).toMatch(/, /);
   });
 
   it('keeps the full card while a step runs', () => {

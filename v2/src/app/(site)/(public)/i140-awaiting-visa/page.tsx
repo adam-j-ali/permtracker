@@ -312,7 +312,7 @@ export default async function I140AwaitingVisaPage() {
                 return {
                   key: String(y.fy),
                   label: `FY${y.fy}`,
-                  sub: `${n(y.approved)} approved, ${n(y.denied)} denied, ${n(y.pending)} pending${y.denialRate !== null ? ` · ${(y.denialRate * 100).toFixed(1)}% of decided denied` : ""}`,
+                  sub: `${n(y.approved)} approved, ${n(y.denied)} denied, ${n(y.pending)} pending${y.denialRate !== null ? `, ${(y.denialRate * 100).toFixed(1)}% of decided denied` : ""}`,
                   value: y.total,
                   text: all && all.total > 0 ? `${n(y.total)} (${Math.round((y.total / all.total) * 100)}%)` : n(y.total),
                   tone: "blue" as const,

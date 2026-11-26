@@ -205,7 +205,7 @@ describe("the answer", () => {
     renderIt();
     fireEvent.change(screen.getByLabelText("Employer or case number"), { target: { value: "acme" } });
     fireEvent.click(screen.getByRole("button", { name: "Search" }));
-    expect(screen.getByText("Seattle · Custom Computer Programming Services")).toBeInTheDocument();
+    expect(screen.getByText("Seattle, Custom Computer Programming Services")).toBeInTheDocument();
     expect(screen.getByText(/Worker: India citizen, H-1B at filing, Master's in Computer Science/)).toBeInTheDocument();
     expect(screen.getByText(/Job requires: Bachelor's/)).toBeInTheDocument();
     expect(screen.getAllByText("FY2008 to FY2023 file")).toHaveLength(1);

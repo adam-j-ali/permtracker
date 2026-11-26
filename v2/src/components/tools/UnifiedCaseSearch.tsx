@@ -343,7 +343,7 @@ function RowDetails({ r }: { r: UnifiedCase }) {
   if (where.length === 0 && who.length === 0 && !r.jobEducation && !r.wageRequest && !r.namedBy) return null;
   return (
     <span className="mt-1 block text-sm leading-snug text-muted-foreground">
-      {where.length > 0 ? <span className="block">{where.join(" · ")}</span> : null}{" "}
+      {where.length > 0 ? <span className="block">{where.join(", ")}</span> : null}{" "}
       {who.length > 0 ? <span className="block">Worker: {who.join(", ")}</span> : null}{" "}
       {r.jobEducation ? <span className="block">Job requires: {r.jobEducation}</span> : null}{" "}
       {/* The filings DOL's file ties this one to, each a link to its own page. */}
@@ -1783,7 +1783,7 @@ export function UnifiedCaseSearch({
               Shown:{" "}
               {CHANGE_PROGRAMS.filter((p) => data.counts[p] > 0)
                 .map((p) => `${formatInt(data.counts[p])} ${PROGRAM_LABEL[p]}`)
-                .join(" · ")}
+                .join(", ")}
             </p>{" "}
             {/* The same search as CSV: the route runs every guard again and
                 returns these rows, never more. A plain link, so the browser's

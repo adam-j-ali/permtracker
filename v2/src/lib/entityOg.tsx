@@ -29,7 +29,7 @@ export function generateEntityOG(kind: EntityKind, row: EntityRow) {
   const filings = row.total.toLocaleString("en-US");
   return card(
     GROUND[kind],
-    `${KIND_EYEBROW[kind]} · PERM filings`,
+    `${KIND_EYEBROW[kind]}, PERM filings`,
     row.name,
     `${filings} PERM ${row.total === 1 ? "filing" : "filings"} in the Department of Labor's disclosure files, with the outcome, wage and worksite of each.`,
   );
@@ -46,7 +46,7 @@ export function generateEntityOG(kind: EntityKind, row: EntityRow) {
 export function generateLiveEmployerOG(name: string, cases: number) {
   return card(
     GROUND.employer,
-    `${KIND_EYEBROW.employer} · PERM filings`,
+    `${KIND_EYEBROW.employer}, PERM filings`,
     name,
     `${cases.toLocaleString("en-US")} PERM ${cases === 1 ? "case" : "cases"} in the Department of Labor's live record, none in a published disclosure file yet.`,
   );
@@ -56,7 +56,7 @@ export function generateLiveEmployerOG(name: string, cases: number) {
 export function generateOtherEmployerOG(name: string, cases: number, programs: string) {
   return card(
     GROUND.employer,
-    `${KIND_EYEBROW.employer} · ${programs}`,
+    `${KIND_EYEBROW.employer}, ${programs}`,
     name,
     `${cases.toLocaleString("en-US")} ${programs} ${cases === 1 ? "filing" : "filings"} in the Department of Labor's records.`,
   );

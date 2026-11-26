@@ -348,7 +348,7 @@ describe('useSectionState', () => {
         expect(result.current.sectionStates.eta9089.disabledReason).toMatch(
           /30-day waiting period: \d+ days remaining/
         );
-        expect(result.current.sectionStates.eta9089.statusInfo).toMatch(/Opens .+ · \d+d remaining/);
+        expect(result.current.sectionStates.eta9089.statusInfo).toMatch(/Opens .+, \d+d remaining/);
       });
 
       it('is enabled when recruitment is complete AND window is open', () => {
@@ -567,7 +567,7 @@ describe('useSectionState', () => {
         pwdExpirationDate: '2024-06-30',
       });
       const { result } = renderHook(() => useSectionState(values));
-      expect(result.current.sectionStates.pwd.summary).toBe('Determined Jan 15 · Expires Jun 30');
+      expect(result.current.sectionStates.pwd.summary).toBe('Determined Jan 15, Expires Jun 30');
     });
 
     it('PWD summary undefined when incomplete', () => {

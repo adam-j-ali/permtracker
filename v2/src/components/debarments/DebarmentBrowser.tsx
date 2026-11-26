@@ -86,7 +86,7 @@ function Row({ d, off = false }: { d: DebarmentView; off?: boolean }) {
       <div>
         <span className="font-bold">{d.entity}</span>{" "}
         {d.entityType ? <span className="text-sm text-muted-foreground">{d.entityType}</span> : null}{" "}
-        {d.location ? <span className="text-sm text-muted-foreground">· {d.location}</span> : null}
+        {d.location ? <span className="text-sm text-muted-foreground">, {d.location}</span> : null}
       </div>{" "}
       <div className="font-mono text-sm tabular-nums">
         {day(d.startDate)} to {day(d.endDate)}
@@ -97,7 +97,7 @@ function Row({ d, off = false }: { d: DebarmentView; off?: boolean }) {
       </div>{" "}
       <div className="text-sm">
         {d.violation ?? ""}
-        {d.citation ? <span className="text-muted-foreground"> · {d.citation}</span> : null}
+        {d.citation ? <span className="text-muted-foreground">, {d.citation}</span> : null}
       </div>
     </li>
   );

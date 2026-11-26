@@ -200,7 +200,7 @@ export default async function PermRfiAuditPage() {
               actions={<RfiTiming rfiDay={rfiMedian} decideDay={analystDays} />}
               source={
                 analystQueue || analystDays !== null
-                  ? `Live case scan of flag.dol.gov, ${rfi.seenTo ?? "latest"} · DOL FLAG processing times, ${dol?.permAsOf ?? ""}`
+                  ? `Live case scan of flag.dol.gov, ${rfi.seenTo ?? "latest"}, DOL FLAG processing times, ${dol?.permAsOf ?? ""}`
                   : undefined
               }
             >

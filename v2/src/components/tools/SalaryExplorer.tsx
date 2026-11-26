@@ -275,7 +275,7 @@ export function SalaryExplorer({
     if (city) parts.splice(2, 0, city);
     const sectorLabel = sectorGroup(sector)?.label;
     if (sectorLabel) parts.push(sectorLabel);
-    return parts.join(" · ");
+    return parts.join(", ");
   }, [occupations, earlierPicked, soc, state, fy, city, sector, pooledLabel]);
 
   // The job's 2010 codes, in a year of the older files (the route sends them only there).

@@ -18,7 +18,7 @@ export default function DeadlineItem({ deadline }: { deadline: DeadlineItemType 
     <WidgetRow
       href={`/cases/${deadline.caseId}`}
       title={caseTitle({ employerName: deadline.employerName, beneficiaryIdentifier: deadline.beneficiaryName })}
-      detail={role ? `${deadline.label} · ${role}` : deadline.label}
+      detail={role ? `${deadline.label}, ${role}` : deadline.label}
       aside={countdownWords(deadline.daysUntil)}
       asideClassName={overdue ? "text-destructive" : undefined}
       asideDetail={formatDeadlineDate(deadline.dueDate)}

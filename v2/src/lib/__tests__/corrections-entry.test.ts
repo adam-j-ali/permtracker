@@ -37,9 +37,9 @@ describe("the corrections changelog entry", () => {
     expect(sections.length).toBeGreaterThanOrEqual(14);
     for (const s of sections) {
       const heading = s.split("\n")[0] ?? "";
-      // "<where> · <Mon D, YYYY>" - the page and the date it shipped.
+      // "<Mon D, YYYY>: <where>" - the date it shipped, then the page (Nov 26 2026: the date first, no dot between).
       expect(heading, `heading: ${heading}`).toMatch(
-        /^.+ · (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{1,2}, \d{4}$/,
+        /^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{1,2}, \d{4}: .+$/,
       );
       for (const part of ["**It said:**", "**What was true:**", "**What changed:**"]) {
         expect(s, `${heading} is missing ${part}`).toContain(part);
@@ -50,7 +50,7 @@ describe("the corrections changelog entry", () => {
   it("dates the post to its newest correction", () => {
     const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
     const iso = (h: string) => {
-      const m = /· (\w{3}) (\d{1,2}), (\d{4})$/.exec(h.split("\n")[0] ?? "");
+      const m = /^(\w{3}) (\d{1,2}), (\d{4}):/.exec(h.split("\n")[0] ?? "");
       if (!m) return "";
       const mm = String(MON.indexOf(m[1]!) + 1).padStart(2, "0");
       return `${m[3]}-${mm}-${String(m[2]).padStart(2, "0")}`;

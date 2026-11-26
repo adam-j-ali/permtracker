@@ -219,7 +219,7 @@ export function LiveCaseBrowser({
                   className={choiceVariants({ on: kind === k })}
                 >
                   {KIND_LABEL[k]}
-                  {counts && k !== "all" ? ` · ${formatInt(counts[k])}` : ""}
+                  {counts && k !== "all" ? `, ${formatInt(counts[k])}` : ""}
                 </button>
                 </Fragment>
               ))}

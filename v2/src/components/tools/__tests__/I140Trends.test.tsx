@@ -59,12 +59,12 @@ describe("I140Trends", () => {
     const select = screen.getByLabelText("Category");
     expect(
       within(select).getByRole("option", {
-        name: /E21 · Professionals with Advanced Degrees/,
+        name: /E21, Professionals with Advanced Degrees/,
       }),
     ).toBeInTheDocument();
     // NIW exists as its own option rather than as a relabelling of E21.
     expect(
-      within(select).getByRole("option", { name: /NIW · National Interest Waiver/ }),
+      within(select).getByRole("option", { name: /NIW, National Interest Waiver/ }),
     ).toBeInTheDocument();
   });
 

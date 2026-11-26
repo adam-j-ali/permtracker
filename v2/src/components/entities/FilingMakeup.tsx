@@ -61,7 +61,7 @@ const tail = (period?: string) => (period ? ` ${period}` : "");
 /** " · 98.4% approved" for a row whose decided cases carry a rate, else nothing. */
 function approvedNote(row: FacetRow): string {
   const rate = shownApprovalRate(row);
-  return rate === null ? "" : ` · ${formatApprovalRate(rate)} approved`;
+  return rate === null ? "" : `, ${formatApprovalRate(rate)} approved`;
 }
 
 function Shell({
@@ -165,7 +165,7 @@ export function OccupationMix({
         )}
       </p>{" "}
       <p className="mt-1.5 font-mono text-sm tabular-nums text-muted-foreground">
-        {lead.code ? <>SOC {lead.code} &middot; </> : null}
+        {lead.code ? <>SOC {lead.code}, </> : null}
         <Count row={lead} href={filingsHref} />
         {leadShare >= 1
           ? `, ${formatShareOf(lead.n, total)} of ${period ? `their filings ${period}` : "everything they file"}`
@@ -440,7 +440,7 @@ export function PlaceMix({
             {cities.map((r) => (
               <Fragment key={r.key ?? r.label}>
                 {" "}
-                <li data-tip={`${r.label}\n${formatInt(r.n)} of ${formatInt(total)} filings${approvedNote(r).replace(" · ", "\n")}`}>
+                <li data-tip={`${r.label}\n${formatInt(r.n)} of ${formatInt(total)} filings${approvedNote(r).replace(", ", "\n")}`}>
                   <span className="flex items-baseline justify-between gap-3">
                     <span className="min-w-0 truncate text-sm font-bold">{keepWhole(r.label)}</span>{" "}
                     <span className="shrink-0 font-mono text-sm tabular-nums text-muted-foreground">{formatInt(r.n)}</span>
@@ -506,7 +506,7 @@ export function IndustryMix({
     >
       <p className="font-heading text-xl font-bold leading-tight">{keepWhole(lead.label)}</p>{" "}
       <p className="mt-1.5 text-sm tabular-nums text-muted-foreground">
-        NAICS {lead.codes.join(", ")} &middot; {formatInt(lead.n)} filings
+        NAICS {lead.codes.join(", ")}, {formatInt(lead.n)} filings
       </p>
       {rest.length > 0 ? (
         <ul className="mt-4 space-y-2 border-t-2 border-border pt-3">
@@ -569,7 +569,7 @@ export function RecruitmentMix({
           <span className="block text-sm text-muted-foreground">Newspaper it advertised in</span>{" "}
           <span className="font-bold">{keepWhole(onePaper.label)}</span>{" "}
           <span className="font-mono text-sm tabular-nums text-muted-foreground">
-            &middot; {formatInt(onePaper.n)} {onePaper.n === 1 ? "case" : "cases"}, its only paper
+           , {formatInt(onePaper.n)} {onePaper.n === 1 ? "case" : "cases"}, its only paper
           </span>
         </p>
       ) : null}{" "}

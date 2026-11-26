@@ -90,7 +90,7 @@ describe("ProfileHeader", () => {
   it("puts the rest of the record on one plain line of links, each to where it's shown in full", () => {
     header();
     const line = screen.getByText("On record:").closest("p")!;
-    expect(line.textContent).toBe("On record: 1 layoff notice · 2 OSHA inspections with violations");
+    expect(line.textContent).toBe("On record: 1 layoff notice, 2 OSHA inspections with violations");
     const links = within(line).getAllByRole("link");
     expect(links.map((a) => a.getAttribute("href"))).toEqual(["#layoffs", "#safety-inspections"]);
     // A link alone on a phone's line still gets the 44px floor.

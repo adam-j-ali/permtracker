@@ -11,7 +11,7 @@ describe("DeadlineItem", () => {
     const d = createMockDeadlineItem({ positionTitle: "Data Engineer" });
     renderWithProviders(<DeadlineItem deadline={d} />);
     expect(screen.getByText(d.employerName)).toBeInTheDocument();
-    expect(screen.getByText(`${d.label} · Data Engineer`)).toBeInTheDocument();
+    expect(screen.getByText(`${d.label}, Data Engineer`)).toBeInTheDocument();
     expect(screen.getByText(countdownWords(d.daysUntil))).toBeInTheDocument();
     expect(screen.getByText(formatDeadlineDate(d.dueDate))).toBeInTheDocument();
     expect(screen.getByRole("link")).toHaveAttribute("href", `/cases/${d.caseId}`);

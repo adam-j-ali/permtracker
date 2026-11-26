@@ -14,7 +14,7 @@ export default function RecentActivityCard({ activity }: { activity: RecentActiv
     <WidgetRow
       href={`/cases/${activity.id}`}
       title={caseTitle(activity)}
-      detail={[activity.action, activity.positionTitle, stage, dol].filter(Boolean).join(" · ")}
+      detail={[activity.action, activity.positionTitle, stage, dol].filter(Boolean).join(", ")}
       asideDetail={
         <time dateTime={new Date(activity.timestamp).toISOString()} data-testid="activity-timestamp">
           {safeFormatDistanceToNow(activity.timestamp)}

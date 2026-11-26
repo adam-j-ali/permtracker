@@ -85,7 +85,7 @@ function card(spec: BadgeSpec, p: Palette): string {
   const h = 116;
   const valueSize = spec.value.length > 12 ? 24 : spec.value.length > 8 ? 30 : 36;
   const w = Math.max(300, wAt(spec.value, valueSize) + 48, wAt(spec.label, 13) + 48);
-  const footer = `${spec.source}${spec.asOf ? ` · ${spec.asOf}` : ""}`;
+  const footer = `${spec.source}${spec.asOf ? `, ${spec.asOf}` : ""}`;
 
   const parts = [
     open(w, h, spec.alt),

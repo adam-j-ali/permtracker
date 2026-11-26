@@ -113,7 +113,7 @@ describe('ChatCompactionDivider', () => {
       );
       fireEvent.click(screen.getByRole('button'));
       expect(
-        screen.getByText(/John Doe \(beneficiary\) · Jane Smith/),
+        screen.getByText(/John Doe \(beneficiary\), Jane Smith/),
       ).toBeInTheDocument();
     });
 
@@ -127,7 +127,7 @@ describe('ChatCompactionDivider', () => {
       );
       fireEvent.click(screen.getByRole('button'));
       expect(
-        screen.getByText(/pwdFiling 2024-06-15 · recruitment 2024-09-01/),
+        screen.getByText(/pwdFiling 2024-06-15, recruitment 2024-09-01/),
       ).toBeInTheDocument();
     });
 

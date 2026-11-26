@@ -389,7 +389,7 @@ export default async function VisaBulletinPage() {
                         ) : (
                           <>
                             <span className="font-semibold">{sum.count}</span>
-                            {" · "}
+                            {", "}
                             {sum.advanced} advanced, {sum.held} unchanged, {sum.retrogressed} back
                             {sum.count - sum.advanced - sum.held - sum.retrogressed > 0 ? `, ${sum.count - sum.advanced - sum.held - sum.retrogressed} other` : ""}
                             {" "}
@@ -406,7 +406,7 @@ export default async function VisaBulletinPage() {
                           // `move-list` (globals.css) keeps each move on one line
                           // with no class on any of them.
                           <Fragment key={m.bulletinMonth}>
-                            {i > 0 ? " · " : null}
+                            {i > 0 ? ", " : null}
                             <span>{m.bulletinMonth.slice(0, 4)} {moveLabel(m)}</span>
                           </Fragment>
                         ))}

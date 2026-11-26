@@ -55,7 +55,7 @@ export async function DataProvenance({ datasets, className }: { datasets: readon
       <p className="text-sm text-muted-foreground">
         {fresh.map((r, i) => (
           <Fragment key={r.dataset}>
-            {i > 0 ? " · " : ""}
+            {i > 0 ? ", " : ""}
             <span className="font-semibold text-soft">{keepWhole(label(r.dataset))}</span>
             {when(r)}
           </Fragment>
@@ -84,7 +84,7 @@ export async function DataProvenance({ datasets, className }: { datasets: readon
                 {" "}
                 <p>
                   <span className="font-bold text-soft">{keepWhole(label(r.dataset))}:</span> {keepWhole(r.source)}
-                  {r.asOf || isNewsFeed(r.dataset) ? <> ·{when(r, "data through")}</> : null} · {r.cadence.toLowerCase()}
+                  {r.asOf || isNewsFeed(r.dataset) ? <>,{when(r, "data through")}</> : null}, {r.cadence.toLowerCase()}
                 </p>
               </Fragment>
             ))}{" "}
@@ -131,7 +131,7 @@ function StaleLine({ r }: { r: DatasetFreshness }) {
         </b>{" "}
         It should update {r.cadence.toLowerCase()}, so the figures below are the last ones that arrived and may be
         out of date. Source: {r.source}
-        {r.asOf ? <> · data through {fmt(r.asOf)}</> : null}.
+        {r.asOf ? <>, data through {fmt(r.asOf)}</> : null}.
       </span>
     </p>
   );

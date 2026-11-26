@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CaretDownIcon, SparkleIcon } from "@phosphor-icons/react";
+import { CaretDownIcon, FileTextIcon } from "@phosphor-icons/react";
 
 import type { Id } from "@convex/_generated/dataModel";
 import { formatInt } from "@/lib/format";
@@ -63,7 +63,7 @@ export function JobDescriptionField({
         <div className="flex shrink-0 items-center gap-3">
           {!isExpanded && suggestionWaiting ? (
             <span className="inline-flex items-center gap-1.5 text-sm font-semibold">
-              <SparkleIcon className="size-4 text-primary-text" aria-hidden="true" />
+              <FileTextIcon className="size-4 text-primary-text" aria-hidden="true" />
               Suggested from {code}
             </span>
           ) : description ? (

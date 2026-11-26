@@ -643,8 +643,8 @@ export function CaseBrowser({
             </p>{" "}
             <p className="mt-2 text-base leading-relaxed text-muted-foreground">
               {liveHit.employerName ?? "This case"}
-              {liveHit.jobTitle ? ` · ${liveHit.jobTitle}` : ""}
-              {liveHit.filingDate ? ` · filed ${liveHit.filingDate}` : ""} ·
+              {liveHit.jobTitle ? `, ${liveHit.jobTitle}` : ""}
+              {liveHit.filingDate ? `, filed ${liveHit.filingDate}` : ""},
               status <b className="font-bold">{liveHit.status ?? "on file"}</b>.
               Details like the law firm and wage appear when DOL publishes the
               decided case.
@@ -1009,7 +1009,7 @@ export function CaseBrowser({
                     <span className="text-muted-foreground">{h.jobTitle}</span>
                   ) : null}{" "}
                   <span className="ml-auto text-sm text-muted-foreground">
-                    {h.filingDate ? `filed ${h.filingDate} · ` : ""}
+                    {h.filingDate ? `filed ${h.filingDate}, ` : ""}
                     {h.status ?? ""}
                   </span>
                 </li>

@@ -148,7 +148,7 @@ export default async function I485ByFieldOfficePage() {
       label: `${o.office}, ${o.state}`,
       sub: delta === null
         ? `${fmt(o.empApproved)} approved, ${fmt(o.empDenied)} denied in the quarter`
-        : `${delta >= 0 ? "+" : ""}${delta.toLocaleString("en-US")} since ${prev ? quarterLabel(prev.fy, prev.quarter).split(" (")[0] : "last quarter"} · ${fmt(o.empApproved)} approved, ${fmt(o.empDenied)} denied`,
+        : `${delta >= 0 ? "+" : ""}${delta.toLocaleString("en-US")} since ${prev ? quarterLabel(prev.fy, prev.quarter).split(" (")[0] : "last quarter"}, ${fmt(o.empApproved)} approved, ${fmt(o.empDenied)} denied`,
       value: o.empPending,
       text: fmt(o.empPending),
       // Still waiting at the office: soft yellow, the site's "pending".

@@ -953,7 +953,7 @@ export function FlagCaseBrowser({
                 className={choiceVariants({ on: kind === k })}
               >
                 {KIND_LABEL[k]}
-                {summary && k !== "all" ? ` · ${formatInt(summary[k])}` : ""}
+                {summary && k !== "all" ? `, ${formatInt(summary[k])}` : ""}
               </button>
               </Fragment>
             ))}

@@ -525,7 +525,7 @@ describe("CaseDetailPage - Section Headers", () => {
 
     await renderPageAndWait("test-id");
 
-    expect(screen.getByText(/· Updated /)).toBeInTheDocument();
+    expect(screen.getByText(/, Updated /)).toBeInTheDocument();
   });
 });
 

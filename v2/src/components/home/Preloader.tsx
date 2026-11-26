@@ -79,8 +79,8 @@ html[data-pre="leaving"] .pre{transform:translateY(-101%);pointer-events:none}
 .pre-name{font-family:var(--font-heading),system-ui,-apple-system,sans-serif;font-weight:900;
 font-size:clamp(1.6rem,4vw,2.1rem);letter-spacing:-.02em;line-height:1;color:var(--_pf)}
 .pre-name b{color:var(--_pp);font-weight:900}
-.pre-sub{font-family:var(--font-mono),ui-monospace,SFMono-Regular,monospace;font-size:.7rem;
-font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--_pf);opacity:.55}
+.pre-sub{font-family:var(--font-mono),ui-monospace,SFMono-Regular,monospace;font-size:.875rem;
+font-weight:700;color:var(--_pf);opacity:.8}
 .pre-track{width:min(260px,60vw);height:6px;border:2px solid var(--_pbd);
 background:var(--_pc);overflow:hidden}
 .pre-bar{display:block;height:100%;background:var(--_pp);transform-origin:left;
@@ -223,7 +223,7 @@ export function Preloader() {
         <div className="pre-name">
           <b>PERM</b> Tracker
         </div>{" "}
-        <div className="pre-sub">Live DOL data · Automatic deadlines</div>{" "}
+        <div className="pre-sub">Live DOL data and automatic deadlines</div>{" "}
         <div className="pre-track">
           <i className="pre-bar" />
         </div>

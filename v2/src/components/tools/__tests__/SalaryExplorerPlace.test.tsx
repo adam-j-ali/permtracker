@@ -107,7 +107,7 @@ describe("SalaryExplorer years from DOL's older files", () => {
     const select = screen.getByLabelText("Fiscal year") as HTMLSelectElement;
     expect(select.options[0]!.textContent).toBe("FY2024 to FY2026");
     expect(screen.queryByText("All years")).toBeNull();
-    expect(screen.getByText(/All occupations · every state · FY2024 to FY2026/)).toBeInTheDocument();
+    expect(screen.getByText(/All occupations, every state, FY2024 to FY2026/)).toBeInTheDocument();
   });
 
   it("keeps 'All years' where nothing names the pool (the LCA page)", () => {

@@ -119,7 +119,7 @@ export function ToolCallCard({
             <span className="font-medium">{displayName}</span>
             {outcome ? (
               <span className={cn(status === 'error' && !wasDenied ? 'text-destructive' : 'text-muted-foreground')}>
-                {` · ${outcome}`}
+                {`, ${outcome}`}
               </span>
             ) : null}
           </span>{" "}

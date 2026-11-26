@@ -246,7 +246,7 @@ export function CaseNotFound({
                 caption={`Drawn for ${month(cohort.month)}, the month this number decodes to: the queue in front of that month rather than in front of any one case.`}
                 source={
                   longDate(publishedAsOf)
-                    ? `Per-case statuses from DOL's own case status system, checked daily · DOL queue position as of ${longDate(publishedAsOf)}`
+                    ? `Per-case statuses from DOL's own case status system, checked daily, DOL queue position as of ${longDate(publishedAsOf)}`
                     : "Per-case statuses from DOL's own case status system, checked daily"
                 }
               >

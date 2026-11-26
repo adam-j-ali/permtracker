@@ -117,7 +117,7 @@ export function ProfileHeader({
                 <span className="font-semibold text-foreground">{`${recordLead}:`}</span>{" "}
                 {record.map((t, i) => (
                   <Fragment key={t.text}>
-                    {i > 0 ? " · " : null}
+                    {i > 0 ? ", " : null}
                     <a href={t.href} className={LINE_LINK}>
                       {keepWhole(t.text)}
                     </a>
@@ -143,7 +143,7 @@ export function ProfileHeader({
                       ) : (
                         f.value
                       )}
-                      {f.note ? <span className="font-normal text-muted-foreground"> · {keepWhole(f.note)}</span> : null}
+                      {f.note ? <span className="font-normal text-muted-foreground">, {keepWhole(f.note)}</span> : null}
                     </dd>
                   </div>
                 ))}

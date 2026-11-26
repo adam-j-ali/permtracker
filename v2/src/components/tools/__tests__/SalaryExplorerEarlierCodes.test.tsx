@@ -69,7 +69,7 @@ describe("SalaryExplorer and a job's 2010 codes", () => {
     answer({ ...EMPTY, stats: { ...NONE, n: 8_100 } });
     search = new URLSearchParams("soc=15-1132&fy=2015");
     view.rerender(explorer());
-    await waitFor(() => expect(screen.getByText(/Software Developers, Applications · every state · FY2015/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/Software Developers, Applications, every state, FY2015/)).toBeInTheDocument());
   });
 
   it("says the figures leave them out where the new code holds some of the year's cases", async () => {

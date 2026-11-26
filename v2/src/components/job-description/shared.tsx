@@ -7,7 +7,7 @@
 import { ConvexError } from "convex/values";
 
 import { toast } from "@/lib/toast";
-import { FloppyDiskIcon, SparkleIcon } from "@phosphor-icons/react/ssr";
+import { FloppyDiskIcon } from "@phosphor-icons/react/ssr";
 import { Button } from "@/components/ui/button";
 import { ToneBadge } from "@/components/ui/badge";
 
@@ -129,7 +129,7 @@ export function TemplateSaveButton({
 }) {
   return (
     <Button type="button" variant="outline" onClick={onClick} disabled={disabled}>
-      {isExisting ? <FloppyDiskIcon className="size-4" aria-hidden="true" /> : <SparkleIcon className="size-4" aria-hidden="true" />}
+      <FloppyDiskIcon className="size-4" aria-hidden="true" />
       {isExisting ? (isSaving ? "Updating..." : "Update template") : isSaving ? "Saving..." : "Save template"}
     </Button>
   );

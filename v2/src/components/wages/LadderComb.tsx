@@ -89,7 +89,7 @@ export function LadderComb({
                   )}
                 </p>{" "}
                 <p className="font-mono text-sm font-bold tabular-nums text-muted-foreground">
-                  {formatDollars(l.p50 as number)} median ·{" "}
+                  {formatDollars(l.p50 as number)} median,{" "}
                   {l.count.toLocaleString("en-US")} {unit}
                 </p>
               </div>

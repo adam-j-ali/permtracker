@@ -89,7 +89,7 @@ export const CaseListRow = memo(function CaseListRow({
               <span className="font-mono">{c.socCode}</span>
             </>
           ) : null}
-          {subtitle && stage?.label ? " · " : ""}
+          {subtitle && stage?.label ? ", " : ""}
           {keepWhole(stage?.label)}
         </p>
       </div>

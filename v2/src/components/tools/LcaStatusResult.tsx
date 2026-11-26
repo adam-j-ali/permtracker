@@ -84,7 +84,7 @@ function Disclosed({ d, detail }: { d: LcaDisclosedRow; detail: LcaRecordDetail 
                   value: (
                     <>
                       {d.socTitle ?? "Not given"}
-                      {d.socCode ? <span className="font-mono text-sm font-normal text-muted-foreground"> · <SocCodeLink code={d.socCode} /></span> : null}
+                      {d.socCode ? <span className="font-mono text-sm font-normal text-muted-foreground">, <SocCodeLink code={d.socCode} /></span> : null}
                     </>
                   ),
                 },

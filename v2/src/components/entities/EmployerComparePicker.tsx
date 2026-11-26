@@ -125,7 +125,7 @@ function Picker({
               >
                 <span className="font-semibold">{h.name}</span>{" "}
                 <span className="shrink-0 font-mono text-sm text-muted-foreground">
-                  {h.total.toLocaleString("en-US")} filings{h.state ? ` · ${h.state}` : ""}
+                  {h.total.toLocaleString("en-US")} filings{h.state ? `, ${h.state}` : ""}
                 </span>
               </button>
             </li>

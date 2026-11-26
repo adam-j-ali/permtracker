@@ -85,7 +85,7 @@ function SeasonalCaseList({
                   <span className="ml-auto text-sm font-bold">{statusText(c)}</span>
                 </div>{" "}
                 {c.jobTitle ? <p className="mt-0.5 text-soft">{c.jobTitle}</p> : null}{" "}
-                {detail.length ? <p className="mt-0.5 text-sm text-muted-foreground">{detail.join(" · ")}</p> : null}
+                {detail.length ? <p className="mt-0.5 text-sm text-muted-foreground">{detail.join(", ")}</p> : null}
               </li>
             </Fragment>
           );

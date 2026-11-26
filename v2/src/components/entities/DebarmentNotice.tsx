@@ -60,13 +60,13 @@ export function DebarmentNotice({
         {rows.map((d) => (
           <li key={`${d.program}-${d.entity}-${d.startDate}`} className="py-2 text-sm">
             <span className="font-bold">{d.entity}</span>
-            {d.location ? <span className="text-muted-foreground"> · {d.location}</span> : null} ·{" "}
-            {PROGRAM_LABEL[d.program]} · {day(d.startDate)} to {day(d.endDate)}
+            {d.location ? <span className="text-muted-foreground">, {d.location}</span> : null},{" "}
+            {PROGRAM_LABEL[d.program]}, {day(d.startDate)} to {day(d.endDate)}
             {phase(d, today) === "ended" ? " (ended)" : null}
             {phase(d, today) === "upcoming" ? (
               <span className="font-bold"> (not started)</span>
             ) : null}
-            {d.violation ? <span className="text-soft"> · {d.violation}</span> : null}
+            {d.violation ? <span className="text-soft">, {d.violation}</span> : null}
           </li>
         ))}
       </ul>{" "}

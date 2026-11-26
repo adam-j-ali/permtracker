@@ -90,7 +90,7 @@ describe("FlagCaseBrowser search filters", () => {
 });
 
 describe("FlagCaseBrowser names the finished filings for what the list holds", () => {
-  // The wage list's button read "Issued · 520,636" and the line above it "520,636 issued". That count is every
+  // The wage list's button read "Issued, 520,636" and the line above it "520,636 issued". That count is every
   // request DOL is done with: on Nov 12 2026, 22,519 of them were withdrawn and 6,149 returned unprocessed, and the
   // rows under the button said so.
   const summary = {
@@ -108,7 +108,7 @@ describe("FlagCaseBrowser names the finished filings for what the list holds", (
 
   it("calls them decided on the wage list, as the other lists do", () => {
     render(<FlagCaseBrowser summary={summary} program={PWD_PROGRAM} />);
-    expect(screen.getByRole("button", { name: "Decided · 520,636" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Decided, 520,636" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Issued/ })).toBeNull();
     // "Still waiting": the open filter holds RFI and redetermination requests too, not only DOL's IN PROCESS.
     expect(screen.getByText(/46,069 still waiting, 520,636 decided\./)).toBeInTheDocument();

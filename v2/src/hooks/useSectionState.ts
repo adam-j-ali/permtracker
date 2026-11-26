@@ -167,7 +167,7 @@ function getPWDSummary(values: Partial<CaseFormData>): string | undefined {
     const level = values.pwdWageLevel ? ` ${values.pwdWageLevel.replace("Level ", "L")}` : "";
     parts.push(`${wage}${level}`);
   }
-  return parts.join(" · ");
+  return parts.join(", ");
 }
 
 function getRecruitmentSummary(values: Partial<CaseFormData>): string | undefined {
@@ -194,7 +194,7 @@ function getRecruitmentSummary(values: Partial<CaseFormData>): string | undefine
     if (methodCount > 0) parts.push(`${methodCount} method${methodCount > 1 ? "s" : ""}`);
   }
 
-  return parts.length > 0 ? parts.join(" · ") : undefined;
+  return parts.length > 0 ? parts.join(", ") : undefined;
 }
 
 function getETA9089Summary(values: Partial<CaseFormData>): string | undefined {
@@ -210,7 +210,7 @@ function getETA9089Summary(values: Partial<CaseFormData>): string | undefined {
 
   if (values.eta9089CaseNumber) parts.push(`Case ${values.eta9089CaseNumber}`);
 
-  return parts.length > 0 ? parts.join(" · ") : undefined;
+  return parts.length > 0 ? parts.join(", ") : undefined;
 }
 
 function getI140Summary(values: Partial<CaseFormData>): string | undefined {
@@ -226,7 +226,7 @@ function getI140Summary(values: Partial<CaseFormData>): string | undefined {
 
   if (values.i140ReceiptNumber) parts.push(values.i140ReceiptNumber);
 
-  return parts.length > 0 ? parts.join(" · ") : undefined;
+  return parts.length > 0 ? parts.join(", ") : undefined;
 }
 
 /** "I-485 · Filed Jan 2 · Card received Aug 1": the path, its first dated step, and the card. */
@@ -244,7 +244,7 @@ function getGreenCardSummary(values: Partial<CaseFormData>): string | undefined 
   else if (approved) parts.push(`Approved ${approved}`);
   else if (denied) parts.push(`Denied ${denied}`);
 
-  return parts.length > 0 ? parts.join(" · ") : undefined;
+  return parts.length > 0 ? parts.join(", ") : undefined;
 }
 
 /**
@@ -304,7 +304,7 @@ export function useSectionState(values: Partial<CaseFormData>) {
       eta9089DisabledReason = 'Complete all recruitment activities first';
     } else if (!eta9089Window.isOpen && eta9089Window.daysUntilOpen && eta9089Window.daysUntilOpen > 0) {
       eta9089DisabledReason = `30-day waiting period: ${eta9089Window.daysUntilOpen} days remaining`;
-      eta9089StatusInfo = `Opens ${fmtDate(eta9089Window.opensOn)} · ${eta9089Window.daysUntilOpen}d remaining`;
+      eta9089StatusInfo = `Opens ${fmtDate(eta9089Window.opensOn)}, ${eta9089Window.daysUntilOpen}d remaining`;
     } else if (eta9089Window.isOpen) {
       // The window's last day is still open: 0 days left means it closes today, never that it has closed.
       eta9089StatusInfo =

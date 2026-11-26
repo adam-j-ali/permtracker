@@ -276,7 +276,7 @@ export function I140QueueEstimator({
               <Fragment key={s.code}>
                 {" "}
                 <li
-                  data-tip={`${s.code} · ${s.label}\n${s.pending.toLocaleString("en-US")} pending at quarter end\n${s.received.toLocaleString("en-US")} received in the quarter\n${s.approved.toLocaleString("en-US")} approved, ${s.denied.toLocaleString("en-US")} denied`}
+                  data-tip={`${s.code}, ${s.label}\n${s.pending.toLocaleString("en-US")} pending at quarter end\n${s.received.toLocaleString("en-US")} received in the quarter\n${s.approved.toLocaleString("en-US")} approved, ${s.denied.toLocaleString("en-US")} denied`}
                   className="grid [&>*]:min-w-0 grid-cols-[4.5rem_1fr_4.5rem] items-center gap-3 sm:grid-cols-[16rem_1fr_5rem]"
                 >
                   <span

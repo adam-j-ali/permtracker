@@ -49,7 +49,7 @@ export function DailyUpdate({ items, prefsUrl, stopUrl, moreWaiting = false }: D
   const n = items.length;
   return (
     <EmailLayout
-      previewText={items.map((i) => `${i.title}: ${i.line}`).join(" · ").slice(0, 140)}
+      previewText={items.map((i) => `${i.title}: ${i.line}`).join(", ").slice(0, 140)}
       settingsUrl={prefsUrl}
       settingsLabel="Email preferences"
       footerText="A change to a case comes at once. Other alerts from one day come together in one email like this, and each row links to the full picture."

@@ -163,7 +163,7 @@ function DocumentPreview({ doc, onFullscreen }: { doc: DocumentEntry; onFullscre
             marginTop: 8,
           }}
         >
-          {typeLabel} &middot; {formatFileSize(doc.size)}
+          {typeLabel}, {formatFileSize(doc.size)}
         </div>
         <div
           style={{
@@ -534,8 +534,8 @@ export function DocumentsTab({
                           </div>
                           <div className="doc-meta">
                             {typeLabel}
-                            {catLabel && <> &middot; {catLabel}</>}
-                            {" "}&middot; {formatFileSize(doc.size)} &middot;{" "}
+                            {catLabel && <>, {catLabel}</>}
+                            {" "}, {formatFileSize(doc.size)},{" "}
                             {fmtTimestamp(doc.uploadedAt)}
                           </div>
                         </div>

@@ -137,7 +137,7 @@ describe("SalaryExplorer", () => {
 
   it("names the selection so a figure cannot be read as describing everything", () => {
     renderExplorer(payload());
-    expect(screen.getByText(/All occupations · every state · all years/)).toBeInTheDocument();
+    expect(screen.getByText(/All occupations, every state, all years/)).toBeInTheDocument();
   });
 
   it("defaults the outcome filter to certified", () => {

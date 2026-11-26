@@ -423,7 +423,7 @@ export function SearchPalette({
           href: h.href,
           label: h.name,
           name: h.name,
-          note: h.more ? "More than fit here" : `${h.kindLabel} · ${h.total.toLocaleString("en-US")} ${h.total === 1 ? "case" : "cases"}`,
+          note: h.more ? "More than fit here" : `${h.kindLabel}, ${h.total.toLocaleString("en-US")} ${h.total === 1 ? "case" : "cases"}`,
           // "Every employer matching ..." says the query back: shown, never what places the group.
           ...(h.more ? { unranked: true, keepsQuery: true } : {}),
         }),
@@ -438,7 +438,7 @@ export function SearchPalette({
           href: h.href,
           label: h.name,
           name: h.name,
-          note: `${KIND_NOUN[h.kind]} · ${h.cases.toLocaleString("en-US")} ${h.cases === 1 ? "case" : "cases"}`,
+          note: `${KIND_NOUN[h.kind]}, ${h.cases.toLocaleString("en-US")} ${h.cases === 1 ? "case" : "cases"}`,
         }),
       ),
     [suggestions],
@@ -753,7 +753,7 @@ export function SearchPalette({
           ) : null}
         </Command.List>
         <div className="border-t-2 border-border px-4 py-2 text-sm text-muted-foreground">
-          Esc closes · Enter opens · a case number goes straight to the lookup
+          Esc closes. Enter opens. A case number goes straight to the lookup.
         </div>
       </Command>
     </div>

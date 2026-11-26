@@ -10,7 +10,7 @@ describe("RecentActivityCard", () => {
     const a = createMockActivityItem({ action: "PWD filed", positionTitle: "Data Engineer", caseStatus: "pwd" });
     renderWithProviders(<RecentActivityCard activity={a} />);
     expect(screen.getByText(a.employerName)).toBeInTheDocument();
-    expect(screen.getByText("PWD filed · Data Engineer · PWD")).toBeInTheDocument();
+    expect(screen.getByText("PWD filed, Data Engineer, PWD")).toBeInTheDocument();
     expect(screen.getByRole("link")).toHaveAttribute("href", `/cases/${a.id}`);
     expect(screen.getByTestId("activity-timestamp")).toBeInTheDocument();
   });

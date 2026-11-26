@@ -1013,7 +1013,7 @@ export function PermTimelineEstimator({
               <p className="text-sm font-bold text-muted-foreground">
                 {keepWhole(model.label)}
                 {i === 0 ? (
-                  <span className="ml-2 text-primary">· the one above</span>
+                  <span className="ml-2 text-primary">(the one above)</span>
                 ) : null}
               </p>{" "}
               {/* Secondary size on purpose. A model in here is the WORKING,

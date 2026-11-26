@@ -139,7 +139,7 @@ function StageRow({
       <p className="mt-1 font-mono text-sm tabular-nums text-muted-foreground">
         {stage.employerNames.toLocaleString()}{" "}
         {stage.employerNames === 1 ? "employer name" : "distinct employer names"}
-        {stage.seenTo ? <> · checked {fmtDate(stage.seenFrom, stage.seenTo)}</> : null}
+        {stage.seenTo ? <>, checked {fmtDate(stage.seenFrom, stage.seenTo)}</> : null}
       </p>{" "}
 
       {/*
@@ -171,7 +171,7 @@ function StageRow({
                 {r.employer ?? "No employer name"}
                 {", "}
                 {r.jobTitle ?? "no job title"}
-                {r.filingMonth ? <> · filed {r.filingMonth}</> : null}
+                {r.filingMonth ? <>, filed {r.filingMonth}</> : null}
               </li>
               </Fragment>
             ))}

@@ -431,7 +431,7 @@ export function NotesTab({ notes, onUpdateNotes }: NotesTabProps) {
                           Cancel
                         </button>
                         <span style={{ fontSize: "0.875rem", color: "var(--muted-foreground)" }}>
-                          {shortcutKey}+Enter to save · Esc to cancel
+                          {shortcutKey}+Enter to save, Esc to cancel
                         </span>
                       </div>
                     </div>

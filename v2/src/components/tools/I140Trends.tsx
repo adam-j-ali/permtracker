@@ -125,14 +125,14 @@ export function I140Trends({ rows }: I140TrendsProps) {
               <optgroup label="Preference (includes its subtypes)">
                 {categories.preferences.map((c) => (
                   <option key={c.value} value={c.value}>
-                    {c.value} · {c.label}
+                    {c.value}, {c.label}
                   </option>
                 ))}
               </optgroup>
               <optgroup label="Subtype">
                 {categories.subtypes.map((c) => (
                   <option key={c.value} value={c.value}>
-                    {c.value} · {c.label}
+                    {c.value}, {c.label}
                   </option>
                 ))}
               </optgroup>
@@ -141,7 +141,7 @@ export function I140Trends({ rows }: I140TrendsProps) {
         </div>
 
         <p className="mt-4 font-mono text-sm text-muted-foreground">
-          {category} · {label} · {totals.quarters}{" "}
+          {category}, {label}, {totals.quarters}{" "}
           {totals.quarters === 1 ? "quarter" : "quarters"} reported
         </p>
       </div>
@@ -291,11 +291,11 @@ export function I140Trends({ rows }: I140TrendsProps) {
                     <Fragment key={c.code}>
                       {" "}
                       <li
-                        data-tip={`${c.code} · ${c.label}\n${pct(c.denialRate)} denied\n${formatInt(c.decided)} decided`}
+                        data-tip={`${c.code}, ${c.label}\n${pct(c.denialRate)} denied\n${formatInt(c.decided)} decided`}
                         className="grid grid-cols-1 gap-1 sm:grid-cols-[16rem_1fr_5rem] sm:items-center sm:gap-4 [&>*]:min-w-0"
                       >
                         <span className="text-sm font-bold">
-                          {c.code} · {keepWhole(c.label)}
+                          {c.code}, {keepWhole(c.label)}
                         </span>{" "}
                         <span className="relative block h-6 border-input bg-background border">
                           <span

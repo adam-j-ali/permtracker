@@ -132,7 +132,7 @@ describe("LadderComb", () => {
 
   it("prints each row's population next to its median", () => {
     render(<LadderComb ladders={[software]} />);
-    expect(screen.getByText(/\$139,027 median · 73,058 certified cases/)).toBeTruthy();
+    expect(screen.getByText(/\$139,027 median, 73,058 certified cases/)).toBeTruthy();
   });
 });
 
