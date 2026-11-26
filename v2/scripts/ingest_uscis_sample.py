@@ -63,6 +63,35 @@ def block_of(receipt: str) -> str | None:
     return receipt[:8] if receipt.startswith("IOE") else None
 
 
+# A block's commonest waiting steps keep their words; the rest are counted together (status ""), so the document stays
+# small (the card names four).
+MIX_STEPS = 12
+
+
+def block_mix(cases: dict[str, dict]) -> dict[str, list[list]]:
+    """Each online block's cases counted for its page's card (Nov 26 2026): [group, status, count] rows, an outcome
+    counted by its group alone (status ""), a waiting case by USCIS's own words, so the card can name the steps. Counted
+    here once a night, so a page reads one document instead of grouping some 100,000 rows a block. No receipt number
+    goes in a row."""
+    counts: dict[str, dict[tuple[str, str], int]] = {}
+    for r, row in cases.items():
+        block = block_of(r)
+        if block is None:
+            continue
+        key = (row["grp"], row["status"] if row["grp"] == "waiting" else "")
+        b = counts.setdefault(block, {})
+        b[key] = b.get(key, 0) + 1
+    out: dict[str, list[list]] = {}
+    for block, b in sorted(counts.items()):
+        rows = sorted(b.items(), key=lambda kv: (-kv[1], kv[0]))
+        named = [kv for kv in rows if kv[0][0] == "waiting" and kv[0][1]]
+        rest = sum(n for _, n in named[MIX_STEPS:])
+        keep = [kv for kv in rows if not (kv[0][0] == "waiting" and kv[0][1])] + named[:MIX_STEPS]
+        keep.sort(key=lambda kv: (-kv[1], kv[0]))
+        out[block] = [[g, st, n] for (g, st), n in keep] + ([["waiting", "", rest]] if rest else [])
+    return out
+
+
 def read_cases(path: str) -> dict[str, dict]:
     with open(path, newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
@@ -137,8 +166,11 @@ def diff_cases(prev: dict[str, dict], new: dict[str, dict]) -> tuple[list[dict],
     return upserts, deletes, events
 
 
-def write_figures(db, figures: dict, cases: int) -> None:
+def write_figures(db, figures: dict, cases: int, mix: dict[str, list[list]] | None = None) -> None:
     from lib_db import stamp_freshness, write_doc
+
+    if mix is not None:
+        write_doc(db, "uscis_sample_block_mix", {"as_of": figures["as_of"], "by_block": mix})
 
     write_doc(db, "uscis_sample_months", {"as_of": figures["as_of"], "groups": figures.get("groups"),
                                           "by_month": figures["by_month"]})
@@ -168,7 +200,7 @@ def load(folder: str, dry_run: bool, figures_only: bool = False) -> int:
     if figures_only:
         print(f"{figures['as_of']}: the figures for {len(new):,} cases" + (" (dry run)" if dry_run else ""))
         if not dry_run:
-            write_figures(db, figures, len(new))
+            write_figures(db, figures, len(new), block_mix(new))
             record_run(db, SCRIPT, status="ok", rows_written=3, note=f"{figures['as_of']}: figures only", started_at=started)
         return 0
     prev_path = os.path.join(folder, LOADED, "sample-cases.csv")
@@ -192,7 +224,7 @@ def load(folder: str, dry_run: bool, figures_only: bool = False) -> int:
     # One transaction a request: each case committed alone ran about 150 a second on the server, so the first full load
     # (1.47 million cases) stopped at its 30 minutes with 275,000 written (Nov 26 2026); in one, about 5,000 a second.
     run_stmts(db, statements, per_request=500, one_commit=True)
-    write_figures(db, figures, len(new))
+    write_figures(db, figures, len(new), block_mix(new))
     write_doc(db, "uscis_sample_load", {"as_of": figures["as_of"], "cases": len(new), "loaded_at": int(time.time() * 1000)})
     os.makedirs(os.path.join(folder, LOADED), exist_ok=True)
     shutil.copyfile(cases_path, prev_path + ".tmp")

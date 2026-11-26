@@ -1,3 +1,5 @@
+import { formatAsOf } from "@/lib/dolFormat";
+import { formatShareOf } from "@/lib/format";
 import { normaliseReceipt } from "@/lib/uscis/receipt";
 import type { CaseStatusTint } from "@/lib/statusTone";
 
@@ -261,3 +263,90 @@ export function groupCounts(rows: readonly { grp: string }[]): { grp: string; n:
 
 /** The rows per page a block's list of numbers offers, the first being the default. */
 export const BLOCK_NUMBERS_PER = [25, 50, 100] as const;
+
+/** The block card's outcome groups, in the site's one status code. "other" gathers the rarer decisions. */
+export const BLOCK_MIX_GROUPS = [
+  { key: "approved", label: "Approved", fill: "bg-chart-green", from: ["approved"] },
+  { key: "denied", label: "Denied", fill: "bg-chart-red", from: ["denied"] },
+  { key: "rfe", label: "Evidence request", fill: "bg-chart-orange", from: ["rfe"] },
+  { key: "withdrawn", label: "Withdrawn", fill: "bg-chart-purple", from: ["withdrawn"] },
+  { key: "other", label: "Other outcomes", fill: "bg-chart-sage", from: ["closed", "rejected", "revoked", "decided", "other"] },
+  { key: "waiting", label: "Waiting", fill: "bg-chart-yellow", from: ["waiting"] },
+] as const;
+
+export interface BlockMixGroup {
+  key: (typeof BLOCK_MIX_GROUPS)[number]["key"];
+  label: string;
+  fill: string;
+  n: number;
+  share: number;
+  /** What the group holds, each named as SAMPLE_GROUP_WORD names it, with its count (the tooltip's lines). */
+  parts: [string, number][];
+}
+
+export interface BlockMix {
+  total: number;
+  groups: BlockMixGroup[];
+  /** The waiting cases by the step USCIS's page names, largest first; the rarer steps together, last. */
+  waiting: { label: string; n: number; share: number }[];
+}
+
+/** The waiting steps people ask about, by USCIS's own words; any other waiting status counts under "Other waiting steps". */
+const WAITING_STEPS: [RegExp, string][] = [
+  [/currently processing|actively reviewed/i, "Being processed"],
+  [/^case was received(?! at another)/i, "Received"],
+  [/^interview was scheduled/i, "Interview scheduled"],
+  [/^response to uscis'? request for evidence was received/i, "Evidence sent back"],
+];
+const OTHER_STEPS = "Other waiting steps";
+
+/**
+ * One block's status mix from every case the sample holds there, each at its newest status: the outcome groups (empty
+ * ones left out) and the waiting steps, each a share of the block's cases. Counts may arrive as strings (libSQL).
+ */
+export function blockStatusMix(rows: readonly { grp: string; status: string; n: number }[]): BlockMix {
+  const byGrp = new Map<string, number>();
+  const steps = new Map<string, number>();
+  let total = 0;
+  for (const r of rows) {
+    const n = Number(r.n) || 0;
+    if (n <= 0) continue;
+    total += n;
+    byGrp.set(r.grp, (byGrp.get(r.grp) ?? 0) + n);
+    if (r.grp === "waiting") {
+      const step = WAITING_STEPS.find(([re]) => re.test(r.status))?.[1] ?? OTHER_STEPS;
+      steps.set(step, (steps.get(step) ?? 0) + n);
+    }
+  }
+  if (!total) return { total: 0, groups: [], waiting: [] };
+  const known = new Set<string>(BLOCK_MIX_GROUPS.flatMap((g) => [...g.from]));
+  const groups: BlockMixGroup[] = [];
+  for (const g of BLOCK_MIX_GROUPS) {
+    const from: string[] = [...g.from];
+    // A group the kit adds later is counted with the rarer decisions, so the total always adds up.
+    if (g.key === "other") from.push(...[...byGrp.keys()].filter((k) => !known.has(k)));
+    const parts = from.flatMap((k): [string, number][] => (byGrp.get(k) ? [[SAMPLE_GROUP_WORD[k] ?? k, byGrp.get(k) ?? 0]] : []));
+    const n = parts.reduce((s, [, k]) => s + k, 0);
+    if (n) groups.push({ key: g.key, label: g.label, fill: g.fill, n, share: n / total, parts });
+  }
+  const waiting = [...steps]
+    .filter(([label]) => label !== OTHER_STEPS)
+    .sort((a, b) => b[1] - a[1])
+    .concat(steps.has(OTHER_STEPS) ? [[OTHER_STEPS, steps.get(OTHER_STEPS) ?? 0]] : [])
+    .map(([label, n]) => ({ label, n, share: n / total }));
+  return { total, groups, waiting };
+}
+
+/** Whether the census checked every number in a block (its walked share, from the estimate), or how much of it. */
+export function blockCoverage(figures: BlockFigures | undefined): { every: boolean; walkedShare: number } {
+  const w = figures && typeof figures._walked_share === "number" ? figures._walked_share : 0;
+  return { every: w >= 0.9995, walkedShare: w };
+}
+
+/** The block in one line to paste into a chat: its cases, each group's share, and the page's address typed out. */
+export function blockShareLine(block: string, asOf: string, mix: BlockMix, coverage: { every: boolean }): string {
+  const when = formatAsOf(asOf) ?? asOf;
+  const head = coverage.every ? `every number checked by ${when}` : `the cases checked by ${when}`;
+  const parts = mix.groups.map((g, i) => `${i === 0 ? g.label : g.label.toLowerCase()} ${formatShareOf(g.n, mix.total)}`);
+  return `${block}, ${head}: ${mix.total.toLocaleString("en-US")} cases. ${parts.join(", ")}. permtracker.app/uscis-receipt-blocks/${block}`;
+}

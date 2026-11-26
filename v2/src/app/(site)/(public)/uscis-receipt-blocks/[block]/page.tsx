@@ -10,17 +10,19 @@ import { notFound } from "next/navigation";
 
 import { DataProvenance } from "@/components/data/DataProvenance";
 import { FigurePlate } from "@/components/tools/FigurePlate";
+import { ShareLine } from "@/components/updates/ShareLine";
 import { BlockApprovalChart } from "@/components/uscis/BlockApprovalChart";
 import { BlockSearch } from "@/components/uscis/BlockSearch";
+import { BlockStatusCard } from "@/components/uscis/BlockStatusCard";
 import { keepWhole } from "@/components/ui/keep-whole";
 import { CaveatBox } from "@/components/ui/note";
 import { ScrollBox } from "@/components/ui/scroll-box";
-import { getBlockMoves, getSampleBlocks, getSampleMeta } from "@/lib/db/uscisSample";
+import { getBlockMix, getBlockMoves, getSampleBlocks, getSampleMeta } from "@/lib/db/uscisSample";
 import { formatAsOf } from "@/lib/dolFormat";
 import { openGraphBase } from "@/lib/openGraphBase";
 import { softFail } from "@/lib/softRead";
 import { withSocialCard } from "@/lib/socialCard";
-import { blockForms, chartSeries, neighbours, topForms } from "@/lib/uscisSample";
+import { blockCoverage, blockForms, blockShareLine, blockStatusMix, chartSeries, neighbours, topForms } from "@/lib/uscisSample";
 
 export const revalidate = 3600;
 
@@ -52,8 +54,8 @@ export async function generateMetadata({ params }: { params: Promise<{ block: st
   const { block } = await params;
   const doc = BLOCK.test(block) ? await getSampleBlocks() : null;
   const held = doc ? blockForms(doc.by_block[block] ?? {}).length > 0 : false;
-  const title = `USCIS Receipt Block ${block}: Approvals by Form`;
-  const description = `How the sampled cases in USCIS receipt block ${block} are moving: the share approved for each form, with its margin, and the newest moves.`;
+  const title = `USCIS Receipt Block ${block}: Case Statuses`;
+  const description = `Every case's status in USCIS receipt block ${block}: how many are approved, denied, waiting or sent an evidence request, the share approved for each form with its margin, and the newest moves.`;
   const path = `/uscis-receipt-blocks/${block}`;
   return withSocialCard(
     {
@@ -70,11 +72,14 @@ export async function generateMetadata({ params }: { params: Promise<{ block: st
 export default async function UscisReceiptBlockPage({ params }: { params: Promise<{ block: string }> }) {
   const { block } = await params;
   if (!BLOCK.test(block)) notFound();
-  const [meta, doc, moves] = await Promise.all([
+  const [meta, doc, moves, mixRows] = await Promise.all([
     getSampleMeta(),
     getSampleBlocks(),
     getBlockMoves(block).catch(softFail("getBlockMoves", [])),
+    getBlockMix(block).catch(softFail("getBlockMix", null)),
   ]);
+  const mix = mixRows ? blockStatusMix(mixRows.rows) : null;
+  const coverage = blockCoverage(doc?.by_block[block]);
   const forms = doc ? blockForms(doc.by_block[block] ?? {}) : [];
   const near = doc ? neighbours(doc, block) : { before: null, after: null };
   const lead = forms.find((f) => f.form === "I-485") ?? forms[0];
@@ -94,10 +99,28 @@ export default async function UscisReceiptBlockPage({ params }: { params: Promis
           USCIS receipt block <span className="font-mono">{block}</span>
         </h1>{" "}
         <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-          How the sampled cases among the 100,000 online receipt numbers that start {block} are moving
+          How the cases among the 100,000 online receipt numbers that start {block} are moving
           {meta ? `, ${formatAsOf(meta.as_of)}` : ""}.
         </p>
-      </header>
+      </header>{" "}
+      <div className="mt-6 max-w-3xl border-2 border-border bg-tint p-4 sm:p-5">
+        <BlockSearch />
+      </div>
+
+      {mix && mixRows && mix.total > 0 ? (
+        <section className="mt-8" aria-labelledby="card-title">
+          <h2 id="card-title" className="sr-only">
+            Every case&apos;s status in {block}
+          </h2>{" "}
+          <BlockStatusCard block={block} asOf={mixRows.as_of} mix={mix} every={coverage.every} />{" "}
+          <ShareLine
+            className="mt-5"
+            line={blockShareLine(block, mixRows.as_of, mix, coverage)}
+            day={mixRows.as_of}
+            event="block_line_shared"
+          />
+        </section>
+      ) : null}
 
       {!lead ? (
         <div className="mt-8 max-w-2xl border-2 border-border bg-card p-5 text-base leading-relaxed">
@@ -124,10 +147,12 @@ export default async function UscisReceiptBlockPage({ params }: { params: Promis
                 </p>
               </div>{" "}
               <div className="border-2 border-border bg-card p-5">
-                <p className="text-sm font-bold text-muted-foreground">Cases sampled in this block</p>{" "}
+                <p className="text-sm font-bold text-muted-foreground">Cases in the estimate</p>{" "}
                 <p className="mt-2 font-heading text-5xl font-bold leading-none tabular-nums">{int(total)}</p>{" "}
                 <p className="mt-2 text-base">
-                  Across {forms.length} {forms.length === 1 ? "form" : "forms"}, each counted at its newest status.
+                  Across {forms.length} {forms.length === 1 ? "form" : "forms"}, each counted at its newest status. Only
+                  numbers checked one by one or drawn at random count here, so numbers people typed in don&apos;t bend the
+                  shares.
                 </p>{" "}
                 <p className="mt-3 text-base">
                   <Link href={`/uscis-receipt-blocks/${block}/numbers`} className="link">
@@ -217,14 +242,8 @@ export default async function UscisReceiptBlockPage({ params }: { params: Promis
         </>
       )}
 
-      <section className="mt-10 max-w-3xl" aria-labelledby="another-title">
-        <h2 id="another-title" className="font-heading text-2xl font-bold">
-          Another block
-        </h2>{" "}
-        <div className="mt-4 border-2 border-border bg-tint p-5 sm:p-6">
-          <BlockSearch />
-        </div>{" "}
-        <CaveatBox className="mt-6">
+      <section className="mt-10 max-w-3xl" aria-label="About these figures">
+        <CaveatBox>
           <p className="text-base leading-relaxed">
             These are samples, so a share from few cases can be well off: its margin says how far. USCIS doesn&apos;t
             decide strictly in receipt order. For your own case, use{" "}

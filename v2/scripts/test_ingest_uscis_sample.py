@@ -11,7 +11,7 @@ import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from ingest_uscis_sample import (  # noqa: E402
-    CASE_FIELDS, SampleError, block_of, check_figures, diff_cases, read_cases,
+    CASE_FIELDS, SampleError, block_mix, block_of, check_figures, diff_cases, read_cases,
 )
 
 fails: list[str] = []
@@ -139,14 +139,47 @@ def test_load_one_commit():
             check(code == 0 and len(writes) >= 3 and all(r[0] == "BEGIN" and r[-2] == "COMMIT" for r in writes),
                   f"a load writes its cases in one transaction a request ({len(writes)} requests)")
             check(int(db.scalar("SELECT count(*) FROM uscis_sample_cases")) == 1200, "every case is written")
+            doc = json.loads(db.scalar("SELECT json FROM perm_docs WHERE key = 'uscis_sample_block_mix'") or "{}")
+            check(doc.get("as_of") == "2026-11-25" and doc.get("by_block", {}).get("IOE00000") == [["waiting", "Case Was Received", 1200]],
+                  f"the load saves each block's counts for its card: {str(doc)[:120]}")
             again = ingest_uscis_sample.load(folder, dry_run=False)
             check(again == 0, "the same day again is a repeat, nothing written")
         finally:
             lib_db.Database = was
 
 
+def test_block_mix():
+    """Each online block's cases counted once a night for its page's card (Nov 26 2026): the outcome groups by group, the
+    waiting cases by USCIS's own words, a paper filing's number in no block, and no receipt number in the counts. Every
+    number here is from the IOE00000000 family or a fiscal year never issued (test-receipts-safe.test.ts)."""
+    def case(r, grp, status):
+        return {"receipt": r, "form": "I-485", "grp": grp, "status": status, "checked_on": "2026-11-26",
+                "since_on": "2026-11-20", "month": "", "kind": "census"}
+    cases = {c["receipt"]: c for c in [
+        case("IOE0000000001", "approved", "Case Was Approved"),
+        case("IOE0000000002", "approved", "New Card Is Being Produced"),
+        case("IOE0000000003", "waiting", "Case Was Received and A Receipt Notice Was Sent"),
+        case("IOE0000000004", "waiting", "Case Was Received and A Receipt Notice Was Sent"),
+        case("IOE0000000005", "waiting", "Interview Was Scheduled"),
+        case("IOE0000000006", "denied", "Case Was Denied"),
+        case("EAC3512345678", "approved", "Case Was Approved"),
+    ]}
+    mix = block_mix(cases)
+    check(set(mix) == {"IOE00000"}, f"one entry per online block, none for a paper number: {sorted(mix)}")
+    check(sorted(map(tuple, mix["IOE00000"])) == [("approved", "", 2), ("denied", "", 1),
+                                                 ("waiting", "Case Was Received and A Receipt Notice Was Sent", 2),
+                                                 ("waiting", "Interview Was Scheduled", 1)],
+          f"outcomes by group, waiting by its words: {mix['IOE00000']}")
+    check(not any("IOE" in str(cell) for rows in mix.values() for row in rows for cell in row), "no receipt number in a count")
+    many = {f"IOE00000000{i:02d}": case(f"IOE00000000{i:02d}", "waiting", f"Step {i % 15}") for i in range(90)}
+    rows = block_mix(many)["IOE00000"]
+    named = [r for r in rows if r[1]]
+    check(len(named) == 12 and rows[-1] == ["waiting", "", 18] and sum(r[2] for r in rows) == 90,
+          f"a block keeps its 12 commonest waiting steps by name and counts the rest together: {rows[-2:]}")
+
+
 def main() -> int:
-    for fn in (test_read_cases, test_block_of, test_check_figures, test_diff_cases, test_load_one_commit):
+    for fn in (test_read_cases, test_block_of, test_check_figures, test_diff_cases, test_block_mix, test_load_one_commit):
         fn()
     print(f"\n{len(fails)} failure(s)")
     return 1 if fails else 0

@@ -14,7 +14,18 @@ import { analytics } from "@/lib/analytics";
  * typed out (no link preview needed, and a chat that strips links still shows where it came from), it's on the
  * page as text so it can be selected by hand, and on a phone the Share button hands it to the chat app.
  */
-export function ShareLine({ line, day, className }: { line: string; day: string; className?: string }) {
+export function ShareLine({
+  line,
+  day,
+  event = "daily_line_shared",
+  className,
+}: {
+  line: string;
+  day: string;
+  /** The analytics event a share records (the day's page by default; a receipt block's card names its own). */
+  event?: string;
+  className?: string;
+}) {
   // The share sheet exists on phones and a few desktops. Asked after mount: the server can't know.
   const [canShare, setCanShare] = useState(false);
   useEffect(() => {
@@ -24,7 +35,7 @@ export function ShareLine({ line, day, className }: { line: string; day: string;
   async function share() {
     try {
       await navigator.share({ text: line });
-      analytics.capture("daily_line_shared", { day, via: "share-sheet" });
+      analytics.capture(event, { day, via: "share-sheet" });
     } catch {
       // Closed without sharing, or refused: the line and the copy button are still there.
     }
@@ -43,7 +54,7 @@ export function ShareLine({ line, day, className }: { line: string; day: string;
           text={line}
           label="Copy this line"
           variant={canShare ? "outline" : "default"}
-          onCopied={() => analytics.capture("daily_line_shared", { day, via: "copy" })}
+          onCopied={() => analytics.capture(event, { day, via: "copy" })}
         />
       </div>
     </div>

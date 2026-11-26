@@ -136,3 +136,24 @@ export async function getCasesAround(receipt: string, span = 500): Promise<Sampl
   );
   return got.map(caseRow);
 }
+
+export interface BlockMixRows {
+  as_of: string;
+  /** Each group's count, and each waiting step's by USCIS's words (status "" for an outcome, or the rarer steps). */
+  rows: { grp: string; status: string; n: number }[];
+}
+
+/**
+ * One block's counts for its card ('uscis_sample_block_mix', counted by the nightly load): only that block's part of
+ * the document is read. Null before the first load; a block the sample holds no case in reads as no rows.
+ */
+export const getBlockMix = cache(async (block: string): Promise<BlockMixRows | null> => {
+  if (!/^IOE\d{5}$/.test(block)) return null;
+  const row = await one<{ as_of: string | null; mix: string | null }>(
+    "SELECT json_extract(json, '$.as_of') AS as_of, json_extract(json, ?) AS mix FROM perm_docs WHERE key = 'uscis_sample_block_mix'",
+    [`$.by_block.${block}`],
+  );
+  if (!row || !row.as_of) return null;
+  const got = row.mix ? (JSON.parse(String(row.mix)) as [string, string, number | string][]) : [];
+  return { as_of: String(row.as_of), rows: got.map(([grp, status, n]) => ({ grp: String(grp), status: String(status), n: Number(n) || 0 })) };
+});
