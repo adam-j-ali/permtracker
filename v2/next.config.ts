@@ -336,6 +336,11 @@ const nextConfig: NextConfig = {
       // The bare path too, or /register is a 404 that Googlebot files under
       // "Not found (404)".
       { source: "/register", destination: "/signup", permanent: true },
+      // The addresses people and assistants type for our sign-in and sign-up pages, each a 404 until Nov 26 2026.
+      { source: "/sign-in", destination: "/login", permanent: true },
+      { source: "/signin", destination: "/login", permanent: true },
+      { source: "/log-in", destination: "/login", permanent: true },
+      { source: "/sign-up", destination: "/signup", permanent: true },
       // Two statuses the employer census once linked as stage pages that were
       // never built (hasStagePage, Oct 8 2026). Google still holds both and
       // reports them as 404s, so each goes to where the status is defined.
