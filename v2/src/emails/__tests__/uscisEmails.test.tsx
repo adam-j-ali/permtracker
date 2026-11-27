@@ -154,10 +154,11 @@ describe("what comes next, in the change email", () => {
     expect(html).toContain('href="https://permtracker.app/uscis-processing-times/i-485"');
   });
 
-  it("adds nothing after an I-485 approval, and still says USCIS is the authority", async () => {
+  it("after an I-485 approval, says the card comes in the mail and asks for the timeline, and still says USCIS is the authority", async () => {
     const html = await changed([moved]);
     const text = words(html);
-    expect(text).not.toContain("What comes next");
+    expect(text).toContain("Your green card in the mail");
+    expect(text).toContain("Add your dates to the green card timelines");
     expect(text).toContain("USCIS is the authority on every case");
   });
 

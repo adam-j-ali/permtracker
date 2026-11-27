@@ -515,6 +515,10 @@ export interface ReceiptMove {
   isFinal: boolean;
 }
 
+/** Forms whose approval is a card or document USCIS mails: the green card, the work permit, the travel document, a
+ * replacement green card, the citizenship certificate. */
+const CARD_FORMS: readonly string[] = ["I-485", "I-765", "I-131", "I-90", "N-600"];
+
 function receiptSteps(r: ReceiptMove): NextStep[] {
   const form = formOf(r.form);
   // A request for evidence is the one status that's bad news and not final (convex/lib/uscisWatch.ts, groupTone).
@@ -531,6 +535,28 @@ function receiptSteps(r: ReceiptMove): NextStep[] {
     return [
       priorityDateStep("The visa bulletin decides when the I-140's priority date can be used.", null),
       REST_OF_THE_WAY,
+    ];
+  }
+  // An approval whose card or document comes in the mail (Nov 26 2026: an approved I-485 used to end with nothing):
+  // the card's own statuses, and for a green card, what happens to the papers filed with it and the timeline.
+  if (r.tone === "good" && r.isFinal && form && CARD_FORMS.includes(form)) {
+    const mail: NextStep = {
+      title: form === "I-485" ? "Your green card in the mail" : "Your card or document in the mail",
+      body: "USCIS mails it to the address on the case. This receipt stays watched, so you'll hear when it's mailed and delivered.",
+      link: { href: at(NEXT_PATHS.uscisStatuses), text: "What each USCIS status means, the card's too" },
+    };
+    if (form !== "I-485") return [mail];
+    return [
+      mail,
+      {
+        title: "Your work permit and travel document",
+        body: "One still pending when the green card is approved is often closed, because the card replaces it.",
+      },
+      {
+        title: "Your timeline",
+        body: "Your dates help people at your office see how long each step takes. It's anonymous and takes a minute.",
+        link: { href: at(NEXT_PATHS.shareTimeline), text: "Add your dates to the green card timelines" },
+      },
     ];
   }
   if (r.isFinal) return [];

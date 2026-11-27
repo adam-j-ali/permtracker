@@ -325,10 +325,21 @@ describe("what comes next after a USCIS receipt moves", () => {
     expect(allLinks(next).map((l) => l.href)).toContain("https://permtracker.app/tools/green-card-timeline");
   });
 
-  it("adds nothing after a denial, a withdrawal or another form's approval", () => {
+  it("an approved green card says it comes in the mail, what happens to the papers filed with it, and asks for the timeline", () => {
+    const next = one("I-485", "good", true)!;
+    expect(next.steps.map((s) => s.title)).toEqual(["Your green card in the mail", "Your work permit and travel document", "Your timeline"]);
+    expect(allLinks(next).map((l) => l.href)).toEqual([
+      "https://permtracker.app/uscis-case-statuses",
+      "https://permtracker.app/green-card-timelines#add-h",
+    ]);
+    expect(one("I-765", "good", true)!.steps.map((s) => s.title)).toEqual(["Your card or document in the mail"]);
+  });
+
+  it("adds nothing after a denial, a withdrawal or an approval with nothing in the mail", () => {
     expect(one("I-140", "bad", true)).toBeNull();
     expect(one("I-485", "neutral", true)).toBeNull();
-    expect(one("I-485", "good", true)).toBeNull();
+    expect(one("I-485", "bad", true)).toBeNull();
+    expect(one("I-130", "good", true)).toBeNull();
   });
 
   it("names a step once when several receipts share it", () => {

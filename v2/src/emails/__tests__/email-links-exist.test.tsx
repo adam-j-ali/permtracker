@@ -61,6 +61,7 @@ import { StatusChange } from "../StatusChange";
 import { TestEmail } from "../TestEmail";
 import { UscisAlertConfirm } from "../UscisAlertConfirm";
 import { UscisStatusChanged, type UscisChangedItem } from "../UscisStatusChanged";
+import { UscisWatchEnded } from "../UscisWatchEnded";
 import { VerificationCode } from "../VerificationCode";
 import { WeeklyDigest } from "../WeeklyDigest";
 import { WelcomeEmail } from "../WelcomeEmail";
@@ -309,6 +310,7 @@ const EMAILS: Array<[file: string, name: string, make: () => React.ReactElement]
   ["TestEmail.tsx", "preview", () => preview(TestEmail)],
   ["UscisAlertConfirm.tsx", "preview", () => preview(UscisAlertConfirm)],
   ["UscisStatusChanged.tsx", "preview", () => preview(UscisStatusChanged)],
+  ["UscisWatchEnded.tsx", "preview", () => preview(UscisWatchEnded)],
   ...Object.entries(RECEIPTS).map(
     ([name, items]): [string, string, () => React.ReactElement] => [
       "UscisStatusChanged.tsx",

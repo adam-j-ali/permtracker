@@ -615,8 +615,60 @@ async function retireReceipt(ctx: MutationCtx, receipt: string): Promise<void> {
     // One still owed an email or mid-send keeps going until it's told.
     if (w.alertDue === true || claimHolds(w.sendingAt, Date.now())) continue;
     await deleteWatch(ctx, w);
+    // Said once, so nobody stops hearing without knowing why (Nov 26 2026).
+    await ctx.scheduler.runAfter(0, internal.uscisAlerts.sendWatchEnded, { email: w.email, receipt });
   }
 }
+
+/** The ended note's unit from the receipt alerts' own pool, charged before the send. */
+export const claimEndedUnit = internalMutation({
+  args: {},
+  returns: v.boolean(),
+  handler: async (ctx) => {
+    const state = await checkRateLimit(ctx, "all", BUDGETS.uscisAlert.key, windowFor("uscisAlert"));
+    if (!state.allowed) return false;
+    await recordRateLimitAttempt(ctx, "all", BUDGETS.uscisAlert.key);
+    return true;
+  },
+});
+
+/** The last email about a receipt: its watch ended a year after a final status with nothing new. */
+export const sendWatchEnded = internalAction({
+  args: { email: v.string(), receipt: v.string() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    if (!(await ctx.runMutation(internal.uscisAlerts.claimEndedUnit, {}))) {
+      log.warn("receipt alert pool spent; the watch-ended note isn't sent", { receipts: 1 });
+      return null;
+    }
+    const secret = unsubscribeSecret();
+    const unsubscribeUrl = actionUrl("/uscis-alert/unsubscribe", await makeUnsubscribeToken(args.email, secret, "uscis-unsubscribe"));
+    const prefsUrl = await prefsLink(args.email, secret, "uscis");
+    const lookupUrl = `${SITE_URL}/uscis-case-status`;
+    const html = await renderOrTextOnly(ctx, "uscisAlerts.sendWatchEnded.render", async () => {
+      const { UscisWatchEnded } = await import("../src/emails/UscisWatchEnded");
+      return UscisWatchEnded({ receipts: [args.receipt], lookupUrl, prefsUrl });
+    });
+    await deliverAlert(ctx, {
+      email: args.email,
+      kind: "uscis",
+      ref: `uscis:ended:${args.receipt}`,
+      subject: `We've stopped watching ${args.receipt}`,
+      html,
+      listUnsubscribe: unsubscribeUrl,
+      summary: { title: args.receipt, line: "Stopped a year after its final status", url: lookupUrl, tone: "neutral" },
+      text: [
+        `We've stopped watching ${args.receipt}. It reached a final status a year ago, and nothing has changed since.`,
+        "",
+        "You can sign a receipt up again at any time, and we'll email you when its status changes.",
+        `Watch a receipt again: ${lookupUrl}`,
+        "",
+        `Email preferences: ${prefsUrl}`,
+      ].join("\n"),
+    });
+    return null;
+  },
+});
 
 // ============================================================================
 // Sending the change emails
