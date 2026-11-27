@@ -3,7 +3,7 @@
  * name means, each block's forms and approval share with its margin, the series a chart draws, and where approvals stop.
  */
 import { describe, expect, it } from "vitest";
-import { approvalsStopAfter, blockForms, blockFromInput, blockSeries, blocksInMonth, decidedThrough, neighbours, type SampleBlocksDoc } from "../uscisSample";
+import { approvalsStopAfter, blockForms, blockFromInput, countedExactly, blockSeries, blocksInMonth, decidedThrough, neighbours, type SampleBlocksDoc } from "../uscisSample";
 
 const g = (count: number, share: number, low: number, high: number) => ({ count, estimated: count, share, low, high });
 const form = (counted: number, approved: number) => ({
@@ -184,3 +184,17 @@ describe("which receipt month USCIS has reached", () => {
   });
 });
 
+
+describe("countedExactly", () => {
+  const g = (low: number, high: number) => ({ count: 0, estimated: 0, share: 0, low, high });
+  it("a block with every number checked is counted exactly, whatever the range says", () => {
+    // Nov 27 2026: IOE09391 read every number checked yet "0 of 15,441 sampled, likely between 0% and 7%".
+    expect(countedExactly(g(0, 0.0699), true)).toBe(true);
+  });
+  it("a share with no range is counted exactly", () => {
+    expect(countedExactly(g(0.12, 0.12), false)).toBe(true);
+  });
+  it("a share estimated from draws keeps its range", () => {
+    expect(countedExactly(g(0.04, 0.09), false)).toBe(false);
+  });
+});

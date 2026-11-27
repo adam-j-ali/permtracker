@@ -31,6 +31,7 @@ import {
   blockRange,
   blockShareLine,
   chartSeries,
+  countedExactly,
   neighbours,
   topForms,
 } from "@/lib/uscisSample";
@@ -170,12 +171,21 @@ export default async function UscisReceiptBlockPage({ params }: { params: Promis
                 <p className="text-sm font-bold text-muted-foreground">{keepWhole(lead.form)} cases approved</p>{" "}
                 <p className="mt-2 font-heading text-5xl font-bold leading-none tabular-nums">{pct(lead.approved.share)}</p>{" "}
                 <p className="mt-2 text-base">
-                  {int(lead.approved.count)} of {int(lead.counted)} sampled, likely between {pct(lead.approved.low)} and{" "}
-                  {pct(lead.approved.high)} of the block&apos;s {keepWhole(lead.form)} cases.
+                  {countedExactly(lead.approved, coverage.every) ? (
+                    <>
+                      {int(lead.approved.count)} of {int(lead.counted)} checked.{" "}
+                      {coverage.every ? "Every number in the block was checked, so this is an exact count." : null}
+                    </>
+                  ) : (
+                    <>
+                      {int(lead.approved.count)} of {int(lead.counted)} sampled, likely between {pct(lead.approved.low)} and{" "}
+                      {pct(lead.approved.high)} of the block&apos;s {keepWhole(lead.form)} cases.
+                    </>
+                  )}
                 </p>
               </div>{" "}
               <div className="border-2 border-border bg-card p-5">
-                <p className="text-sm font-bold text-muted-foreground">Cases in the estimate</p>{" "}
+                <p className="text-sm font-bold text-muted-foreground">{coverage.every ? "Cases counted" : "Cases in the estimate"}</p>{" "}
                 <p className="mt-2 font-heading text-5xl font-bold leading-none tabular-nums">{int(total)}</p>{" "}
                 <p className="mt-2 text-base">
                   Across {forms.length} {forms.length === 1 ? "form" : "forms"}, each counted at its newest status. Only

@@ -70,6 +70,15 @@ export function blockForms(block: BlockFigures): BlockForm[] {
     .sort((a, b) => b.counted - a.counted || a.form.localeCompare(b.form));
 }
 
+/**
+ * Whether a block's share is a count, not an estimate: every number in the block was checked, or the share has no
+ * range left. Then it reads "of N checked", with no "likely between" (Nov 27 2026: a block with every number
+ * checked read "0 of 15,441 sampled, likely between 0% and 7%").
+ */
+export function countedExactly(figure: GroupFigure, every: boolean): boolean {
+  return every || figure.low === figure.high;
+}
+
 export interface SeriesPoint {
   block: string;
   counted: number;
