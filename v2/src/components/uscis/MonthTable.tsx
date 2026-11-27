@@ -11,15 +11,12 @@ import { ScrollBox } from "@/components/ui/scroll-box";
 export interface MonthLine {
   month: string;
   counted: number;
-  approvedCount: number;
+  /** Shares of the month's cases: approved (with its 95% range), denied or closed, still waiting. */
   approved: number;
   low: number;
   high: number;
-  rfe: number;
+  closed: number;
   waiting: number;
-  /** Cases still waiting, estimated, with the margin's range. */
-  pending: { estimated: number; low: number; high: number } | null;
-  walked: boolean;
 }
 
 const PER_PAGE = 12;
@@ -29,8 +26,9 @@ const label = (m: string) =>
   new Date(`${m}-15T12:00:00Z`).toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
 
 /**
- * The sample's shares by the month USCIS received each case (its own status page's day), one form at a time, a year to a page. Each share comes with its
- * 95% margin and the cases behind it.
+ * The sample's shares by the month each online case was filed (placed by where its receipt number falls among the
+ * received dates around it), one form at a time, a year to a page: approved, denied or closed, still waiting, with a
+ * bar, the approved share's 95% margin and the cases behind it.
  */
 export function MonthTable({ series }: { series: { form: string; rows: MonthLine[] }[] }) {
   const [form, setForm] = useState(series[0]?.form ?? "");
@@ -56,12 +54,13 @@ export function MonthTable({ series }: { series: { form: string; rows: MonthLine
           <thead className="bg-tint">
             <tr>
               <th scope="col" className="px-4 py-2">Filed in{" "}</th>
-              <th scope="col" className="px-4 py-2 text-right">Sampled{" "}</th>
+              <th scope="col" className="px-4 py-2 text-right">Cases{" "}</th>
               <th scope="col" className="px-4 py-2 text-right">Approved{" "}</th>
-              <th scope="col" className="px-4 py-2">Margin{" "}</th>
-              <th scope="col" className="px-4 py-2 text-right">Evidence request{" "}</th>
+              <th scope="col" className="px-4 py-2 text-right">Denied or closed{" "}</th>
               <th scope="col" className="px-4 py-2 text-right">Still waiting{" "}</th>
-              <th scope="col" className="px-4 py-2 text-right">Cases still waiting, estimated{" "}</th>
+              <th scope="col" className="w-48 px-4 py-2">
+                <span className="sr-only">The shares as a bar</span>
+              {" "}</th>
             </tr>
           </thead>
           <tbody>
@@ -69,23 +68,17 @@ export function MonthTable({ series }: { series: { form: string; rows: MonthLine
               <tr key={r.month} className="border-t-2 border-border">
                 <th scope="row" className="px-4 py-2 font-bold">{label(r.month)}{" "}</th>
                 <td className="px-4 py-2 text-right tabular-nums">{int(r.counted)}{" "}</td>
-                <td className="px-4 py-2 text-right tabular-nums">{pct(r.approved)}{" "}</td>
-                <td className="px-4 py-2 tabular-nums text-muted-foreground">
-                  {pct(r.low)} to {pct(r.high)}
-                {" "}</td>
-                <td className="px-4 py-2 text-right tabular-nums">{pct(r.rfe)}{" "}</td>
-                <td className="px-4 py-2 text-right tabular-nums">{pct(r.waiting)}{" "}</td>
                 <td className="px-4 py-2 text-right tabular-nums">
-                  {r.pending ? (
-                    <>
-                      {int(r.pending.estimated)}{" "}
-                      {r.pending.low !== r.pending.high ? (
-                        <span className="text-muted-foreground">({int(r.pending.low)} to {int(r.pending.high)})</span>
-                      ) : null}
-                    </>
-                  ) : (
-                    "n/a"
-                  )}
+                  <b>{pct(r.approved)}</b> <span className="text-sm text-muted-foreground">({pct(r.low)} to {pct(r.high)})</span>
+                {" "}</td>
+                <td className="px-4 py-2 text-right tabular-nums">{pct(r.closed)}{" "}</td>
+                <td className="px-4 py-2 text-right tabular-nums">{pct(r.waiting)}{" "}</td>
+                <td className="px-4 py-2" aria-hidden="true">
+                  <span className="flex h-3 w-full overflow-hidden border border-border">
+                    <span className="block h-full bg-chart-green" style={{ width: `${r.approved * 100}%` }} />
+                    <span className="block h-full bg-chart-red" style={{ width: `${r.closed * 100}%` }} />
+                    <span className="block h-full bg-chart-yellow" style={{ width: `${r.waiting * 100}%` }} />
+                  </span>
                 {" "}</td>
               </tr>
             ))}
@@ -109,7 +102,7 @@ export function MonthTable({ series }: { series: { form: string; rows: MonthLine
       ) : null}{" "}
       <p className="mt-3 text-sm text-muted-foreground">
         {keepWhole(`${s.form}: `)}
-        {int(s.rows.reduce((n, r) => n + r.counted, 0))} sampled cases across {s.rows.length} months.
+        {int(s.rows.reduce((n, r) => n + r.counted, 0))} cases across {s.rows.length} months, each counted at its newest status.
       </p>
     </div>
   );

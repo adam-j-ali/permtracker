@@ -24,7 +24,7 @@ vi.mock("@/lib/db/uscisSample", () => ({
     as_of: "2026-11-29",
     forms: {
       "I-485": [
-        { month: "2026-03", counted: 13371, decided: 0.51, low: 0.5, high: 0.52 },
+        { month: "2026-03", counted: 13371, decided: 0.51, low: 0.5, high: 0.52, approved: 0.44, approved_low: 0.43, approved_high: 0.45, closed: 0.07, waiting: 0.49 },
         { month: "2026-04", counted: 9000, decided: 0.34, low: 0.33, high: 0.35 },
       ],
       "I-130": [{ month: "2026-03", counted: 900, decided: 0.38, low: 0.35, high: 0.41 }],
@@ -71,6 +71,8 @@ describe("/uscis-receipt-blocks: which receipt month USCIS has reached", () => {
     expect(text).toContain("51% decided (50% to 52%), of 13,371 cases checked.");
     expect(text).toContain("April 2026: 34% decided, of 9,000.");
     expect(text).not.toContain("I-130, family petition");
+    // The month table counts every case, decided or not: approved with its range, denied or closed, still waiting.
+    expect(text).toContain("March 2026 13,371 44% (43% to 45%) 7% 49%");
   });
 });
 

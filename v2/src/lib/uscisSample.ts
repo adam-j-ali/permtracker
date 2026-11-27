@@ -207,6 +207,12 @@ export interface DecidedMonth {
   decided: number;
   low: number;
   high: number;
+  /** Approved, with its range; denied or closed; still waiting (or an evidence request). Shares of `counted`. */
+  approved?: number;
+  approved_low?: number;
+  approved_high?: number;
+  closed?: number;
+  waiting?: number;
 }
 
 /** perm_docs 'uscis_sample_reached': each form's newest receipt months, oldest first. */

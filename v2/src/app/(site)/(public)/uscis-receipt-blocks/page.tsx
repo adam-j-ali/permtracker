@@ -19,7 +19,7 @@ import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 import { ListPages } from "@/components/ui/list-pages";
 import { CaveatBox } from "@/components/ui/note";
 import { andList } from "@/lib/describe";
-import { getBlockMixes, getSampleBlocks, getSampleIssued, getSampleMeta, getSampleMonths, getSampleReached } from "@/lib/db/uscisSample";
+import { getBlockMixes, getSampleBlocks, getSampleIssued, getSampleMeta, getSampleReached } from "@/lib/db/uscisSample";
 import { formatShareOf } from "@/lib/format";
 import { softFail } from "@/lib/softRead";
 import { formatAsOf, formatMonthDay } from "@/lib/dolFormat";
@@ -27,7 +27,7 @@ import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
 import { BlockFollowForm } from "@/components/uscis/BlockFollowForm";
 import { issuedWeek } from "@/lib/uscisIssued";
-import { blockCoverage, blockForms, blockStatusMix, blocksInMonth, chartSeries, decidedThrough, monthRows, topForms, type SampleReachedDoc } from "@/lib/uscisSample";
+import { blockCoverage, blockForms, blockStatusMix, blocksInMonth, chartSeries, decidedThrough, topForms, type SampleReachedDoc } from "@/lib/uscisSample";
 import { monthYear } from "@convex/lib/months";
 
 const TITLE = "USCIS Receipt Blocks: Where Approvals Are Now";
@@ -59,12 +59,7 @@ const NOW_FORMS = [
 ] as const;
 
 export default async function UscisReceiptBlocksPage() {
-  const [meta, doc, months, issuedRuns] = await Promise.all([
-    getSampleMeta(),
-    getSampleBlocks(),
-    getSampleMonths(),
-    getSampleIssued(),
-  ]);
+  const [meta, doc, issuedRuns] = await Promise.all([getSampleMeta(), getSampleBlocks(), getSampleIssued()]);
   const issued = issuedWeek(issuedRuns);
   // The blocks the census checked one number at a time, newest first: the ones people pass around as a picture.
   const whole = doc ? Object.keys(doc.by_block).filter((b) => blockCoverage(doc.by_block[b]).every).sort().reverse() : [];
@@ -81,29 +76,29 @@ export default async function UscisReceiptBlocksPage() {
         .filter((b) => b.forms.length > 0)
     : [];
   const i485 = series.find((s) => s.form === "I-485");
-  const monthSeries = months
-    ? chartSeries(doc ?? { as_of: "", groups: [], by_block: {} }, forms).map((s) => s.form)
-        .map((form) => ({
-          form,
-          rows: monthRows(months, form).map((r) => ({
+  const reachedDoc = await getSampleReached().catch(softFail<SampleReachedDoc | null>("getSampleReached", null));
+  // By the month cases were filed (scripts/ingest_uscis_sample.py reached_by_month), newest first: every case counted,
+  // decided or not, placed by where its receipt number falls among the received dates around it.
+  const monthSeries = reachedDoc
+    ? Object.keys(reachedDoc.forms).map((form) => ({
+        form,
+        rows: [...(reachedDoc.forms[form] ?? [])]
+          .filter((r) => r.approved !== undefined)
+          .sort((x, y) => y.month.localeCompare(x.month))
+          .map((r) => ({
             month: r.month,
             counted: r.counted,
-            approvedCount: r.approved.count,
-            approved: r.approved.share,
-            low: r.approved.low,
-            high: r.approved.high,
-            rfe: r.rfe.share,
-            waiting: r.waiting.share,
-            pending: r.pending,
-            walked: r.walked,
+            approved: r.approved ?? 0,
+            low: r.approved_low ?? 0,
+            high: r.approved_high ?? 0,
+            closed: r.closed ?? 0,
+            waiting: r.waiting ?? 0,
           })),
-        }))
-        .filter((s) => s.rows.length > 0)
+      })).filter((s) => s.rows.length > 0)
     : [];
 
   // How far USCIS has got with each form, by the month its cases were received (decidedThrough): the answer to "which
   // month is USCIS on", the first thing under the search box.
-  const reachedDoc = await getSampleReached().catch(softFail<SampleReachedDoc | null>("getSampleReached", null));
   const reachedForms = reachedDoc
     ? NOW_FORMS.flatMap(({ form, name }) => {
         const r = decidedThrough(reachedDoc, form);
@@ -279,11 +274,9 @@ export default async function UscisReceiptBlocksPage() {
                 By the month a case was filed
               </h2>{" "}
               <p className="mt-2 max-w-2xl text-base leading-relaxed text-muted-foreground">
-                The same shares for online filings, by receipt month. A month&apos;s newest cases are the least decided,
-                so its share approved climbs as the month ages. Each case counts in the month USCIS received it, as its
-                own status page says, because USCIS doesn&apos;t number cases in the order it receives them. A case the
-                sample first saw already decided isn&apos;t counted here, because its page shows only the day of the
-                decision and leaves out the day USCIS received it.
+                Every online case we checked, by the month it was filed, at its newest status. A decided case&apos;s
+                page shows only the day of the decision, so each case is placed by where its receipt number falls among
+                the received dates of the cases around it. A month&apos;s share approved climbs as the month ages.
               </p>{" "}
               <div className="mt-4">
                 <MonthTable series={monthSeries} />

@@ -69,8 +69,8 @@ def block_of(receipt: str) -> str | None:
 MIX_STEPS = 12
 
 
-REACHED_FORMS = ("I-485", "I-765", "I-131", "I-130")
-REACHED_MONTHS = 18
+REACHED_FORMS = ("I-485", "I-765", "I-130", "I-129", "I-131")
+REACHED_MONTHS = 24
 OPEN_GROUPS = ("waiting", "rfe")
 
 
@@ -83,23 +83,28 @@ def reached_by_month(cases, as_of: str) -> dict[str, list[dict]]:
     from lib_wilson import wilson_interval
 
     filling = as_of[:7]
-    tally: dict[tuple[str, str], list[int]] = {}
+    tally: dict[tuple[str, str], list[int]] = {}  # cases, decided, approved
     for r, row in cases.items():
         form, month = row.get("form") or "", row.get("month") or ""
         if form not in REACHED_FORMS or not month or month >= filling or not r.startswith("IOE"):
             continue
-        t = tally.setdefault((form, month), [0, 0])
+        t = tally.setdefault((form, month), [0, 0, 0])
         t[0] += 1
         if row["grp"] not in OPEN_GROUPS:
             t[1] += 1
+        if row["grp"] == "approved":
+            t[2] += 1
     out: dict[str, list[dict]] = {}
     for form in REACHED_FORMS:
         months = sorted(m for f, m in tally if f == form)[-REACHED_MONTHS:]
         rows = []
         for m in months:
-            n, k = tally[(form, m)]
+            n, k, a = tally[(form, m)]
             lo, hi = wilson_interval(k, n) or (0.0, 100.0)
-            rows.append({"month": m, "counted": n, "decided": round(k / n, 4), "low": round(lo / 100, 4), "high": round(hi / 100, 4)})
+            alo, ahi = wilson_interval(a, n) or (0.0, 100.0)
+            rows.append({"month": m, "counted": n, "decided": round(k / n, 4), "low": round(lo / 100, 4), "high": round(hi / 100, 4),
+                         "approved": round(a / n, 4), "approved_low": round(alo / 100, 4), "approved_high": round(ahi / 100, 4),
+                         "closed": round((k - a) / n, 4), "waiting": round((n - k) / n, 4)})
         if rows:
             out[form] = rows
     return out

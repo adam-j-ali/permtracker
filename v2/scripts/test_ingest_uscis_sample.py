@@ -227,6 +227,8 @@ def test_reached_by_month():
     check([r["month"] for r in got["I-485"]] == ["2026-03", "2026-04"] and got["I-485"][1]["decided"] == 0,
           "the month still filling and paper receipts are left out; an evidence request is still open")
     check(set(got) == {"I-485"}, "only the forms the list shows")
+    check(abs(mar["approved"] - 1 / 3) < 0.001 and abs(mar["closed"] - 1 / 3) < 0.001 and abs(mar["waiting"] - 1 / 3) < 0.001,
+          f"each month's approved, denied or closed and still-waiting shares: {mar}")
 
 
 def main() -> int:
