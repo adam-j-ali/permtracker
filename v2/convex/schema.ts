@@ -2402,6 +2402,36 @@ export default defineSchema({
     summaryByForm: v.optional(v.record(v.string(), v.object({ total: v.number(), approved: v.number(), denied: v.number(), rfe: v.number(), waiting: v.number() }))),
   }).index("by_block", ["block"]),
 
+  /** "Ask us to check this block" (convex/blockRequests.ts): one row per USCIS receipt block, its votes and when they
+   * started; closed (doneAt) once the checker has handed out every number. Nothing about who asked. */
+  blockRequests: defineTable({
+    block: v.string(),
+    votes: v.number(),
+    firstAt: v.number(),
+    lastAt: v.number(),
+    doneAt: v.optional(v.number()),
+  })
+    .index("by_block", ["block"])
+    .index("by_done", ["doneAt"]),
+
+  /** The checker's line of blocks (key "line"), replaced every 10 minutes by POST /block-queue-state. */
+  blockQueue: defineTable({
+    key: v.string(),
+    at: v.number(),
+    running: v.boolean(),
+    perMinute: v.optional(v.number()),
+    items: v.array(
+      v.object({
+        block: v.string(),
+        position: v.number(),
+        status: v.union(v.literal("walking"), v.literal("waiting")),
+        handed: v.number(),
+        votes: v.number(),
+      }),
+    ),
+    walked: v.array(v.object({ block: v.string(), at: v.number() })),
+  }).index("by_key", ["key"]),
+
   employerAlerts: defineTable({
     email: v.string(),
     /** The `/perm-employers/<slug>` slug. */

@@ -30,6 +30,7 @@ import { normaliseFlagCaseNumber, programOf } from "../src/lib/flagCaseNumber";
 import { LIST_ENTRIES_MAX } from "../src/lib/caseList";
 import { confirmOffers, isPermWageRequest, PWD_MATCH_SENTENCE } from "./lib/alertNextSteps";
 import { BLOCK_RE, FORM_RE, parseBlockUpdate } from "./lib/blockUpdate";
+import { parseBlockQueue } from "./lib/blockQueue";
 import { MAIL_KINDS, PREFS_KINDS, type PrefsKind } from "./lib/mailKinds";
 import { REMINDER_CONFIRM_PATH, REMINDER_DECLINE_PATH, REMINDER_STOP_PATH } from "./lib/reminderRecipients";
 
@@ -1813,6 +1814,91 @@ http.route({
     const parsed = parseBlockUpdate(body);
     if (!parsed) return serverJson({ ok: false, message: "Malformed request." }, 400);
     const got = await ctx.runMutation(internal.blockAlerts.recordUpdate, parsed);
+    return serverJson({ ok: true, ...got }, 200);
+  }),
+});
+
+// ============================================================================
+// "Ask us to check this block" (convex/blockRequests.ts)
+//
+// The block page POSTs a block (nothing else) to vote for it, and GETs where it stands (only reads). The checker pulls
+// the open requests and sends back its line, both behind its secret, like /block-update.
+// ============================================================================
+
+http.route({
+  path: "/block-request",
+  method: "OPTIONS",
+  handler: httpAction(async (_ctx, req) => {
+    return new Response(null, { status: 204, headers: corsHeaders(req.headers.get("Origin")) });
+  }),
+});
+
+http.route({
+  path: "/block-request",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    const cors = corsHeaders(req.headers.get("Origin"));
+    const json = (body: unknown, status = 200) =>
+      new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
+    const raw = await req.text();
+    if (raw.length > 200) return json({ ok: false, message: "Malformed request." }, 413);
+    let body: unknown;
+    try {
+      body = JSON.parse(raw);
+    } catch {
+      return json({ ok: false, message: "Malformed request." }, 400);
+    }
+    const block = typeof body === "object" && body !== null ? (body as Record<string, unknown>).block : undefined;
+    if (typeof block !== "string") return json({ ok: false, message: "A receipt block is required." }, 400);
+    const clean = block.slice(0, 12).toUpperCase();
+    if (!BLOCK_RE.test(clean)) return json({ ok: false, message: "That isn't a receipt block." }, 400);
+    const result = await ctx.runMutation(internal.blockRequests.vote, { block: clean, ip: callerIp(req) });
+    return json(result, result.ok ? 200 : result.throttled ? 429 : result.done ? 409 : 400);
+  }),
+});
+
+http.route({
+  path: "/block-queue",
+  method: "GET",
+  handler: httpAction(async (ctx, req) => {
+    const headers = { ...corsHeaders(req.headers.get("Origin")), "Content-Type": "application/json", "Cache-Control": "no-store" };
+    const block = (new URL(req.url).searchParams.get("block") ?? "").slice(0, 12).toUpperCase();
+    if (!BLOCK_RE.test(block)) return new Response(JSON.stringify({ ok: false, message: "That isn't a receipt block." }), { status: 400, headers });
+    const standing = await ctx.runQuery(internal.blockRequests.standing, { block });
+    return new Response(JSON.stringify({ ok: true, ...standing }), { status: 200, headers });
+  }),
+});
+
+/** The checker's pull of the open requests, behind its secret. */
+http.route({
+  path: "/block-requests",
+  method: "GET",
+  handler: httpAction(async (ctx, req) => {
+    const gate = await uscisCheckerGate(req);
+    if (gate) return gate;
+    const requests = await ctx.runQuery(internal.blockRequests.openRequests, {});
+    return serverJson({ ok: true, requests }, 200);
+  }),
+});
+
+/** The checker's line, every 10 minutes, behind its secret. */
+http.route({
+  path: "/block-queue-state",
+  method: "POST",
+  handler: httpAction(async (ctx, req) => {
+    const gate = await uscisCheckerGate(req);
+    if (gate) return gate;
+    const raw = await req.text();
+    if (raw.length > 200_000) return serverJson({ ok: false, message: "Too large." }, 413);
+    let body: unknown;
+    try {
+      body = JSON.parse(raw);
+    } catch {
+      return serverJson({ ok: false, message: "Malformed request." }, 400);
+    }
+    const parsed = parseBlockQueue(body);
+    if (!parsed) return serverJson({ ok: false, message: "Malformed request." }, 400);
+    const got = await ctx.runMutation(internal.blockRequests.recordQueue, parsed);
     return serverJson({ ok: true, ...got }, 200);
   }),
 });

@@ -1933,7 +1933,8 @@ export default function PrivacyPage() {
               block&apos;s page, the receipt numbers we checked, with the last status we saw for each and the day we saw
               it. Those pages are kept out of search engines. A receipt number typed into the lookup joins the numbers
               our sample checks each week, with the numbers around it, and is counted apart from the sample&apos;s
-              random draw. If you type a receipt number our sample has checked, the lookup shows the last status we
+              random draw. Asking us to check a receipt block keeps only the block and when it was asked. Your IP
+              address is used only to limit how many blocks one connection can ask for in a day. If you type a receipt number our sample has checked, the lookup shows the last status we
               saw for it and the day we saw it. To have a receipt number&apos;s record removed from the sample, write to{" "}
               <a href="mailto:support@permtracker.app?subject=USCIS%20sample%20removal" className="link">support@permtracker.app</a>{" "}
               with the number.

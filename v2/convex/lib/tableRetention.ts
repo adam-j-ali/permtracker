@@ -66,6 +66,8 @@ export const TABLE_RETENTION: Record<string, { kind: RetentionKind; rule: string
   employerAlerts: { kind: "subscription", rule: "deleted when stopped or unconfirmed after 30 days" },
   blockAlerts: { kind: "subscription", rule: "deleted when unconfirmed after 30 days; turned off by its link, /prefs or account deletion" },
   blockSnapshots: { kind: "bounded", rule: "one row per USCIS receipt block, overwritten by each sample load" },
+  blockRequests: { kind: "bounded", rule: "one row per USCIS receipt block, its votes; nothing about who asked" },
+  blockQueue: { kind: "bounded", rule: "one row, the checker's line, replaced every 10 minutes" },
   uscisTypedReceipts: { kind: "pruned", rule: "12 months after the number was last typed (uscisTyped.pruneTyped, daily)" },
   uscisTypedDays: { kind: "pruned", rule: "a week of day counters (uscisTyped.pruneTyped, daily)" },
   uscisWatches: {
