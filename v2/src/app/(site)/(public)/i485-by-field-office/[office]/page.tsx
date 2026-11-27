@@ -142,6 +142,19 @@ function reportedAnswer(o: UscisOffice, summary: PlaceSummary | null): string {
 /** The quarter in words alone: "April to June 2026". */
 const quarterWords = (fy: number, quarter: number) => quarterLabel(fy, quarter).replace(/^FY\d+ Q\d \((.*)\)$/, "$1");
 
+
+/** Quarters of work in everyday time: "about 6 years", "about 1.5 years", "about 9 months". */
+function spanWords(quarters: number): string {
+  const years = quarters / 4;
+  if (years >= 3) return `about ${Math.round(years)} years`;
+  if (years >= 1) {
+    const y = Number(years.toFixed(1));
+    return `about ${y} ${y === 1 ? "year" : "years"}`;
+  }
+  const months = Math.max(1, Math.round(quarters * 3));
+  return `about ${months} ${months === 1 ? "month" : "months"}`;
+}
+
 export default async function UscisOfficePage({ params }: { params: Promise<{ office: string }> }) {
   const office = officeBySlug((await params).office);
   if (!office) notFound();
@@ -349,14 +362,15 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
 
           {work !== null && decided ? (
             <p className="mt-4 max-w-2xl text-base leading-relaxed text-soft">
-              That pile is <b className="font-bold text-foreground">{work.toFixed(1)} quarters of work</b> at the
-              quarter&apos;s pace of {formatInt(decided)} decisions
+              {center ? "This center" : "This office"} decided {formatInt(decided)} cases in its latest quarter. At
+              that pace, it would need <b className="font-bold text-foreground">about {work.toFixed(1)} quarters</b>,
+              or {spanWords(work)}, to get through every case it has waiting.
               {pendingPlace ? (
                 <>
-                  , and the {ordinal(pendingPlace.rank)} largest of {pendingPlace.of} {kindWord}
+                  {" "}That&apos;s the {ordinal(pendingPlace.rank)} largest pile of {pendingPlace.of} {kindWord}.
                 </>
-              ) : null}
-              . It compares workload. It isn&apos;t a wait for any one case.
+              ) : null}{" "}
+              This compares how busy offices are. It doesn&apos;t tell you how long any one case will take.
             </p>
           ) : pendingPlace ? (
             <p className="mt-4 max-w-2xl text-base leading-relaxed text-soft">
@@ -368,8 +382,8 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
             <h2 className="font-heading text-2xl font-bold">The last {year.length === 1 ? "quarter" : `${year.length} quarters`}</h2>{" "}
             <p className="mt-2 max-w-2xl text-base leading-relaxed text-muted-foreground">
               <KeepWhole>
-                {"Employment-based I-485s at this office, newest quarter first, with the family-based pile beside " +
-                  "them for scale. Pending is the count on the quarter's last day."}
+                {"Employment-based I-485s at this office, newest quarter first, with family-based cases beside them " +
+                  "for comparison. Pending means still waiting on the last day of that quarter."}
               </KeepWhole>
             </p>{" "}
             <ScrollBox label={`I-485s at ${theOffice(office)}, by quarter`} className="mt-4 border-t-2 border-[var(--object-border)]">

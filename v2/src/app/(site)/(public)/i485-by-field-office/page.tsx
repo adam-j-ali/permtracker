@@ -266,7 +266,7 @@ export default async function I485ByFieldOfficePage() {
                   <>
                     Pending divided by the quarter&apos;s approvals plus denials: how many
                     quarters the office would need at that pace to clear what it holds.
-                    It compares workload. It isn&apos;t a wait for any one case. An office
+                    This compares how busy offices are. It doesn&apos;t tell you how long any one case will take. An office
                     that cleared old cases in a burst reads better this quarter than next.
                   </>
                 }

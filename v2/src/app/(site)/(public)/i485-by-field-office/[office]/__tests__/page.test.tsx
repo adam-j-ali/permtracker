@@ -133,8 +133,9 @@ describe("a USCIS office's page", () => {
     const firstCells = [...container.querySelectorAll("#quarters tbody tr")].map((tr) => tr.querySelector("th")?.textContent?.trim());
     expect(firstCells).toEqual(["Apr to Jun 2026", "Jan to Mar 2026"]);
     // 2,699 pending against 266 + 18 decisions; Boston holds more, so Hartford is 2nd of the 2 field offices.
-    expect(text).toContain("9.5 quarters of work at the quarter's pace of 284 decisions, and the 2nd largest of 2 field offices");
-    expect(text).toContain("It isn't a wait for any one case.");
+    expect(text).toContain("This office decided 284 cases in its latest quarter. At that pace, it would need about 9.5 quarters, or about 2.4 years, to get through every case it has waiting. That's the 2nd largest pile of 2 field offices.");
+    expect(text).toContain("It doesn't tell you how long any one case will take.");
+    expect(text).toContain("Pending means still waiting on the last day of that quarter.");
   });
 
   it("gives the one time USCIS posts for every field office, and says there's none for this office alone", async () => {
@@ -254,7 +255,7 @@ describe("a USCIS office's page", () => {
     const { container, text } = await page("national-benefits-center");
     expect(container.querySelector("h1")?.textContent).toBe("I-485s at the National Benefits Center");
     expect(text).not.toContain("The processing time USCIS posts");
-    expect(text).toContain("largest of 1 centers");
+    expect(text).toContain("largest pile of 1 centers");
   });
 
   it("shows no figures for an office the newest file doesn't list", async () => {
