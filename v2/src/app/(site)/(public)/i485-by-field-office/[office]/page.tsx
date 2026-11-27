@@ -143,6 +143,9 @@ function reportedAnswer(o: UscisOffice, summary: PlaceSummary | null): string {
 const quarterWords = (fy: number, quarter: number) => quarterLabel(fy, quarter).replace(/^FY\d+ Q\d \((.*)\)$/, "$1");
 
 
+/** "the largest", "the 2nd largest". */
+const largest = (rank: number) => (rank === 1 ? "the largest" : `the ${ordinal(rank)} largest`);
+
 /** Quarters of work in everyday time: "about 6 years", "about 1.5 years", "about 9 months". */
 function spanWords(quarters: number): string {
   const years = quarters / 4;
@@ -210,6 +213,35 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
     current && current.row.empApproved !== null && current.row.empDenied !== null
       ? current.row.empApproved + current.row.empDenied
       : null;
+
+  // Family-based I-485s (a spouse, parent or other relative's petition): the same quarterly counts USCIS publishes for
+  // every office, shown in full beside the employment-based ones (Nov 26 2026: an office group's members mostly file
+  // through marriage).
+  const famWork = current ? quartersOfWork(current.row, "fam") : null;
+  const famApprovedNow = current ? current.row.famApproved ?? null : null;
+  const famDeniedNow = current ? current.row.famDenied ?? null : null;
+  const famDecided = famApprovedNow !== null && famDeniedNow !== null ? famApprovedNow + famDeniedNow : null;
+  const famPlace = standing(sameKind, office.code, (r) => r.famPending ?? null);
+  const famYear = year.filter((p) => (p.row.famPending ?? null) !== null || (p.row.famApproved ?? null) !== null);
+  const famFigures: RecordFigure[] = [];
+  if (current) {
+    const r = current.row;
+    const prior = before ? slotShort(before) : "";
+    const add = (value: number | null | undefined, label: string, was: number | null | undefined, better: "fewer" | "more" | null) => {
+      if (value === null || value === undefined) return;
+      famFigures.push({
+        href: "#family-quarters",
+        value,
+        label,
+        asOf: current.quarterEnd,
+        asOfKind: "through",
+        trend: before ? countVs(value, was ?? null, prior, better) : undefined,
+      });
+    };
+    add(r.famPending, "family-based I-485s pending here", before?.row.famPending, "fewer");
+    if ((r.famApproved ?? 0) > 0) add(r.famApproved, "family-based approved in the quarter", before?.row.famApproved, "more");
+    if ((r.famReceived ?? 0) > 0) add(r.famReceived, "family-based received in the quarter", before?.row.famReceived, null);
+  }
 
   const figures: RecordFigure[] = [];
   if (current) {
@@ -367,7 +399,7 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
               or {spanWords(work)}, to get through every case it has waiting.
               {pendingPlace ? (
                 <>
-                  {" "}That&apos;s the {ordinal(pendingPlace.rank)} largest pile of {pendingPlace.of} {kindWord}.
+                  {" "}That&apos;s {largest(pendingPlace.rank)} pile of {pendingPlace.of} {kindWord}.
                 </>
               ) : null}{" "}
               This compares how busy offices are. It doesn&apos;t tell you how long any one case will take.
@@ -376,6 +408,70 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
             <p className="mt-4 max-w-2xl text-base leading-relaxed text-soft">
               It&apos;s the {ordinal(pendingPlace.rank)} largest pile of {pendingPlace.of} {kindWord}.
             </p>
+          ) : null}
+
+          {famFigures.length > 0 ? (
+            <p className="mt-3 text-base">
+              <a href="#family" className="link font-bold">
+                Filed through a relative? The family-based figures
+              </a>
+            </p>
+          ) : null}{" "}
+
+          {famFigures.length > 0 ? (
+            <section id="family" className="mt-12 scroll-mt-24">
+              <h2 className="font-heading text-2xl font-bold"><KeepWhole>{"Family-based I-485s here"}</KeepWhole></h2>{" "}
+              <p className="mt-2 max-w-2xl text-base leading-relaxed">
+                {"These are green card cases filed through a relative, such as a husband, wife or parent who's a US citizen or holds a green card."}
+              </p>{" "}
+              <div className="mt-4">
+                <RecordStrip record={famFigures} label={`Family-based, the quarter at ${theOffice(office)}`} />
+              </div>{" "}
+              {famWork !== null && famDecided ? (
+                <p className="mt-4 max-w-2xl text-base leading-relaxed text-soft">
+                  {center ? "This center" : "This office"} decided {formatInt(famDecided)} family-based cases in its
+                  latest quarter. At that pace, it would need{" "}
+                  <b className="font-bold text-foreground">about {famWork.toFixed(1)} quarters</b>, or {spanWords(famWork)}, to
+                  get through every family-based case it has waiting.
+                  {famPlace ? (
+                    <>
+                      {" "}That&apos;s {largest(famPlace.rank)} family-based pile of {famPlace.of} {kindWord}.
+                    </>
+                  ) : null}{" "}
+                  It doesn&apos;t tell you how long any one case will take.
+                </p>
+              ) : null}{" "}
+              <div id="family-quarters" className="scroll-mt-24">
+                <ScrollBox label={`Family-based I-485s at ${theOffice(office)}, by quarter`} className="mt-4 border-t-2 border-[var(--object-border)]">
+                  <table className="w-full min-w-[560px] border-collapse text-left text-base">
+                    <caption className="sr-only">
+                      <KeepWhole>{"Family-based I-485s received, approved, denied and pending at "}</KeepWhole>
+                      {theOffice(office)}, by quarter
+                    </caption>
+                    <thead className="dark border-b border-black bg-[#141414] text-foreground">
+                      <tr>
+                        <th scope="col" className="px-3 py-3 text-sm font-bold">Quarter{" "}</th>
+                        <th scope="col" className="px-3 py-3 text-right text-sm font-bold">Received{" "}</th>
+                        <th scope="col" className="px-3 py-3 text-right text-sm font-bold">Approved{" "}</th>
+                        <th scope="col" className="px-3 py-3 text-right text-sm font-bold">Denied{" "}</th>
+                        <th scope="col" className="px-3 py-3 text-right text-sm font-bold">Pending{" "}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-card">
+                      {[...famYear].reverse().map((p) => (
+                        <tr key={`fam-${p.fy}-${p.quarter}`} className="border-t-2 border-border/30">
+                          <th scope="row" className="px-3 py-3 font-semibold">{quarterWords(p.fy, p.quarter)}{" "}</th>
+                          <td className="px-3 py-3 text-right tabular-nums">{count(p.row.famReceived ?? null)}{" "}</td>
+                          <td className="px-3 py-3 text-right tabular-nums">{count(p.row.famApproved ?? null)}{" "}</td>
+                          <td className="px-3 py-3 text-right tabular-nums">{count(p.row.famDenied ?? null)}{" "}</td>
+                          <td className="px-3 py-3 text-right font-bold tabular-nums">{count(p.row.famPending ?? null)}{" "}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </ScrollBox>
+              </div>
+            </section>
           ) : null}
 
           <section id="quarters" className="mt-12 scroll-mt-24">

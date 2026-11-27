@@ -37,7 +37,14 @@ vi.mock("@/lib/db/reportedSummary", () => ({ getOfficeSummary }));
 
 const { default: UscisOfficePage, generateStaticParams, generateMetadata } = await import("../page");
 
-const row = (code: string, office: string, state: string, emp: [number | null, number | null, number | null, number | null], fam = 100): OfficeRow =>
+const row = (
+  code: string,
+  office: string,
+  state: string,
+  emp: [number | null, number | null, number | null, number | null],
+  fam = 100,
+  famMore: [number | null, number | null, number | null] = [null, null, null],
+): OfficeRow =>
   ({
     state,
     office,
@@ -47,6 +54,9 @@ const row = (code: string, office: string, state: string, emp: [number | null, n
     empApproved: emp[1],
     empDenied: emp[2],
     empPending: emp[3],
+    famReceived: famMore[0],
+    famApproved: famMore[1],
+    famDenied: famMore[2],
     famPending: fam,
   }) as unknown as OfficeRow;
 
@@ -65,7 +75,7 @@ const QUARTERS = [
     row("NBC", "National Benefits Center", "Service Center", [10, 9000, 50, 60000]),
   ]),
   quarter(2026, 3, "2026-06-30", [
-    row("HAR", "Hartford", "Connecticut", [1118, 266, 18, 2699]),
+    row("HAR", "Hartford", "Connecticut", [1118, 266, 18, 2699], 1200, [400, 280, 20]),
     row("BOS", "Boston", "Massachusetts", [950, 310, null, 5200]),
     row("NBC", "National Benefits Center", "Service Center", [12, 9500, 60, 61000]),
   ]),
@@ -136,6 +146,18 @@ describe("a USCIS office's page", () => {
     expect(text).toContain("This office decided 284 cases in its latest quarter. At that pace, it would need about 9.5 quarters, or about 2.4 years, to get through every case it has waiting. That's the 2nd largest pile of 2 field offices.");
     expect(text).toContain("It doesn't tell you how long any one case will take.");
     expect(text).toContain("Pending means still waiting on the last day of that quarter.");
+  });
+
+  it("gives family-based I-485s their own figures, pace, place and table", async () => {
+    const { container, text } = await page("hartford-connecticut");
+    expect(text).toContain("Family-based I-485s here");
+    expect(text).toContain("Filed through a relative? The family-based figures");
+    // 1,200 pending against 280 + 20 decisions; Boston's 100 is smaller, so Hartford's pile is the largest of the 2.
+    expect(text).toContain(
+      "This office decided 300 family-based cases in its latest quarter. At that pace, it would need about 4.0 quarters, or about 1 year, to get through every family-based case it has waiting. That's the largest family-based pile of 2 field offices.",
+    );
+    const cells = [...container.querySelectorAll("#family-quarters tbody tr")].map((tr) => tr.textContent?.replace(/\s+/g, " ").trim());
+    expect(cells[0]).toBe("Apr to Jun 2026 400 280 20 1,200");
   });
 
   it("gives the one time USCIS posts for every field office, and says there's none for this office alone", async () => {

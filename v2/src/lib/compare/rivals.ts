@@ -178,7 +178,7 @@ export const RIVALS: readonly Tracker[] = [
     },
     bestFor: "A daily read on whether DOL's queue is gaining ground",
     dataFrom: "DOL's case-status service and quarterly files",
-    beatsUs: ["USCIS case status by receipt number, on its paid plan", "A path to request a recheck after an appeal"],
+    beatsUs: ["A path to request a recheck after an appeal"],
     strengths: [
       "A plain gaining-or-losing-ground counter for DOL's queue on its homepage",
       "A public wage-request board, with a lookup and a filing-date estimate",
@@ -399,7 +399,7 @@ export const RIVALS: readonly Tracker[] = [
     },
     bestFor: "A month for your PERM decision from a filing date, in English, Chinese or Spanish",
     dataFrom: "DOL's monthly processing-times page, DOL's quarterly files and State's bulletin",
-    beatsUs: ["Chinese and Spanish", "USCIS receipt status, with an account", "Alerts by Telegram, on its paid plan"],
+    beatsUs: ["Chinese and Spanish", "Alerts by Telegram, on its paid plan"],
     strengths: [
       "A decision month from a filing date, with a public backtest of its own errors",
       "English, Chinese and Spanish",
@@ -443,7 +443,7 @@ export const RIVALS: readonly Tracker[] = [
     },
     bestFor: "Priority-date forecasts and visa bulletin alerts",
     dataFrom: "DOL's published figures, USCIS's I-485 inventory and the bulletin",
-    beatsUs: ["Consular interview reports and a 221(g) tracker from applicants"],
+    beatsUs: [],
     strengths: [
       "A priority-date estimate built on USCIS's I-485 inventory and the visa bulletin, with three scenarios",
       "An email and a browser alert for each new visa bulletin, by country and category",
@@ -586,7 +586,7 @@ export const RIVALS: readonly Tracker[] = [
     bestFor: "Checking a USCIS receipt's status and getting a WhatsApp message when it changes",
     dataFrom: "USCIS's case status and the cases its users look up",
     beatsUs: [
-      "USCIS case status by receipt number today, free. Ours waits on USCIS granting access",
+      "An instant USCIS status lookup for any receipt, free. Ours emails a receipt's changes within hours and shows the last status our sample saw",
       "WhatsApp alerts beside email, on its paid plans",
       "The site in Spanish, Portuguese and Arabic as well as English. Ours is in English only",
     ],

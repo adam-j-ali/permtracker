@@ -166,15 +166,18 @@ export function rankOffices(rowsIn: readonly OfficeRow[], measure: OfficeMeasure
 }
 
 /**
- * Employment-based completions against the quarter's employment pending,
- * per office: how many quarters of work sit in the pile at this quarter's
- * pace. Null when the office decided nothing (the ratio is not a wait) or
- * when either figure is withheld.
+ * The quarter's completions against the quarter's pending, per office, for
+ * employment-based ("emp", the default) or family-based ("fam") I-485s: how
+ * many quarters of work sit in the pile at this quarter's pace. Null when the
+ * office decided nothing (the ratio is not a wait) or when a figure is
+ * withheld or missing.
  */
-export function quartersOfWork(r: OfficeRow): number | null {
-  const done = (r.empApproved ?? 0) + (r.empDenied ?? 0);
-  if (r.empApproved === null || r.empDenied === null || r.empPending === null || done === 0) return null;
-  return r.empPending / done;
+export function quartersOfWork(r: OfficeRow, basis: "emp" | "fam" = "emp"): number | null {
+  const approved = (basis === "emp" ? r.empApproved : r.famApproved) ?? null;
+  const denied = (basis === "emp" ? r.empDenied : r.famDenied) ?? null;
+  const pending = (basis === "emp" ? r.empPending : r.famPending) ?? null;
+  if (approved === null || denied === null || pending === null || approved + denied === 0) return null;
+  return pending / (approved + denied);
 }
 
 /** Sum of a measure over rows, counting withheld cells as absent and saying how many were. */
