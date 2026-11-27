@@ -140,7 +140,7 @@ export default async function UscisReceiptBlockPage({ params }: { params: Promis
             received={coverage.received}
             blockCases={coverage.every ? mix.total : undefined}
           />{" "}
-          {coverage.every ? null : <BlockCheckRequest block={block} />}{" "}
+          <BlockCheckRequest block={block} again={coverage.every} />{" "}
           <div className="mt-6 max-w-2xl border-2 border-border bg-card p-5">
             <h2 className="font-heading text-xl font-bold">{`Email me when ${block} moves`}</h2>{" "}
             <div className="mt-2">

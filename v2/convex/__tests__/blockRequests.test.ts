@@ -113,6 +113,12 @@ describe("the checker's side", () => {
     expect(late.done).toBe(true);
     const open = await t.query(internal.blockRequests.openRequests, {});
     expect(open).toEqual([]);
+
+    // A week after the pass, asking again opens a new request.
+    vi.setSystemTime(NOW + 50_000 + 7 * 86_400_000);
+    const again = await ask(t, "IOE09361", "198.51.100.10");
+    expect([again.ok, again.votes]).toEqual([true, 1]);
+    expect((await t.query(internal.blockRequests.openRequests, {})).map((r) => r.block)).toEqual(["IOE09361"]);
   });
 });
 

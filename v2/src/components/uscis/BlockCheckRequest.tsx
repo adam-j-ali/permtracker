@@ -27,6 +27,8 @@ type Standing = {
 };
 
 const ASKED_KEY = (block: string) => `ptBlockAsked:${block}`;
+const WEEK_MS = 7 * 86_400_000;
+const etDay = (ms: number) => new Date(ms).toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "America/New_York" });
 
 /** "about 40 minutes", "about 3 hours", "about 2 days". */
 export function aboutTime(minutes: number): string {
@@ -54,9 +56,12 @@ export function standingWords(s: Standing): string {
   return "";
 }
 
-export function BlockCheckRequest({ block }: { block: string }) {
+/** `again`: every number is already checked; the box offers a new pass once the last is a week old. */
+export function BlockCheckRequest({ block, again = false }: { block: string; again?: boolean }) {
   const noteId = useId();
   const [standing, setStanding] = useState<Standing | null>(null);
+  // When the line was read: "a week since the last check" is judged against it, never the clock during render.
+  const [readAt, setReadAt] = useState<number | null>(null);
   const [asked, setAsked] = useState(false);
   const [status, setStatus] = useState<"idle" | "sending" | "error">("idle");
   const [message, setMessage] = useState("");
@@ -68,7 +73,10 @@ export function BlockCheckRequest({ block }: { block: string }) {
     try {
       const res = await fetch(queueUrl, { cache: "no-store" });
       const body = (await res.json().catch(() => null)) as Standing | null;
-      if (res.ok && body?.ok) setStanding(body);
+      if (res.ok && body?.ok) {
+        setStanding(body);
+        setReadAt(Date.now());
+      }
     } catch {
       /* the box keeps what it last showed; the button still works */
     }
@@ -114,13 +122,22 @@ export function BlockCheckRequest({ block }: { block: string }) {
     }
   }
 
-  const words = standing ? standingWords(standing) : "";
-  const done = !!standing?.doneAt;
+  const doneAt = standing?.doneAt ?? null;
+  const recent = doneAt !== null && readAt !== null && readAt - doneAt < WEEK_MS;
+  const words =
+    again && doneAt && !standing?.position && !standing?.joining
+      ? `Checked in full on ${etDay(doneAt)}.${recent ? ` You can ask for a new check from ${etDay(doneAt + WEEK_MS)}.` : ""}`
+      : standing
+        ? standingWords(standing)
+        : "";
+  const done = recent;
   return (
     <div className="mt-6 max-w-2xl border-2 border-border bg-card p-5 print:hidden">
-      <h2 className="font-heading text-xl font-bold">{`Check every number in ${block}`}</h2>{" "}
+      <h2 className="font-heading text-xl font-bold">{again ? `Check ${block} again` : `Check every number in ${block}`}</h2>{" "}
       <p className="mt-2 text-base leading-relaxed">
-        {"We check whole blocks people ask for, the most asked first. A block takes about an hour once its turn comes."}
+        {again
+          ? "Every number here has been checked. Ask for a new check to see what has moved since, a week or more after the last one."
+          : "We check whole blocks people ask for, the most asked first. A block takes about an hour once its turn comes."}
       </p>{" "}
       <p id={noteId} className="mt-3 text-base font-semibold leading-relaxed" aria-live="polite">
         {status === "error" ? message : words || (asked ? message || "You asked for this block today." : "")}
@@ -136,7 +153,7 @@ export function BlockCheckRequest({ block }: { block: string }) {
           aria-describedby={noteId}
           data-ph-capture-attribute-cta="block-check-request"
         >
-          {asked ? "Asked" : "Ask us to check this block"}
+          {asked ? "Asked" : again ? "Ask for a new check" : "Ask us to check this block"}
         </Button>
       )}
     </div>

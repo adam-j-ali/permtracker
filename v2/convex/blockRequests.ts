@@ -24,6 +24,8 @@ export const BLOCKS_PER_IP_PER_DAY = 10;
 export const VOTES_PER_HOUR = 300;
 /** The checker reports every 10 minutes: a line older than this means it isn't running right now. */
 export const LINE_STALE_MS = 30 * MS_PER_MINUTE;
+/** A block checked in full can be asked for again once its pass is this old (Nov 26 2026, "Check again"). */
+export const AGAIN_AFTER_MS = 7 * MS_PER_DAY;
 const BLOCK_NUMBERS = 100_000;
 
 const voteReply = v.object({
@@ -44,11 +46,12 @@ export const vote = internalMutation({
       .query("blockRequests")
       .withIndex("by_block", (q) => q.eq("block", args.block))
       .unique();
-    if (row?.doneAt) {
+    const again = !!row?.doneAt && Date.now() - row.doneAt >= AGAIN_AFTER_MS;
+    if (row?.doneAt && !again) {
       return {
         ok: false as const,
         done: true,
-        message: "Every number in this block has been checked. This page shows them after its next update.",
+        message: "Every number in this block was checked in the last week. You can ask again a week after that check.",
       };
     }
     const ip = args.ip?.trim();
@@ -71,6 +74,11 @@ export const vote = internalMutation({
       await recordRateLimitAttempt(ctx, known, "block_request_ip");
     }
     const now = Date.now();
+    if (row && again) {
+      // A new pass: the old request's votes were for the old pass.
+      await ctx.db.replace(row._id, { block: args.block, votes: 1, firstAt: now, lastAt: now });
+      return { ok: true as const, votes: 1, message: "Asked. The checker picks it up within 10 minutes." };
+    }
     if (row) {
       await ctx.db.patch(row._id, { votes: row.votes + 1, lastAt: now });
       return { ok: true as const, votes: row.votes + 1, message: "Asked. The checker picks it up within 10 minutes." };
