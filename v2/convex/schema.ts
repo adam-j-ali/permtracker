@@ -1982,7 +1982,20 @@ export default defineSchema({
     ipHash: v.string(),
     public: v.boolean(),
     category: v.optional(
-      v.union(v.literal("eb1"), v.literal("eb2"), v.literal("eb2-niw"), v.literal("eb3"), v.literal("eb3-other")),
+      v.union(
+        v.literal("eb1"),
+        v.literal("eb2"),
+        v.literal("eb2-niw"),
+        v.literal("eb3"),
+        v.literal("eb3-other"),
+        // Family-based (convex/lib/communityTimeline.ts CATEGORIES): a relative's I-130 starts the case.
+        v.literal("family-ir"),
+        v.literal("f1"),
+        v.literal("f2a"),
+        v.literal("f2b"),
+        v.literal("f3"),
+        v.literal("f4"),
+      ),
     ),
     country: v.optional(
       v.union(v.literal("row"), v.literal("india"), v.literal("china"), v.literal("mexico"), v.literal("philippines")),
@@ -1996,6 +2009,9 @@ export default defineSchema({
     fieldOffice: v.optional(v.string()),
     /** The service center that took the I-485 in: one of the six centers' codes (lib I485_CENTERS). */
     i485Center: v.optional(v.string()),
+    /** A family-based case's I-130 (the relative's petition), filed and approved. */
+    i130FiledOn: v.optional(v.string()),
+    i130ApprovedOn: v.optional(v.string()),
     i140FiledOn: v.optional(v.string()),
     i140ApprovedOn: v.optional(v.string()),
     i485FiledOn: v.optional(v.string()),

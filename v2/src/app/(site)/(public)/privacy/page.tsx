@@ -479,8 +479,10 @@ export default function PrivacyPage() {
             <ul className="list-disc list-inside text-soft space-y-2 ml-4">
               <li>
                 <KeepWhole>
-                  {"On a case’s page, a USCIS office’s page or the green card timelines page you can save the " +
-                    "dates that came after PERM (the I-140, the I-485, a biometrics appointment, a work permit, a " +
+                  {"On a case’s page, a USCIS office’s page or the green card timelines page you can save your " +
+                    "green card case’s dates: for an employment-based case, those after PERM, and for a " +
+                    "family-based case, those from the I-130 on (the I-130, the I-140, the I-485, a biometrics " +
+                    "appointment, a work permit, a " +
                     "travel document, a Supplement J approval, an interview, the green card, the day premium " +
                     "processing was requested, the move to a field office, the card’s arrival) and a few choices " +
                     "from fixed lists, such as your category, your country, whether the case is the main " +

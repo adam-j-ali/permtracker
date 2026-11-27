@@ -72,7 +72,7 @@ describe("ShareTimeline", () => {
     }
     // EB-1 and waiver cases can be picked here: they have no PERM case.
     const categories = Array.from((screen.getByLabelText("Category") as HTMLSelectElement).options).map((o) => o.value);
-    expect(categories).toEqual(["", "eb1", "eb2", "eb2-niw", "eb3", "eb3-other"]);
+    expect(categories).toEqual(["", "eb1", "eb2", "eb2-niw", "eb3", "eb3-other", "family-ir", "f1", "f2a", "f2b", "f3", "f4"]);
     expect(screen.getByLabelText("PERM case number, if the case has one").closest("details")!.open).toBe(false);
   });
 

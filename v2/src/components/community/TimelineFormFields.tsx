@@ -12,6 +12,8 @@ import {
   CATEGORIES,
   COUNTRIES,
   DATE_FIELDS,
+  basisOf,
+  stepsFor,
   EVENT_FORMS,
   I140_CENTERS,
   APPLICANTS,
@@ -619,7 +621,9 @@ export function TimelineFormFields({
   onCaseNumber?: (v: string) => void;
 }) {
   const route = form.route === "consular" ? "consular" : "adjustment";
-  const forRoute = DATE_FIELDS.filter((f) => (f.routes as readonly string[]).includes(route)).map((f) => f.id);
+  // A family-based case asks for the I-130 and has no I-140, premium processing, PERM number or H-4 papers.
+  const family = basisOf(form.category) === "family";
+  const forRoute = stepsFor(route, basisOf(form.category)).map((f) => f.id);
   const kept = "This browser keeps a key for it so you can edit or remove it later.";
 
   if (variant === "case") {
@@ -672,13 +676,14 @@ export function TimelineFormFields({
       </fieldset>{" "}
       <details className="group/more border-2 border-border p-2">
         <summary className={foldCls}>
-          <CaretRightIcon className="size-4 shrink-0 transition-transform group-open/more:rotate-90" weight="bold" aria-hidden="true" /><KeepWhole>{" More, if you have it: the I-140, the work permit, the travel document"}</KeepWhole>
+          <CaretRightIcon className="size-4 shrink-0 transition-transform group-open/more:rotate-90" weight="bold" aria-hidden="true" /><KeepWhole>{family ? " More, if you have it: the I-130, the work permit, the travel document" : " More, if you have it: the I-140, the work permit, the travel document"}</KeepWhole>
         </summary>
         <div className={`mt-3 ${gridCls}`}>
-          <Pick id={`${uid}-route`} label="After the I-140" value={route} options={ROUTES} onChange={(v) => set("route", v)} />{" "}
-          <Pick id={`${uid}-center`} label="Where the I-140 was decided" value={form.i140Center ?? ""} empty="Not sure" options={I140_CENTERS} onChange={(v) => set("i140Center", v || null)} />{" "}
+          <Pick id={`${uid}-route`} label={family ? "After the I-130" : "After the I-140"} value={route} options={ROUTES} onChange={(v) => set("route", v)} />{" "}
+          {family ? null : <Pick id={`${uid}-center`} label="Where the I-140 was decided" value={form.i140Center ?? ""} empty="Not sure" options={I140_CENTERS} onChange={(v) => set("i140Center", v || null)} />}{" "}
           <Dates uid={uid} ids={rest} form={form} set={set} />{" "}
-          <Premium uid={uid} form={form} set={set} />{" "}
+          {family ? null : <Premium uid={uid} form={form} set={set} />}{" "}
+          {family ? null : (
           <div className="sm:col-span-2">
             <Label htmlFor={`${uid}-case`}>PERM case number, if the case has one</Label>
             <Input
@@ -699,9 +704,10 @@ export function TimelineFormFields({
               </KeepWhole>
             </p>
           </div>
+          )}
         </div>
       </details>{" "}
-      <H4 uid={uid} form={form} set={set} />{" "}
+      {family ? null : <H4 uid={uid} form={form} set={set} />}{" "}
       <Rfe uid={uid} form={form} set={set} />{" "}
       <Hints form={form} />{" "}
       <ShowOnBoard form={form} set={set} kept={kept} />

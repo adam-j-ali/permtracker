@@ -27,15 +27,33 @@
 import { USCIS_OFFICES, isCenter } from "../../src/lib/uscisOffices";
 import { MS_PER_DAY, daysBetweenOrNull } from "./time";
 
-/** `perm` is false for a category that has no labor certification, so no PERM case number. */
+/**
+ * `perm` is false for a category that has no labor certification, so no PERM case number. `basis` keeps family-based
+ * cases (a relative's I-130 instead of an employer's I-140; Nov 26 2026: an office group's members mostly file through
+ * marriage) apart from employment-based ones in every figure: their steps and waits aren't the same.
+ */
 export const CATEGORIES = [
-  { id: "eb1", label: "EB-1", perm: false },
-  { id: "eb2", label: "EB-2", perm: true },
-  { id: "eb2-niw", label: "EB-2 with a national interest waiver", perm: false },
-  { id: "eb3", label: "EB-3 professional or skilled", perm: true },
-  { id: "eb3-other", label: "EB-3 other workers", perm: true },
+  { id: "eb1", label: "EB-1", perm: false, basis: "employment" },
+  { id: "eb2", label: "EB-2", perm: true, basis: "employment" },
+  { id: "eb2-niw", label: "EB-2 with a national interest waiver", perm: false, basis: "employment" },
+  { id: "eb3", label: "EB-3 professional or skilled", perm: true, basis: "employment" },
+  { id: "eb3-other", label: "EB-3 other workers", perm: true, basis: "employment" },
+  { id: "family-ir", label: "Spouse, parent or child under 21 of a US citizen", perm: false, basis: "family" },
+  { id: "f1", label: "F1: unmarried son or daughter of a US citizen", perm: false, basis: "family" },
+  { id: "f2a", label: "F2A: spouse or child of a green card holder", perm: false, basis: "family" },
+  { id: "f2b", label: "F2B: unmarried son or daughter 21 or older of a green card holder", perm: false, basis: "family" },
+  { id: "f3", label: "F3: married son or daughter of a US citizen", perm: false, basis: "family" },
+  { id: "f4", label: "F4: brother or sister of a US citizen", perm: false, basis: "family" },
 ] as const;
 export type CategoryId = (typeof CATEGORIES)[number]["id"];
+export type Basis = "employment" | "family";
+
+/** Whether a category is family-based: a relative's I-130 starts it, and it never counts with employment cases. */
+export const isFamilyCategory = (id: string | null | undefined): boolean =>
+  CATEGORIES.some((c) => c.id === id && c.basis === "family");
+
+/** A timeline's basis, from its category; one with no category reads as employment, as every timeline did before. */
+export const basisOf = (category: string | null | undefined): Basis => (isFamilyCategory(category) ? "family" : "employment");
 
 /** Whether a category goes through PERM, so a timeline in it can carry a PERM case number. */
 export const isPermCategory = (id: string): boolean => CATEGORIES.some((c) => c.id === id && c.perm);
@@ -85,8 +103,10 @@ export type I140CenterId = (typeof I140_CENTERS)[number]["id"];
  * adjustment; a consular case goes from the I-140 to an interview abroad.
  */
 export const DATE_FIELDS = [
-  { id: "i140FiledOn", label: "I-140 filed", short: "I-140 filed", routes: ["adjustment", "consular"] },
-  { id: "i140ApprovedOn", label: "I-140 approved", short: "I-140 approved", routes: ["adjustment", "consular"] },
+  { id: "i130FiledOn", label: "I-130 filed", short: "I-130 filed", routes: ["adjustment", "consular"], basis: "family" },
+  { id: "i130ApprovedOn", label: "I-130 approved", short: "I-130 approved", routes: ["adjustment", "consular"], basis: "family" },
+  { id: "i140FiledOn", label: "I-140 filed", short: "I-140 filed", routes: ["adjustment", "consular"], basis: "employment" },
+  { id: "i140ApprovedOn", label: "I-140 approved", short: "I-140 approved", routes: ["adjustment", "consular"], basis: "employment" },
   { id: "i485FiledOn", label: "I-485 filed", short: "I-485 filed", routes: ["adjustment"] },
   { id: "biometricsOn", label: "Biometrics appointment", short: "Biometrics", routes: ["adjustment"] },
   { id: "eadOn", label: "Work permit (EAD) approved", short: "EAD", routes: ["adjustment"] },
@@ -96,6 +116,13 @@ export const DATE_FIELDS = [
   { id: "greenCardOn", label: "Green card approved, or immigrant visa issued", short: "Green card", routes: ["adjustment", "consular"] },
 ] as const;
 export type DateFieldId = (typeof DATE_FIELDS)[number]["id"];
+
+/** The steps a timeline on this route and basis asks for: the I-130 for a family case, the I-140 for an employment one. */
+export function stepsFor(route: string, basis: Basis) {
+  return DATE_FIELDS.filter(
+    (f) => (f.routes as readonly string[]).includes(route) && (!("basis" in f) || f.basis === basis),
+  );
+}
 
 /**
  * Dates that refine a step without being a step of their own, kept apart from DATE_FIELDS so the board draws the
@@ -276,6 +303,8 @@ export interface TimelineInput {
   fieldOffice?: string | null;
   /** The service center that took the I-485 in, by USCIS's code (I485_CENTERS). */
   i485Center?: string | null;
+  i130FiledOn?: string | null;
+  i130ApprovedOn?: string | null;
   i140FiledOn?: string | null;
   i140ApprovedOn?: string | null;
   i485FiledOn?: string | null;
@@ -320,6 +349,8 @@ export interface TimelineFields {
   i140Center?: I140CenterId;
   fieldOffice?: string;
   i485Center?: string;
+  i130FiledOn?: string;
+  i130ApprovedOn?: string;
   i140FiledOn?: string;
   i140ApprovedOn?: string;
   i485FiledOn?: string;
@@ -390,6 +421,7 @@ export type TimelineProblem =
   | { code: "date" }
   | { code: "no-dates" }
   | { code: "i140-order" }
+  | { code: "i130-order" }
   | { code: "green-card-order" }
   | { code: "rfe-order" }
   | { code: "rfe-form" }
@@ -516,12 +548,29 @@ export function validateTimeline(input: TimelineInput, today: string = isoToday(
       code: "no-dates",
       message: h4Only
         ? "The H-4 dates go with a green card timeline: add at least one I-140 or I-485 date too."
-        : "Add at least one date after PERM to record a timeline.",
+        : "Add at least one date to record a timeline.",
     };
   }
 
   if (out.premium !== true) delete out.premiumOn;
   const before = (a?: string, b?: string) => a !== undefined && b !== undefined && b < a;
+  if (before(out.i130FiledOn, out.i130ApprovedOn)) {
+    return { ok: false, code: "i130-order", message: "The I-130 approval is dated before its filing." };
+  }
+  // A family case has no I-140 or PERM, and an employment case no I-130: dates for the other kind are dropped.
+  if (isFamilyCategory(out.category)) {
+    delete out.i140FiledOn;
+    delete out.i140ApprovedOn;
+    delete out.premiumOn;
+    delete out.premium;
+    delete out.i140Center;
+  } else {
+    delete out.i130FiledOn;
+    delete out.i130ApprovedOn;
+  }
+  if (!DATE_FIELDS.some((f) => out[f.id] !== undefined)) {
+    return { ok: false, code: "no-dates", message: "Add at least one date to record a timeline." };
+  }
   if (before(out.i140FiledOn, out.i140ApprovedOn)) {
     return { ok: false, code: "i140-order", message: "The I-140 approval is dated before its filing." };
   }
@@ -1184,7 +1233,8 @@ export interface WaitingView {
 }
 
 export function whoIsWaiting(records: readonly TimelineRecord[]): WaitingView {
-  const live = records.filter((r) => r.hiddenAt === undefined);
+  // Its stages are an employment case's (PERM, the I-140): family-based timelines count in their own figures only.
+  const live = records.filter((r) => r.hiddenAt === undefined && basisOf(r.category) === "employment");
   const open = live.length >= BOARD_OPENS_AT;
   const stageIndex = new Map(WAITING_STAGES.map((s, i) => [s.id, i] as const));
   const byStage = WAITING_STAGES.map((s) => ({ id: s.id, label: s.label, count: 0 }));

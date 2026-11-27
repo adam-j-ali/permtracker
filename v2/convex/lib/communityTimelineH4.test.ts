@@ -58,7 +58,7 @@ describe("the H-4 dates", () => {
       code: "no-dates",
       message: "The H-4 dates go with a green card timeline: add at least one I-140 or I-485 date too.",
     });
-    expect(validateTimeline({}, TODAY)).toMatchObject({ code: "no-dates", message: "Add at least one date after PERM to record a timeline." });
+    expect(validateTimeline({}, TODAY)).toMatchObject({ code: "no-dates", message: "Add at least one date to record a timeline." });
   });
 
   it("take the work permit's route as asked, and refuse one the form doesn't offer", () => {

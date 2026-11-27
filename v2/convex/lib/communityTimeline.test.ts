@@ -12,6 +12,8 @@ import {
   formHints,
   isListedCode,
   isPermCategory,
+  isFamilyCategory,
+  stepsFor,
   mergeIntoTimeline,
   isShown,
   reviewFlags,
@@ -177,10 +179,38 @@ describe("the USCIS office and the biometrics date", () => {
 
 describe("categories", () => {
   it("knows which have a PERM case and which don't", () => {
-    expect(CATEGORIES.filter((c) => !c.perm).map((c) => c.id)).toEqual(["eb1", "eb2-niw"]);
+    expect(CATEGORIES.filter((c) => !c.perm && c.basis === "employment").map((c) => c.id)).toEqual(["eb1", "eb2-niw"]);
+    expect(CATEGORIES.filter((c) => c.basis === "family").every((c) => !c.perm)).toBe(true);
     expect(isPermCategory("eb2")).toBe(true);
     expect(isPermCategory("eb2-niw")).toBe(false);
     expect(isPermCategory("nonsense")).toBe(false);
+  });
+});
+
+describe("family-based timelines", () => {
+  it("ask for the I-130 where an employment case asks for the I-140", () => {
+    expect(stepsFor("adjustment", "family").map((f) => f.id)).toContain("i130FiledOn");
+    expect(stepsFor("adjustment", "family").map((f) => f.id)).not.toContain("i140FiledOn");
+    expect(stepsFor("consular", "employment").map((f) => f.id)).not.toContain("i130FiledOn");
+    expect(isFamilyCategory("f2a")).toBe(true);
+    expect(isFamilyCategory("eb2")).toBe(false);
+  });
+
+  it("keep a family case's I-130 and drop the employment-only fields, and the reverse", () => {
+    const fam = validateTimeline(
+      { category: "family-ir", i130FiledOn: "2025-01-10", i130ApprovedOn: "2025-09-01", i140FiledOn: "2025-02-01", premium: true, i485FiledOn: "2025-01-10" },
+      TODAY,
+    );
+    expect(fam.ok && [fam.value.i130FiledOn, fam.value.i140FiledOn, fam.value.premium]).toEqual(["2025-01-10", undefined, undefined]);
+    const emp = validateTimeline({ category: "eb2", i130FiledOn: "2025-01-10", i140FiledOn: "2025-02-01" }, TODAY);
+    expect(emp.ok && [emp.value.i130FiledOn, emp.value.i140FiledOn]).toEqual([undefined, "2025-02-01"]);
+    const backwards = validateTimeline({ category: "f2a", i130FiledOn: "2025-05-01", i130ApprovedOn: "2025-04-01" }, TODAY);
+    expect(!backwards.ok && backwards.code).toBe("i130-order");
+  });
+
+  it("never count in the employment stages of who is waiting", () => {
+    const rows = Array.from({ length: BOARD_OPENS_AT }, (_, i) => ({ updatedAt: i, category: "family-ir", i130FiledOn: "2025-01-01" }) as TimelineRecord);
+    expect(whoIsWaiting(rows).byStage.reduce((s, x) => s + x.count, 0)).toBe(0);
   });
 });
 

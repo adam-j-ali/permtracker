@@ -110,6 +110,9 @@ def visastats_record(row: dict) -> dict | None:
 
 # Our own forms' words, as the merge's.
 TIMELINE_CATEGORIES = {"eb1": "EB-1", "eb2": "EB-2", "eb2-niw": "EB-2 NIW", "eb3": "EB-3", "eb3-other": "EB-3 EW"}
+# Family-based timelines (convex/lib/communityTimeline.ts CATEGORIES, Nov 26 2026): a relative's I-130 instead of an
+# employer's I-140. Every figure this list feeds is an employment-based case's, so they stay out of it, never mixed in.
+FAMILY_CATEGORIES = {"family-ir", "f1", "f2a", "f2b", "f3", "f4"}
 CONSULAR_LINES = {"eb1": "EB-1", "eb2": "EB-2", "eb3": "EB-3", "ew": "EB-3 EW", "eb4": "EB-4", "eb5": "EB-5"}
 CENTERS_BY_NAME = {"nebraska": "NSC", "texas": "TSC"}
 CONSULAR_OUTCOME = {"waiting": "pending", "approved": "approved", "issued": "issued", "passport-returned": "issued",
@@ -248,6 +251,8 @@ def build_cases(sources: dict[str, list[dict]]) -> tuple[list[dict], dict]:
     records, left_out = [], 0
     for name, rows in sources.items():
         for row in rows:
+            if name == "timelines" and row.get("category") in FAMILY_CATEGORIES:
+                continue
             r = makers[name](row)
             if r is None:
                 left_out += 1

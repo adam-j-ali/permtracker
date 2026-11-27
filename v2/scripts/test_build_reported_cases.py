@@ -128,6 +128,9 @@ def main() -> int:
     check(r["i140_rfe_issued"] == "2026-01-30" and r["i140_rfe_answered"] == "2026-02-10" and r.get("i485_rfe_issued") is None,
           "an I-140 RFE lands on the I-140")
     check(r["as_of"] == "2026-11-19", "as of its last change, an Eastern day")
+    fam_cases, _ = b.build_cases({"timelines": [{**tl, "id": "f1", "category": "family-ir", "i130FiledOn": "2025-01-02"}]})
+    emp_cases, _ = b.build_cases({"timelines": [{**tl, "id": "f1", "category": "eb2"}]})
+    check(fam_cases == [] and len(emp_cases) == 1, "a family-based timeline stays out of the employment-based list")
     private = b.timeline_record({**tl, "public": False})
     check(private["shows"] is False, "a private timeline doesn't show")
     consular = b.timeline_record({**tl, "route": "consular", "i485FiledOn": None, "interviewOn": "2026-08-01",
