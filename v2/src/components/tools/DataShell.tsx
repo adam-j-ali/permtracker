@@ -4,8 +4,10 @@ import { usePathname } from "next/navigation";
 
 import { SiteBreadcrumbs } from "@/components/layout/SiteBreadcrumbs";
 import type { DateSources } from "@/lib/pageDates";
-import { isDataPath } from "@/lib/siteMap";
+import { isDataPath, sectionForPath } from "@/lib/siteMap";
 import { CaseNextStep } from "./CaseNextStep";
+import { ReceiptNextStep } from "./ReceiptNextStep";
+import { BulletinNextStep, ConsulateNextStep } from "./StepNextBoxes";
 import { DataRail } from "./DataRail";
 
 /**
@@ -25,12 +27,65 @@ import { DataRail } from "./DataRail";
 /** Pages that carry their own case box, so the closing one would repeat it. */
 const OWN_LOOKUP: readonly RegExp[] = [
   /^\/perm-case-status/,
+  /^\/uscis-case-status/,
+  // The bulletin's own pages and the priority date calculator carry the bulletin alert already.
+  /^\/visa-bulletin/,
+  /^\/tools\/priority-date-calculator/,
   /^\/perm-case-alerts$/,
   /^\/case-search/,
   /^\/perm-employers\/(?!compare$|under-review$|browse$)[^/]+$/,
   /^\/perm-attorneys\/(?!browse$)[^/]+$/,
   /^\/perm-queue\/\d{4}-\d{2}/,
 ];
+
+type ClosingBox = "perm" | "dol" | "wage" | "receipt" | "bulletin" | "consulate";
+
+/**
+ * The closing box for the step a page is about (Nov 26 2026: every data page ended asking for a PERM case number,
+ * the USCIS receipt blocks page too). By the page's group in the site map, with a few pages read by their address:
+ * a PERM case, a wage request, a DOL case (LCA, H-2A, H-2B), a USCIS receipt past PERM, the visa bulletin's alert on
+ * the green card line, the consulates for the steps abroad.
+ */
+export function closingBoxFor(pathname: string): ClosingBox {
+  if (/^\/(uscis-|i485-|i140-|opt-)/.test(pathname)) return "receipt";
+  if (/^\/(visa-refusals|visa-wait-times)/.test(pathname)) return "consulate";
+  switch (sectionForPath(pathname)?.group) {
+    case "I-140":
+    case "I-485":
+    case "After the green card":
+    case "Students and OPT":
+      return "receipt";
+    case "Wage request":
+    case "Wages":
+      return "wage";
+    case "Green card line":
+      return "bulletin";
+    case "Consulate":
+      return "consulate";
+    case "Other visas":
+      return "dol";
+    default:
+      return /^\/(green-card-timelines|tools\/ead-extension|tools\/green-card-fees)/.test(pathname) ? "receipt" : "perm";
+  }
+}
+
+function ClosingBox({ pathname }: { pathname: string }) {
+  const cls = "mt-16 max-w-5xl";
+  switch (closingBoxFor(pathname)) {
+    case "receipt":
+      return <ReceiptNextStep className={cls} />;
+    case "bulletin":
+      return <BulletinNextStep className={cls} />;
+    case "consulate":
+      return <ConsulateNextStep className={cls} />;
+    case "wage":
+      return <CaseNextStep question="Waiting on a wage request?" numberKind="DOL" source="data-page-end" className={cls} />;
+    case "dol":
+      return <CaseNextStep question="Looking up a DOL case?" numberKind="DOL" source="data-page-end" className={cls} />;
+    default:
+      return <CaseNextStep question="Waiting on a PERM case?" source="data-page-end" className={cls} />;
+  }
+}
 
 export function DataShell({ children, sources }: { children: React.ReactNode; sources?: DateSources }) {
   const pathname = usePathname();
@@ -61,9 +116,7 @@ export function DataShell({ children, sources }: { children: React.ReactNode; so
       <div data-shell-column className="min-w-0 pb-16 lg:flex-1 lg:[&>.mx-auto]:ml-0 lg:[&>*>.mx-auto]:ml-0">
         <SiteBreadcrumbs inColumn sources={sources} />
         {children}
-        {OWN_LOOKUP.some((re) => re.test(pathname)) ? null : (
-          <CaseNextStep question="Waiting on a PERM case?" source="data-page-end" className="mt-16 max-w-5xl" />
-        )}
+        {OWN_LOOKUP.some((re) => re.test(pathname)) ? null : <ClosingBox pathname={pathname} />}
       </div>
     </div>
   );
