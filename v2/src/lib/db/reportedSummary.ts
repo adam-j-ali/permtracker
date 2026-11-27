@@ -25,6 +25,10 @@ export const getReportedSummary = async (): Promise<ReportedSummary | null> => p
 export const getOfficeSummary = async (code: string): Promise<PlaceSummary | null> =>
   parseSummary<PlaceSummary>(await read(`office:${code}`));
 
+/** One office's family-based cases, kept apart from its employment-based ones (the build's "office-family:<code>"). */
+export const getOfficeFamilySummary = async (code: string): Promise<PlaceSummary | null> =>
+  parseSummary<PlaceSummary>(await read(`office-family:${code}`));
+
 export const getPostSummary = async (slug: string): Promise<PlaceSummary | null> =>
   parseSummary<PlaceSummary>(await read(`post:${slug}`));
 

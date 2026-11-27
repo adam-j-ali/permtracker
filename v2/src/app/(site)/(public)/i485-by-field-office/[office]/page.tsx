@@ -57,7 +57,7 @@ import { datasetSchemaFor } from "@/lib/datasetSchema";
 import { formatInt } from "@/lib/format";
 import { StepsByStage } from "@/components/community/StepFigures";
 import { WhoIsWaiting } from "@/components/community/TimelineBoard";
-import { getOfficeSummary } from "@/lib/db/reportedSummary";
+import { getOfficeFamilySummary, getOfficeSummary } from "@/lib/db/reportedSummary";
 import type { PlaceSummary } from "@/lib/reportedSummary";
 import { KeepWhole } from "@/components/ui/keep-whole";
 
@@ -181,6 +181,11 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
       ? getSampleMonths().catch(softFail<SampleMonthsDoc | null>("i485-by-field-office/[office].sample", null))
       : Promise.resolve(null),
   ]);
+  // Family-based cases people reported here: their own step times, never mixed with the employment ones above.
+  const famSummary = await getOfficeFamilySummary(office.code).catch(
+    softFail<PlaceSummary | null>("i485-by-field-office/[office].famSummary", null),
+  );
+  const famStepsMeasured = !!famSummary && famSummary.steps.some((st) => st.median !== null);
   const sampleShown = sample !== null && newestCompleteMonths(sample, "I-485").length > 0;
   const stepsMeasured = !!summary && summary.steps.some((st) => st.median !== null);
   const waiting = summary?.waiting?.open ? summary.waiting : null;
@@ -470,7 +475,18 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
                     </tbody>
                   </table>
                 </ScrollBox>
-              </div>
+              </div>{" "}
+              {famStepsMeasured ? (
+                <div className="mt-8">
+                  <h3 className="font-heading text-xl font-bold">How long each step took, as people report it</h3>{" "}
+                  <p className="mt-2 max-w-2xl text-base text-muted-foreground">
+                    {`From the ${formatInt(famSummary!.cases)} family-based cases people reported at ${theOffice(office)}, each person once.`}
+                  </p>
+                  <div className="mt-5">
+                    <StepsByStage steps={famSummary!.steps} stages={[{ groups: ["i485"], title: "Each step of the I-485" }]} />
+                  </div>
+                </div>
+              ) : null}
             </section>
           ) : null}
 

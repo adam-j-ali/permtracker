@@ -33,7 +33,7 @@ const getSampleMonths = vi.fn(async () => null as unknown);
 vi.mock("@/lib/db/uscisSample", () => ({ getSampleMonths }));
 // The office's figures over every source, the shared timelines among them (the hourly build's summary, D7).
 const getOfficeSummary = vi.fn(async () => null as PlaceSummary | null);
-vi.mock("@/lib/db/reportedSummary", () => ({ getOfficeSummary }));
+vi.mock("@/lib/db/reportedSummary", () => ({ getOfficeSummary, getOfficeFamilySummary: async () => null }));
 
 const { default: UscisOfficePage, generateStaticParams, generateMetadata } = await import("../page");
 

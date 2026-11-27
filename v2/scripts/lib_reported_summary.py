@@ -389,13 +389,14 @@ def summarize(cases: list[dict], today: dt.date) -> dict:
             "waiting": waiting(cases, today), "i140": i140_figures(cases, today)}
 
 
-def office_summaries(cases: list[dict], today: dt.date) -> dict[str, dict]:
-    """Each office with OFFICE_FLOOR cases or more: its I-485 steps and who's waiting there."""
+def office_summaries(cases: list[dict], today: dt.date, family: bool = False) -> dict[str, dict]:
+    """Each office with OFFICE_FLOOR cases or more: its I-485 steps and who's waiting there. Employment-based cases by
+    default; `family` gives the family-based cases their own ("office-family:<code>", Nov 26 2026), never mixed in."""
     by_office: dict[str, list[dict]] = {}
     for c in cases:
-        # The office pages are about employment-based I-485s: a family case reported at an office counts nowhere on
-        # them (the office list leaves it out the same way, src/lib/db/communityReports.ts).
-        if c.get("office") and c.get("category") != "Family":
+        # An office's employment-based figures never count a family case, nor its family figures an employment one
+        # (the office list leaves family cases out the same way, src/lib/db/communityReports.ts).
+        if c.get("office") and (c.get("category") == "Family") == family:
             by_office.setdefault(c["office"], []).append(c)
     steps = [s for s in STEPS if s["id"] in OFFICE_STEPS]
     out = {}
@@ -601,6 +602,7 @@ def all_summaries(cases: list[dict], today: dt.date, reports: list[dict] | None 
     cases = prepared(cases)
     out = {"all": summarize(cases, today)}
     out.update({f"office:{k}": v for k, v in office_summaries(cases, today).items()})
+    out.update({f"office-family:{k}": v for k, v in office_summaries(cases, today, family=True).items()})
     out.update({f"post:{k}": v for k, v in post_summaries(cases, today).items()})
     if reports is not None:
         out.update(report_summaries(reports, today))

@@ -130,7 +130,8 @@ def main() -> int:
     check(r["as_of"] == "2026-11-19", "as of its last change, an Eastern day")
     fam_cases, _ = b.build_cases({"timelines": [{**tl, "id": "f1", "category": "family-ir", "i130FiledOn": "2025-01-02"}]})
     emp_cases, _ = b.build_cases({"timelines": [{**tl, "id": "f1", "category": "eb2"}]})
-    check(fam_cases == [] and len(emp_cases) == 1, "a family-based timeline stays out of the employment-based list")
+    check(len(fam_cases) == 1 and fam_cases[0].get("category") == "Family" and len(emp_cases) == 1,
+          "a family-based timeline joins the list as Family, as the readers' family cases do")
     private = b.timeline_record({**tl, "public": False})
     check(private["shows"] is False, "a private timeline doesn't show")
     consular = b.timeline_record({**tl, "route": "consular", "i485FiledOn": None, "interviewOn": "2026-08-01",

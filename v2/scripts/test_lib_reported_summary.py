@@ -185,6 +185,9 @@ def main() -> int:
     fam = rs.office_summaries(office + family, TODAY)
     check(fam["SFV"]["cases"] == offices["SFV"]["cases"] and "SFV" not in rs.office_summaries(family, TODAY),
           f"a family case counts toward no office: {fam['SFV']['cases']} vs {offices['SFV']['cases']}")
+    own = rs.office_summaries(office + family, TODAY, family=True)
+    check(list(own) == ["SFV"] and own["SFV"]["cases"] == len(family), "family cases get their own office summary")
+    check("office-family:SFV" in rs.all_summaries(office + family, TODAY), "stored under office-family:<code>")
 
     # Every group has its steps, the ids are unique, and every field a step reads is one the merge carries.
     import lib_reported_cases as rc
