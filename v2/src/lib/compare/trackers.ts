@@ -130,7 +130,7 @@ export const PERM_TRACKER: Tracker = {
     wage: { mark: "yes", evidence: { url: `${OURS}/pwd-cases` } },
     lca: { mark: "yes", note: "Every LCA in DOL's files since October 2015", evidence: { url: `${OURS}/lca-cases` } },
     seasonal: { mark: "yes", evidence: { url: `${OURS}/seasonal-cases` } },
-    alerts: { mark: "yes", note: "Free. A status change is emailed at once", evidence: { url: `${OURS}/perm-case-status` } },
+    alerts: { mark: "yes", note: "Free. A DOL status change is emailed at once, a USCIS receipt's within hours, and a receipt block's moves as they're checked", evidence: { url: `${OURS}/perm-case-status` } },
     push: { mark: "yes", note: "A browser notification when a DOL case changes, or when a new bulletin is out for your line. No account needed", evidence: { url: `${OURS}/perm-case-status` } },
     bulletinAlerts: { mark: "yes", note: "An email when your category's cutoff moves, or a browser notification each new bulletin", evidence: { url: `${OURS}/visa-bulletin/categories/eb2-india` } },
     employers: { mark: "yes", note: "Every employer in DOL's files, PERM or not", evidence: { url: `${OURS}/perm-employers` } },
@@ -145,8 +145,8 @@ export const PERM_TRACKER: Tracker = {
     openData: { mark: "yes", note: "A free API and CC BY-NC 4.0 files", evidence: { url: `${OURS}/open-data` } },
   },
   strengths: [],
-  bestFor: "Following one case's DOL status, in any DOL program, with a free email when it changes",
-  dataFrom: "DOL's case-status service and its quarterly files",
+  bestFor: "Following a case from PERM to the green card, with a free email at each DOL or USCIS change",
+  dataFrom: "DOL's case-status service and files, USCIS's data, and our daily USCIS receipt sample",
   beatsUs: [],
 };
 
