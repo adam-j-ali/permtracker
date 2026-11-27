@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 
 import { CatchingUp } from "../CatchingUp";
 import { PwdDateEstimate } from "../PwdDateEstimate";
@@ -35,6 +35,19 @@ describe("PwdDateEstimate", () => {
     render(<PwdDateEstimate data={DATA} lineDay="2026-07-27" />);
     expect(screen.getAllByText("Pick the day it was filed").length).toBeGreaterThan(0);
     expect(screen.queryByText(/^Around /)).toBeNull();
+  });
+
+  it("opens on the day a link carries (?filed=), and ignores one that isn't a date", () => {
+    window.history.pushState({}, "", "/tools/pwd-calculator?filed=2026-08-14");
+    Element.prototype.scrollIntoView = vi.fn();
+    render(<PwdDateEstimate data={DATA} lineDay="2026-07-27" />);
+    expect((screen.getByLabelText("The day the wage request was filed") as HTMLInputElement).value).toBe("2026-08-14");
+    expect(screen.getByText(/2,213 requests filed before it are still waiting/)).toBeTruthy();
+    cleanup();
+    window.history.pushState({}, "", "/tools/pwd-calculator?filed=tomorrow");
+    render(<PwdDateEstimate data={DATA} lineDay="2026-07-27" />);
+    expect((screen.getByLabelText("The day the wage request was filed") as HTMLInputElement).value).toBe("");
+    window.history.pushState({}, "", "/");
   });
 
   it("dates a request filed after the day DOL is on, with the requests ahead", () => {

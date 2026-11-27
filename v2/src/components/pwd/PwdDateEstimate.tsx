@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { DateInput } from "@/components/forms/DateInput";
 import { CaseFinder } from "@/components/tools/CaseFinder";
@@ -33,7 +33,16 @@ export function PwdDateEstimate({
   filedByDay?: readonly (readonly [string, number])[];
 }) {
   const id = useId();
+  const root = useRef<HTMLDivElement>(null);
   const [filed, setFiled] = useState("");
+  // A link can carry the day (?filed=2026-08-20), so a reply in a group opens straight on its answer. Read after the
+  // first render, never on the server: the page is cached and the same for everyone.
+  useEffect(() => {
+    const day = new URLSearchParams(window.location.search).get("filed") ?? "";
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return;
+    setFiled(day);
+    root.current?.scrollIntoView({ block: "start" });
+  }, []);
   const ok = /^\d{4}-\d{2}-\d{2}$/.test(filed);
   // Read only once a day is picked: the page is cached, and a day computed in
   // the first render could differ between the server and the reader.
@@ -49,7 +58,7 @@ export function PwdDateEstimate({
   const decidedThatDay = sameDay !== null ? Math.max(0, sameDay - waitingThatDay) : null;
 
   return (
-    <div>
+    <div ref={root} className="scroll-mt-24">
       <Label htmlFor={id}>The day the wage request was filed</Label>{" "}
       <DateInput id={id} value={filed} onChange={(e) => setFiled(e.target.value)} className="mt-1.5 max-w-xs" />{" "}
       {/* No number: the employer's name and the day above find the request itself, with DOL's status for it. */}
