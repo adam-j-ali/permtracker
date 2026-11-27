@@ -172,6 +172,20 @@ export default async function I485ByFieldOfficePage() {
       tone: "blue" as const,
     }));
 
+  // Family-based I-485s (a relative's petition), the same quarter, the offices holding the most: most people at a field
+  // office file this way (Nov 26 2026).
+  const familyRows: BarRow[] = rankOffices(fieldOffices, "famPending", 15).map((o) => {
+    const q = quartersOfWork(o, "fam");
+    return {
+      key: `fam-${o.code}`,
+      label: `${o.office}, ${o.state}`,
+      sub: `${fmt(o.famApproved)} approved, ${fmt(o.famDenied)} denied in the quarter${q !== null ? `, about ${q.toFixed(1)} quarters of work` : ""}`,
+      value: o.famPending,
+      text: fmt(o.famPending),
+      tone: "yellow" as const,
+    };
+  });
+
   const centerRows: BarRow[] = [...serviceCenters]
     .sort((a, b) => (b.empApproved ?? 0) - (a.empApproved ?? 0))
     .map((o) => ({
@@ -296,6 +310,25 @@ export default async function I485ByFieldOfficePage() {
               <BarRows label="Service center approvals in the quarter" rows={centerRows} />
             </FigurePlate>
           </section>
+
+          {familyRows.length > 0 ? (
+            <section id="family" className="mt-12 scroll-mt-24">
+              <FigurePlate
+                title="Family-based I-485 pending"
+                subject="The fifteen field offices holding the most"
+                caption={
+                  <>
+                    Green card applications filed through a relative, such as a husband, wife or parent, awaiting a
+                    decision on the quarter&apos;s last day, with the quarter&apos;s decisions and how many quarters of
+                    work that pace leaves. It compares workload. It doesn&apos;t tell you how long any one case will take.
+                  </>
+                }
+                source={<>USCIS, {data.sourceFile}, family-based, pending as of {data.quarterEnd}.</>}
+              >
+                <BarRows label="Busiest field offices by pending family-based I-485s" rows={familyRows} />
+              </FigurePlate>
+            </section>
+          ) : null}
 
         </>
       )}
