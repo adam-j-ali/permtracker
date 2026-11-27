@@ -483,7 +483,7 @@ export default async function UscisOfficePage({ params }: { params: Promise<{ of
                     {`From the ${formatInt(famSummary!.cases)} family-based cases people reported at ${theOffice(office)}, each person once.`}
                   </p>
                   <div className="mt-5">
-                    <StepsByStage steps={famSummary!.steps} stages={[{ groups: ["i485"], title: "Each step of the I-485" }]} />
+                    <StepsByStage steps={famSummary!.steps} stages={[{ groups: ["i485"], title: "Each step of a family-based I-485" }]} />
                   </div>
                 </div>
               ) : null}

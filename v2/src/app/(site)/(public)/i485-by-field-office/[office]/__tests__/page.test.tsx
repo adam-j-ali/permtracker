@@ -33,7 +33,8 @@ const getSampleMonths = vi.fn(async () => null as unknown);
 vi.mock("@/lib/db/uscisSample", () => ({ getSampleMonths }));
 // The office's figures over every source, the shared timelines among them (the hourly build's summary, D7).
 const getOfficeSummary = vi.fn(async () => null as PlaceSummary | null);
-vi.mock("@/lib/db/reportedSummary", () => ({ getOfficeSummary, getOfficeFamilySummary: async () => null }));
+const getOfficeFamilySummary = vi.fn(async () => null as PlaceSummary | null);
+vi.mock("@/lib/db/reportedSummary", () => ({ getOfficeSummary, getOfficeFamilySummary }));
 
 const { default: UscisOfficePage, generateStaticParams, generateMetadata } = await import("../page");
 
@@ -146,6 +147,18 @@ describe("a USCIS office's page", () => {
     expect(text).toContain("This office decided 284 cases in its latest quarter. At that pace, it would need about 9.5 quarters, or about 2.4 years, to get through every case it has waiting. That's the 2nd largest pile of 2 field offices.");
     expect(text).toContain("It doesn't tell you how long any one case will take.");
     expect(text).toContain("Pending means still waiting on the last day of that quarter.");
+  });
+
+  it("names its family-based step times apart from the employment ones, so no heading repeats", async () => {
+    const gc: StepFigure = {
+      id: "i485-gc", label: "I-485 filed to green card", group: "i485", verified: false, n: 12, windowDays: 365,
+      median: 295, p25: 250, p75: 330, before: null, allTime: 20, months: [],
+    };
+    getOfficeSummary.mockResolvedValueOnce({ today: "2026-11-25", cases: 30, steps: [gc] });
+    getOfficeFamilySummary.mockResolvedValueOnce({ today: "2026-11-25", cases: 12, steps: [gc] });
+    const { container } = await page("hartford-connecticut");
+    const heads = [...container.querySelectorAll("h2,h3,h4")].map((h) => h.textContent?.trim().toLowerCase());
+    expect(heads.filter((h, i) => heads.indexOf(h) !== i)).toEqual([]);
   });
 
   it("gives family-based I-485s their own figures, pace, place and table", async () => {
