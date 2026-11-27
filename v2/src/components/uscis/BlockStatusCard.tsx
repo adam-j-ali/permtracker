@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { Fragment, type ReactNode } from "react";
 
 import { FigurePlate } from "@/components/tools/FigurePlate";
 import { ChartTips } from "@/components/data/ChartTips";
@@ -33,6 +33,7 @@ export function BlockStatusCard({
   form,
   received,
   blockCases,
+  note,
 }: {
   block: string;
   asOf: string;
@@ -45,6 +46,8 @@ export function BlockStatusCard({
   received?: { from: string; to: string };
   /** The block's cases of every form, for the numbers that hold none. */
   blockCases?: number;
+  /** A word on how to read this form's figures, inside the frame so a screenshot carries it. */
+  note?: ReactNode;
 }) {
   const when = formatAsOf(asOf) ?? asOf;
   const waitingTotal = mix.waiting.reduce((s, w) => s + w.n, 0);
@@ -64,6 +67,7 @@ export function BlockStatusCard({
         <span className="ml-3 font-sans text-xl font-bold">cases</span>
       </p>{" "}
       {received ? <p className="mt-2 text-base text-muted-foreground">Received about {receivedSpan(received)}</p> : null}{" "}
+      {note ? <div className="mt-4 border-l-4 border-chart-blue bg-card p-4 text-base">{note}</div> : null}{" "}
       <ChartTips label={`The ${formatInt(mix.total)} cases in ${block} by status`} className="mt-5">
         <BlockMixBar mix={mix} label={`The cases in ${block} by status`} />
       </ChartTips>{" "}

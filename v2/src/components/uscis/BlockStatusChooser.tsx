@@ -3,9 +3,10 @@
 import { Fragment, useEffect, useState } from "react";
 
 import { choiceVariants } from "@/components/ui/choice";
+import { keepWhole } from "@/components/ui/keep-whole";
 import { ShareLine } from "@/components/updates/ShareLine";
 import { BlockStatusCard } from "@/components/uscis/BlockStatusCard";
-import { BLOCK_FORM_WORDS, type BlockFormChoice } from "@/lib/uscisSample";
+import { BLOCK_FORM_WORDS, decidedOn, type BlockFormChoice } from "@/lib/uscisSample";
 
 /** The event a form choice sends, so other parts of the page follow it. */
 export const BLOCK_FORM_EVENT = "pt-block-form";
@@ -52,6 +53,7 @@ export function BlockStatusChooser({
   };
   const shown = choices.find((c) => c.key === key) ?? choices[0];
   if (!shown) return null;
+  const parent = decidedOn(shown.key);
   // Every form together and the commonest few as buttons, the rest in one list: a block can hold 20 forms, and a
   // button each pushed the card a screen down on a phone. On a phone a button shows the form's number and count.
   const quick = choices.slice(0, QUICK + 1);
@@ -100,7 +102,27 @@ export function BlockStatusChooser({
           ) : null}
         </div>
       ) : null}{" "}
-      <BlockStatusCard block={block} asOf={asOf} mix={shown.mix} every={every} form={shown.key === "all" ? undefined : shown.key} received={received} blockCases={blockCases} />{" "}
+      <BlockStatusCard
+        block={block}
+        asOf={asOf}
+        mix={shown.mix}
+        every={every}
+        form={shown.key === "all" ? undefined : shown.key}
+        received={received}
+        blockCases={blockCases}
+        note={parent ? (
+          <>
+            <p>
+              {keepWhole(`An ${shown.key} is sent in with an ${parent}, and USCIS's page doesn't move its receipt on its own. Across every block we've checked, nearly every ${shown.key} receipt still reads "Case Was Received", and none shows an approval. The decision comes on the receipt of the ${parent} filed with it.`)}
+            </p>{" "}
+            {choices.some((c) => c.key === parent) ? (
+              <button type="button" className="link mt-2 min-h-11 text-left font-bold" onClick={() => choose(parent)}>
+                {`Show the ${parent} figures`}
+              </button>
+            ) : null}
+          </>
+        ) : undefined}
+      />{" "}
       <ShareLine className="mt-5" line={lines[shown.key] ?? ""} day={asOf} event="block_line_shared" />
     </div>
   );

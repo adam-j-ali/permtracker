@@ -57,3 +57,25 @@ describe("BlockStatusChooser with many forms", () => {
     expect(formButtons().every((b) => b.getAttribute("aria-pressed") === "false")).toBe(true);
   });
 });
+
+describe("BlockStatusChooser on a form decided on another form's receipt", () => {
+  // Nov 27 2026: a group read IOE09358's I-485J card (over 99% waiting) as the block's green cards stuck for 9 months.
+  // Of 24,493 I-485J receipts checked, none showed an approval; the decision comes on the I-485's receipt.
+  const withJ = blockFormChoices({
+    "I-485": [{ grp: "approved", status: "", n: 500 }, { grp: "waiting", status: "", n: 500 }],
+    "I-485J": [{ grp: "waiting", status: "", n: 90 }],
+  });
+  it("says so on the I-485J card, and its button shows the I-485 figures", () => {
+    render(<BlockStatusChooser block="IOE09358" asOf="2026-11-27" every choices={withJ} lines={{}} />);
+    fireEvent.click(screen.getByRole("button", { name: /^I-485J/ }));
+    expect(document.body.textContent).toContain("decision comes on the receipt of the I-485 filed with it");
+    fireEvent.click(screen.getByRole("button", { name: "Show the I-485 figures" }));
+    expect(screen.getByRole("button", { name: /^I-485 / }).getAttribute("aria-pressed")).toBe("true");
+    expect(document.body.textContent).not.toContain("decision comes on the receipt of the I-485 filed with it");
+  });
+  it("says nothing of the kind on a form decided on its own receipt", () => {
+    render(<BlockStatusChooser block="IOE09358" asOf="2026-11-27" every choices={withJ} lines={{}} />);
+    fireEvent.click(screen.getByRole("button", { name: /^I-485 / }));
+    expect(document.body.textContent).not.toContain("The decision comes on the receipt");
+  });
+});

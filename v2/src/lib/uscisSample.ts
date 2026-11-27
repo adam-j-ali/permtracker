@@ -79,6 +79,19 @@ export function countedExactly(figure: GroupFigure, every: boolean): boolean {
   return every || figure.low === figure.high;
 }
 
+/**
+ * Forms whose own receipt USCIS's page doesn't move, each with the form whose receipt carries the decision. Of 24,493
+ * I-485J receipts the sample had checked by Nov 27 2026, none showed an approval and 99.6% still read "Case Was
+ * Received", while the I-485s in the same blocks were approved (IOE09358: 49%). A group read the I-485J card as the
+ * block's green cards stuck for nine months.
+ */
+const DECIDED_ON: Readonly<Record<string, string>> = { "I-485J": "I-485" };
+
+/** The form whose receipt carries this form's decision, or null when it's decided on its own receipt. */
+export function decidedOn(form: string | undefined): string | null {
+  return (form && DECIDED_ON[form.toUpperCase()]) || null;
+}
+
 export interface SeriesPoint {
   block: string;
   counted: number;
