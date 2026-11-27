@@ -20,6 +20,16 @@ vi.mock("@/lib/db/uscisSample", () => ({
   getSampleMeta: async () => ({ as_of: "2026-11-29", cases: 52_000 }),
   getSampleBlocks,
   getSampleMonths: async () => null,
+  getSampleReached: async () => ({
+    as_of: "2026-11-29",
+    forms: {
+      "I-485": [
+        { month: "2026-03", counted: 13371, decided: 0.51, low: 0.5, high: 0.52 },
+        { month: "2026-04", counted: 9000, decided: 0.34, low: 0.33, high: 0.35 },
+      ],
+      "I-130": [{ month: "2026-03", counted: 900, decided: 0.38, low: 0.35, high: 0.41 }],
+    },
+  }),
   getSampleIssued,
   getBlockMixes,
 }));
@@ -49,6 +59,18 @@ describe("/uscis-receipt-blocks: receipts issued a day", () => {
     expect(text).toContain("Online receipts issued a day");
     expect(text).toContain("16,000");
     expect(text).toContain("issued in the week to Nov 29, most for the I-765, I-485 and I-131.");
+  });
+});
+
+describe("/uscis-receipt-blocks: which receipt month USCIS has reached", () => {
+  it("names the newest half-decided month per form, its range and count, the month after, and a form with none is left out", async () => {
+    const { container } = render(await UscisReceiptBlocksPage());
+    const text = (container.textContent ?? "").replace(/\s+/g, " ");
+    expect(text).toContain("Which receipt month USCIS has reached");
+    expect(text).toContain("March 2026");
+    expect(text).toContain("51% decided (50% to 52%), of 13,371 cases checked.");
+    expect(text).toContain("April 2026: 34% decided, of 9,000.");
+    expect(text).not.toContain("I-130, family petition");
   });
 });
 

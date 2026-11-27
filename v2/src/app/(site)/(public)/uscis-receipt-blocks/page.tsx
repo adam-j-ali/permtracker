@@ -19,7 +19,7 @@ import { KeepWhole, keepWhole } from "@/components/ui/keep-whole";
 import { ListPages } from "@/components/ui/list-pages";
 import { CaveatBox } from "@/components/ui/note";
 import { andList } from "@/lib/describe";
-import { getBlockMixes, getSampleBlocks, getSampleIssued, getSampleMeta, getSampleMonths } from "@/lib/db/uscisSample";
+import { getBlockMixes, getSampleBlocks, getSampleIssued, getSampleMeta, getSampleMonths, getSampleReached } from "@/lib/db/uscisSample";
 import { formatShareOf } from "@/lib/format";
 import { softFail } from "@/lib/softRead";
 import { formatAsOf, formatMonthDay } from "@/lib/dolFormat";
@@ -27,7 +27,8 @@ import { openGraphBase } from "@/lib/openGraphBase";
 import { withSocialCard } from "@/lib/socialCard";
 import { BlockFollowForm } from "@/components/uscis/BlockFollowForm";
 import { issuedWeek } from "@/lib/uscisIssued";
-import { blockCoverage, blockForms, blockStatusMix, chartSeries, monthRows, topForms } from "@/lib/uscisSample";
+import { blockCoverage, blockForms, blockStatusMix, blocksInMonth, chartSeries, decidedThrough, monthRows, topForms, type SampleReachedDoc } from "@/lib/uscisSample";
+import { monthYear } from "@convex/lib/months";
 
 const TITLE = "USCIS Receipt Blocks: Where Approvals Are Now";
 const DESCRIPTION =
@@ -49,6 +50,13 @@ export const revalidate = 3600;
 
 const int = (n: number) => n.toLocaleString("en-US");
 const pct = (x: number) => `${Math.round(x * 100)}%`;
+
+const NOW_FORMS = [
+  { form: "I-485", name: "I-485, green card" },
+  { form: "I-765", name: "I-765, work permit" },
+  { form: "I-131", name: "I-131, travel document" },
+  { form: "I-130", name: "I-130, family petition" },
+] as const;
 
 export default async function UscisReceiptBlocksPage() {
   const [meta, doc, months, issuedRuns] = await Promise.all([
@@ -93,6 +101,16 @@ export default async function UscisReceiptBlocksPage() {
         .filter((s) => s.rows.length > 0)
     : [];
 
+  // How far USCIS has got with each form, by the month its cases were received (decidedThrough): the answer to "which
+  // month is USCIS on", the first thing under the search box.
+  const reachedDoc = await getSampleReached().catch(softFail<SampleReachedDoc | null>("getSampleReached", null));
+  const reachedForms = reachedDoc
+    ? NOW_FORMS.flatMap(({ form, name }) => {
+        const r = decidedThrough(reachedDoc, form);
+        return r ? [{ form, name, ...r, blocks: doc ? blocksInMonth(doc, r.reached.month) : null }] : [];
+      })
+    : [];
+
   return (
     <div className="mx-auto w-full max-w-7xl px-4 pb-12 sm:px-6 sm:pb-16">
       <div className="pt-10 sm:pt-12" />
@@ -120,6 +138,42 @@ export default async function UscisReceiptBlocksPage() {
         </p>
       ) : (
         <>
+          {reachedForms.length > 0 ? (
+            <section className="mt-10" aria-labelledby="reached-title">
+              <h2 id="reached-title" className="font-heading text-2xl font-bold">
+                Which receipt month USCIS has reached
+              </h2>{" "}
+              <p className="mt-2 max-w-2xl text-base leading-relaxed text-muted-foreground">
+                {`The newest month whose cases are at least half decided, for cases filed online, ${formatAsOf(reachedDoc!.as_of)}. Field offices and service centers move at their own pace, so it isn't your place in a line.`}
+              </p>{" "}
+              <div className="mt-4 grid grid-cols-1 gap-4 [&>*]:min-w-0 sm:grid-cols-2 lg:grid-cols-4">
+                {reachedForms.map((r) => (
+                  <div key={r.form} className="border-2 border-border bg-card p-5">
+                    <p className="text-sm font-bold text-muted-foreground">
+                      <KeepWhole>{r.name}</KeepWhole>
+                    </p>{" "}
+                    <p className="mt-2 font-heading text-3xl font-bold leading-none">{monthYear(r.reached.month)}</p>{" "}
+                    <p className="mt-2 text-base">
+                      {`${pct(r.reached.decided)} decided (${pct(r.reached.low)} to ${pct(r.reached.high)}), of ${int(r.reached.counted)} cases checked.`}
+                    </p>{" "}
+                    {r.next ? (
+                      <p className="mt-1 text-base text-muted-foreground">
+                        {`${monthYear(r.next.month)}: ${pct(r.next.decided)} decided, of ${int(r.next.counted)}.`}
+                      </p>
+                    ) : null}{" "}
+                    {r.blocks ? (
+                      <p className="mt-2 text-base">
+                        <Link href={`/uscis-receipt-blocks/${r.blocks[0]}#form=${r.form}`} className="link font-bold">
+                          {r.blocks[0] === r.blocks[1] ? `Its block, ${r.blocks[0]}` : `Its blocks, ${r.blocks[0]} to ${r.blocks[1]}`}
+                        </Link>
+                      </p>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
           <section className="mt-10" aria-labelledby="now-title">
             <h2 id="now-title" className="font-heading text-2xl font-bold">
               Where the sample sees approvals, {formatAsOf(meta.as_of)}

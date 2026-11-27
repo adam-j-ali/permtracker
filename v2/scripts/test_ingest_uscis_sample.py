@@ -11,7 +11,7 @@ import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from ingest_uscis_sample import (  # noqa: E402
-    CASE_FIELDS, SampleError, block_mix, block_of, check_figures, diff_cases, read_cases,
+    CASE_FIELDS, SampleError, block_mix, block_of, check_figures, diff_cases, reached_by_month, read_cases,
 )
 
 fails: list[str] = []
@@ -209,8 +209,28 @@ def test_block_mix():
           f"a block keeps its 12 commonest waiting steps by name and counts the rest together: {rows[-2:]}")
 
 
+def test_reached_by_month():
+    row = lambda form, grp, month: {"form": form, "grp": grp, "status": "", "month": month}
+    cases = {
+        "IOE0000000001": row("I-485", "approved", "2026-03"),
+        "IOE0000000002": row("I-485", "waiting", "2026-03"),
+        "IOE0000000003": row("I-485", "denied", "2026-03"),
+        "IOE0000000004": row("I-485", "rfe", "2026-04"),
+        "IOE0000000005": row("I-485", "approved", "2026-11"),
+        "LIN3590012345": row("I-485", "approved", "2026-03"),
+        "IOE0000000006": row("N-400", "approved", "2026-03"),
+    }
+    got = reached_by_month(cases, "2026-11-26")
+    mar = got["I-485"][0]
+    check(mar["month"] == "2026-03" and mar["counted"] == 3 and abs(mar["decided"] - 2 / 3) < 0.001 and 0 < mar["low"] < mar["decided"] < mar["high"] < 1,
+          f"a month's decided share counts every outcome but waiting and evidence requests, with its range: {mar}")
+    check([r["month"] for r in got["I-485"]] == ["2026-03", "2026-04"] and got["I-485"][1]["decided"] == 0,
+          "the month still filling and paper receipts are left out; an evidence request is still open")
+    check(set(got) == {"I-485"}, "only the forms the list shows")
+
+
 def main() -> int:
-    for fn in (test_read_cases, test_block_of, test_check_figures, test_diff_cases, test_rows_stay_small, test_block_mix, test_load_one_commit):
+    for fn in (test_read_cases, test_block_of, test_check_figures, test_diff_cases, test_rows_stay_small, test_block_mix, test_reached_by_month, test_load_one_commit):
         fn()
     print(f"\n{len(fails)} failure(s)")
     return 1 if fails else 0

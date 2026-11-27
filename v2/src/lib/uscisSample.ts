@@ -200,6 +200,51 @@ export function monthRows(doc: SampleMonthsDoc, form: string): MonthRow[] {
   }));
 }
 
+/** One receipt month's decided share for a form (scripts/ingest_uscis_sample.py reached_by_month), with its range. */
+export interface DecidedMonth {
+  month: string;
+  counted: number;
+  decided: number;
+  low: number;
+  high: number;
+}
+
+/** perm_docs 'uscis_sample_reached': each form's newest receipt months, oldest first. */
+export interface SampleReachedDoc {
+  as_of: string;
+  forms: Record<string, DecidedMonth[]>;
+}
+
+/**
+ * How far USCIS has got with a form, by receipt month: the newest month whose cases our sample checked are at least
+ * half decided (at least `min` of them), and the month after it. Shares, never counts, so a month the walk happened
+ * to check in full weighs no more than one it sampled. Null when no month is half decided.
+ */
+export function decidedThrough(doc: SampleReachedDoc, form: string, min = 30): { reached: DecidedMonth; next: DecidedMonth | null } | null {
+  const rows = [...(doc.forms[form] ?? [])].sort((a, b) => a.month.localeCompare(b.month));
+  let at = -1;
+  rows.forEach((r, i) => {
+    if (r.counted >= min && r.decided >= 0.5) at = i;
+  });
+  if (at < 0) return null;
+  return { reached: rows[at]!, next: rows[at + 1] ?? null };
+}
+
+/** The online blocks whose cases were received in a month (from each block's received dates), first and last. */
+export function blocksInMonth(doc: { by_block: Record<string, BlockFigures> }, month: string): [string, string] | null {
+  const start = `${month}-01`;
+  const end = `${month}-31`;
+  const hits = Object.keys(doc.by_block)
+    .filter((b) => {
+      const f = doc.by_block[b];
+      const from = f?._received_from;
+      const to = f?._received_to;
+      return typeof from === "string" && typeof to === "string" && from <= end && to >= start;
+    })
+    .sort();
+  return hits.length ? [hits[0]!, hits[hits.length - 1]!] : null;
+}
+
 export interface SampleMonth {
   month: string;
   counted: number;

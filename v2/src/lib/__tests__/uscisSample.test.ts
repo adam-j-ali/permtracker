@@ -3,7 +3,7 @@
  * name means, each block's forms and approval share with its margin, the series a chart draws, and where approvals stop.
  */
 import { describe, expect, it } from "vitest";
-import { approvalsStopAfter, blockForms, blockFromInput, blockSeries, neighbours, type SampleBlocksDoc } from "../uscisSample";
+import { approvalsStopAfter, blockForms, blockFromInput, blockSeries, blocksInMonth, decidedThrough, neighbours, type SampleBlocksDoc } from "../uscisSample";
 
 const g = (count: number, share: number, low: number, high: number) => ({ count, estimated: count, share, low, high });
 const form = (counted: number, approved: number) => ({
@@ -152,3 +152,35 @@ describe("pendingEstimate (Batch 3: pending by month, Nov 25 2026)", () => {
     expect(pendingEstimate(empty as never)).toBeNull();
   });
 });
+
+describe("which receipt month USCIS has reached", () => {
+  const m = (month: string, counted: number, decided: number) => ({ month, counted, decided, low: decided - 0.02, high: decided + 0.02 });
+  const doc = {
+    as_of: "2026-11-26",
+    forms: { "I-485": [m("2026-02", 400, 0.8), m("2026-03", 13371, 0.51), m("2026-04", 9000, 0.34), m("2026-05", 20, 0.9)] },
+  };
+
+  it("is the newest month at least half decided, with enough cases, and the month after it", () => {
+    const r = decidedThrough(doc, "I-485");
+    expect(r?.reached.month).toBe("2026-03");
+    expect(r?.reached.decided).toBeCloseTo(0.51);
+    expect(r?.next?.month).toBe("2026-04");
+  });
+
+  it("has no answer for a form the sample hasn't seen half decided", () => {
+    expect(decidedThrough(doc, "I-130")).toBeNull();
+  });
+
+  it("finds the blocks whose cases were received in a month", () => {
+    const blocks = {
+      by_block: {
+        IOE09358: { _received_from: "2026-02-27", _received_to: "2026-03-05" },
+        IOE09360: { _received_from: "2026-03-13", _received_to: "2026-03-20" },
+        IOE09364: { _received_from: "2026-04-02", _received_to: "2026-04-09" },
+      },
+    } as never;
+    expect(blocksInMonth(blocks, "2026-03")).toEqual(["IOE09358", "IOE09360"]);
+    expect(blocksInMonth(blocks, "2026-08")).toBeNull();
+  });
+});
+

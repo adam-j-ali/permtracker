@@ -69,6 +69,42 @@ def block_of(receipt: str) -> str | None:
 MIX_STEPS = 12
 
 
+REACHED_FORMS = ("I-485", "I-765", "I-131", "I-130")
+REACHED_MONTHS = 18
+OPEN_GROUPS = ("waiting", "rfe")
+
+
+def reached_by_month(cases, as_of: str) -> dict[str, list[dict]]:
+    """How far USCIS has got with each of a few forms, by the month its online (IOE) cases were received: per month,
+    the cases the sample holds and the share decided (anything but waiting or an evidence request), with its 95%
+    Wilson range. Shares, so a month the walk checked in full weighs no more than one it sampled. The month the sample
+    is dated in is still filling and is left out; only the newest REACHED_MONTHS months are kept. The block list's
+    "Which receipt month USCIS has reached" reads it (src/lib/uscisSample.ts decidedThrough)."""
+    from lib_wilson import wilson_interval
+
+    filling = as_of[:7]
+    tally: dict[tuple[str, str], list[int]] = {}
+    for r, row in cases.items():
+        form, month = row.get("form") or "", row.get("month") or ""
+        if form not in REACHED_FORMS or not month or month >= filling or not r.startswith("IOE"):
+            continue
+        t = tally.setdefault((form, month), [0, 0])
+        t[0] += 1
+        if row["grp"] not in OPEN_GROUPS:
+            t[1] += 1
+    out: dict[str, list[dict]] = {}
+    for form in REACHED_FORMS:
+        months = sorted(m for f, m in tally if f == form)[-REACHED_MONTHS:]
+        rows = []
+        for m in months:
+            n, k = tally[(form, m)]
+            lo, hi = wilson_interval(k, n) or (0.0, 100.0)
+            rows.append({"month": m, "counted": n, "decided": round(k / n, 4), "low": round(lo / 100, 4), "high": round(hi / 100, 4)})
+        if rows:
+            out[form] = rows
+    return out
+
+
 def block_mix(cases) -> dict[str, dict[str, list[list]]]:
     """Each online block's cases counted for its page's card, form by form (Nov 26 2026: people pass around one form's
     picture, a block's work permits): {block: {form: [[group, status, count], ...]}}, an outcome counted by its group
@@ -221,11 +257,14 @@ def diff_cases(prev: dict[str, dict], new: dict[str, dict]) -> tuple[list[dict],
     return upserts, deletes, events
 
 
-def write_figures(db, figures: dict, cases: int, mix: dict[str, list[list]] | None = None) -> None:
+def write_figures(db, figures: dict, cases: int, mix: dict[str, list[list]] | None = None,
+                  reached: dict[str, list[dict]] | None = None) -> None:
     from lib_db import stamp_freshness, write_doc
 
     if mix is not None:
         write_doc(db, "uscis_sample_block_mix", {"as_of": figures["as_of"], "by_block": mix})
+    if reached is not None:
+        write_doc(db, "uscis_sample_reached", {"as_of": figures["as_of"], "forms": reached})
 
     write_doc(db, "uscis_sample_months", {"as_of": figures["as_of"], "groups": figures.get("groups"),
                                           "by_month": figures["by_month"]})
@@ -255,7 +294,7 @@ def load(folder: str, dry_run: bool, figures_only: bool = False) -> int:
     if figures_only:
         print(f"{figures['as_of']}: the figures for {len(new):,} cases" + (" (dry run)" if dry_run else ""))
         if not dry_run:
-            write_figures(db, figures, len(new), block_mix(new))
+            write_figures(db, figures, len(new), block_mix(new), reached_by_month(new, figures["as_of"]))
             record_run(db, SCRIPT, status="ok", rows_written=3, note=f"{figures['as_of']}: figures only", started_at=started)
         return 0
     prev_path = os.path.join(folder, LOADED, "sample-cases.csv")
@@ -269,7 +308,7 @@ def load(folder: str, dry_run: bool, figures_only: bool = False) -> int:
     # One transaction a request: each case committed alone ran about 150 a second on the server, so the first full load
     # (1.47 million cases) stopped at its 30 minutes with 275,000 written (Nov 26 2026); in one, about 5,000 a second.
     run_stmts(db, case_statements(upserts, deletes, events), per_request=500, one_commit=True)
-    write_figures(db, figures, len(new), block_mix(new))
+    write_figures(db, figures, len(new), block_mix(new), reached_by_month(new, figures["as_of"]))
     write_doc(db, "uscis_sample_load", {"as_of": figures["as_of"], "cases": len(new), "loaded_at": int(time.time() * 1000)})
     os.makedirs(os.path.join(folder, LOADED), exist_ok=True)
     shutil.copyfile(cases_path, prev_path + ".tmp")
